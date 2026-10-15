@@ -741,6 +741,11 @@ function renderLangSwitcher(){
 // Rather than touch every function, we keep English as the source text and
 // translate it live whenever the language is Russian, by walking the DOM.
 const RU_MAP={
+  'New here?':'Впервые здесь?',
+  '📋 Bulk Import — Full Week Schedule':'📋 Массовый импорт — расписание на неделю',
+  'Select class and week, then paste the whole week. Write the day name, then its lessons one per line — the system sorts them into the right days:':'Выберите класс и неделю, затем вставьте всю неделю. Напишите название дня, затем его уроки по одному в строке — система сама разложит их по дням:',
+  'Select class, month and week.':'Выберите класс, месяц и неделю.',
+  '(only if no day name is pasted)':'(только если не вставлено название дня)',
   'Administrator':'Администратор',
   'Administrator sign in':'Вход администратора',
   'Teacher sign in':'Вход учителя',
@@ -2095,7 +2100,6 @@ function startApp(){
   buildNav();
   startIncomingCallWatcher();
   startNotifWatcher();
-  loadAds();
 }
 
 function showPg(id){
@@ -3570,18 +3574,18 @@ function buildASc(){
   const ys=[];const cy=n.getFullYear();
   for(let y=cy+1;y>=cy-2;y--)ys.push((y-1)+'-'+y);
   return'<div class="pg" id="asc"><div class="pt">Schedule</div>'
-    +'<div class="fc" style="margin-bottom:14px"><h3>📋 Bulk Import — Full Day Schedule</h3>'
-    +'<p style="font-size:12px;color:var(--txt2);margin-bottom:6px">Select class, week, day — then paste lessons one per line:</p>'
-    +'<code style="display:block;font-size:11px;background:var(--surf3);padding:8px 12px;border-radius:7px;margin-bottom:10px;color:var(--acc)">Subject — Teacher Name</code>'
-    +'<p style="font-size:11px;color:var(--txt3);margin-bottom:10px">Example:<br>Armenian Language — Armen Danielyan<br>Mathematics — Gor Petrosyan<br>English — Aram Vardanyan</p>'
+    +'<div class="fc" style="margin-bottom:14px"><h3>📋 Bulk Import — Full Week Schedule</h3>'
+    +'<p style="font-size:12px;color:var(--txt2);margin-bottom:6px">Select class and week, then paste the whole week. Write the day name, then its lessons one per line — the system sorts them into the right days:</p>'
+    +'<code style="display:block;font-size:11px;background:var(--surf3);padding:8px 12px;border-radius:7px;margin-bottom:10px;color:var(--acc);white-space:pre-line">Monday\nSubject — Teacher Name\nSubject — Teacher Name\nTuesday\nSubject — Teacher Name</code>'
+    +'<p style="font-size:11px;color:var(--txt3);margin-bottom:10px">Example:<br>Monday<br>English — Aram Vardanyan<br>Mathematics — Gor Petrosyan<br>Tuesday<br>Armenian Language — Armen Danielyan<br>Chemistry — Lilia Sargsyan<br><br>Day names can be English, Armenian or Russian (Mon / Երկուշաբթի / Понедельник…). Only the days you paste are changed. If you paste lessons without any day name, they go to the Day chosen below.</p>'
     +'<div class="sr" style="margin-bottom:10px;flex-wrap:wrap">'
     +'<label>Class:</label><select id="bi-cls" style="padding:7px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);font-size:13px;font-family:inherit;outline:none">'+cls.map(c=>'<option value="'+c+'">'+c+'</option>').join('')+'</select>'
     +'<label>Year:</label><select id="bi-yr" style="padding:7px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);font-size:13px;font-family:inherit;outline:none">'+ys.map(y=>'<option value="'+y+'"'+(y===ay?' selected':'')+'>'+y+'</option>').join('')+'</select>'
     +'<label>Month:</label><select id="bi-mo" onchange="updBiWeeks()" style="padding:7px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);font-size:13px;font-family:inherit;outline:none">'+ms.map(m=>'<option value="'+m.v+'"'+(m.v===cm?' selected':'')+'>'+m.l+'</option>').join('')+'</select>'
     +'<label>Week:</label><select id="bi-wk" style="padding:7px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);font-size:13px;font-family:inherit;outline:none;min-width:180px"><option>Loading...</option></select>'
-    +'<label>Day:</label><select id="bi-dy" style="padding:7px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);font-size:13px;font-family:inherit;outline:none">'+days.map(d=>'<option value="'+d+'">'+d+'</option>').join('')+'</select>'
+    +'<label>Day <small style="color:var(--txt3)">(only if no day name is pasted)</small>:</label><select id="bi-dy" style="padding:7px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);font-size:13px;font-family:inherit;outline:none">'+days.map(d=>'<option value="'+d+'">'+d+'</option>').join('')+'</select>'
     +'</div>'
-    +'<textarea id="bi-lines" placeholder="Armenian Language — Armen Danielyan&#10;Mathematics — Gor Petrosyan&#10;English — Aram Vardanyan&#10;Natural Science — Lilia Sargsyan" style="width:100%;min-height:160px;padding:10px 12px;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);font-size:13px;font-family:inherit;outline:none;resize:vertical;line-height:1.7"></textarea>'
+    +'<textarea id="bi-lines" placeholder="Monday&#10;English — Aram Vardanyan&#10;Mathematics — Gor Petrosyan&#10;Tuesday&#10;Chemistry — Lilia Sargsyan&#10;Armenian Language — Armen Danielyan&#10;..." style="width:100%;min-height:260px;padding:10px 12px;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);font-size:13px;font-family:inherit;outline:none;resize:vertical;line-height:1.7"></textarea>'
     +'<div style="display:flex;gap:8px;margin-top:10px;align-items:center">'
     +'<button class="btn bp2" onclick="bulkImportSched()" style="padding:9px 20px;font-size:14px">✓ Import Schedule</button>'
     +'<span id="bi-msg" style="font-size:13px;color:var(--grn)"></span>'
@@ -3612,37 +3616,109 @@ function updBiWeeks(){
   if(ci>=0)sel.value=ci;
 }
 
+// Day-name recognition for the bulk importer (English, Armenian, Russian; full + short forms).
+const BULK_DAY_MAP={
+  'monday':'Mon','mon':'Mon','երկուշաբթի':'Mon','երկ':'Mon','понедельник':'Mon','пн':'Mon',
+  'tuesday':'Tue','tues':'Tue','tue':'Tue','երեքշաբթի':'Tue','երք':'Tue','вторник':'Tue','вт':'Tue',
+  'wednesday':'Wed','wed':'Wed','չորեքշաբթի':'Wed','չրք':'Wed','среда':'Wed','ср':'Wed',
+  'thursday':'Thu','thurs':'Thu','thur':'Thu','thu':'Thu','հինգշաբթի':'Thu','հնգ':'Thu','четверг':'Thu','чт':'Thu',
+  'friday':'Fri','fri':'Fri','ուրբաթ':'Fri','ուրբ':'Fri','пятница':'Fri','пт':'Fri',
+  'saturday':'SKIP','sat':'SKIP','շաբաթ':'SKIP','суббота':'SKIP','сб':'SKIP',
+  'sunday':'SKIP','sun':'SKIP','կիրակի':'SKIP','воскресенье':'SKIP','вс':'SKIP'
+};
+const _bulkDayKeys=Object.keys(BULK_DAY_MAP).sort((a,b)=>b.length-a.length)
+  .map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
+const BULK_DAY_RE=new RegExp('^('+_bulkDayKeys.join('|')+')(?=$|[\\s:：\\-–—.,;])[\\s:：\\-–—.,;]*(.*)$','i');
+
+// One "Subject - Teacher" line -> {sub,teacher}. Handles "1. " numbering and -, –, — separators.
+function parseLessonLine(line){
+  let s=line.replace(/^\s*\d+\s*[.)]\s*/,'').trim();
+  if(!s)return null;
+  let m=s.match(/\s+[-–—]\s+|[—–]/);
+  let sub,teacher='';
+  if(m){sub=s.slice(0,m.index).trim();teacher=s.slice(m.index+m[0].length).trim();}
+  else{
+    const i=s.indexOf('-');
+    if(i>0){sub=s.slice(0,i).trim();teacher=s.slice(i+1).trim();}
+    else sub=s;
+  }
+  if(!sub)return null;
+  if(/^\.{2,}$|^…$/.test(teacher))teacher=''; // "English - ..." placeholder
+  return{sub,teacher};
+}
+
+// Whole-week parser. Day names on their own line (or at the start of the line, followed by the
+// first lesson) switch the current day; everything after belongs to that day until the next name.
+function parseWeekSchedule(raw){
+  const out={days:{},errs:[],skipped:[],hasDayHeaders:false};
+  let cur=null;
+  raw.split('\n').forEach((rawLine,idx)=>{
+    const line=rawLine.replace(/\u00a0/g,' ').trim();
+    if(!line)return;
+    const m=line.match(BULK_DAY_RE);
+    let rest=line;
+    if(m){
+      out.hasDayHeaders=true;
+      const key=BULK_DAY_MAP[m[1].toLowerCase()];
+      cur=key==='SKIP'?'SKIP':key;
+      if(cur!=='SKIP'&&!out.days[cur])out.days[cur]=[];
+      if(cur==='SKIP')out.skipped.push(m[1]);
+      rest=(m[2]||'').trim();
+      if(!rest)return;
+    }
+    if(!cur){out.errs.push('Line '+(idx+1)+': lesson before any day name');return;}
+    if(cur==='SKIP')return;
+    // several lessons on one line separated by tabs
+    rest.split(/\t+/).map(x=>x.trim()).filter(Boolean).forEach(part=>{
+      const les=parseLessonLine(part);
+      if(les)out.days[cur].push(les);
+      else out.errs.push('Line '+(idx+1)+': invalid format');
+    });
+  });
+  return out;
+}
+
 async function bulkImportSched(){
   const cls=$('bi-cls')?.value;
   const mo=$('bi-mo')?.value;
   const wi=parseInt($('bi-wk')?.value)||0;
   const day=$('bi-dy')?.value;
   const raw=$('bi-lines')?.value||'';
-  if(!cls||!mo||!day){alert('Select class, month, week and day.');return;}
+  if(!cls||!mo){alert('Select class, month and week.');return;}
   const wks=getWeeks(mo);
   const wk=wks[wi]?.ws;
   if(!wk){alert('Invalid week.');return;}
-  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
-  if(!lines.length){alert('Enter at least one lesson.');return;}
-  const lessons=[];
-  const errs=[];
-  lines.forEach((line,i)=>{
-    // Support both — and - separators
-    const sep=line.includes('—')?'—':'-';
-    const parts=line.split(sep).map(p=>p.trim());
-    if(parts.length<1||!parts[0]){errs.push('Line '+(i+1)+': invalid format');return;}
-    const sub=parts[0];
-    const teacher=parts.slice(1).join(sep).trim();
-    lessons.push({sub,teacher:teacher||''});
-  });
-  if(errs.length){alert('Errors:\n'+errs.join('\n'));return;}
+  if(!raw.trim()){alert('Enter at least one lesson.');return;}
+  const parsed=parseWeekSchedule(raw);
+  let daysToSave={};
+  if(parsed.hasDayHeaders){
+    // WHOLE-WEEK MODE: day names in the pasted text decide where each lesson goes.
+    if(parsed.errs.length){alert('Errors:\n'+parsed.errs.join('\n'));return;}
+    Object.entries(parsed.days).forEach(([d,ls])=>{if(ls.length)daysToSave[d]=ls;});
+    if(!Object.keys(daysToSave).length){alert('Enter at least one lesson.');return;}
+  }else{
+    // SINGLE-DAY MODE (old behaviour): everything goes to the Day selected in the dropdown.
+    if(!day){alert('Select class, month, week and day.');return;}
+    const lessons=[],errs=[];
+    raw.split('\n').map(l=>l.trim()).filter(Boolean).forEach((line,i)=>{
+      const les=parseLessonLine(line);
+      if(les)lessons.push(les);else errs.push('Line '+(i+1)+': invalid format');
+    });
+    if(errs.length){alert('Errors:\n'+errs.join('\n'));return;}
+    if(!lessons.length){alert('Enter at least one lesson.');return;}
+    daysToSave[day]=lessons;
+  }
   if(!SC[cls])SC[cls]={};
   if(!SC[cls][wk])SC[cls][wk]={};
-  SC[cls][wk][day]=lessons;
+  Object.entries(daysToSave).forEach(([d,ls])=>{SC[cls][wk][d]=ls;});
   sLoad('Saving...');await svSched();hLoad();
+  const nDays=Object.keys(daysToSave).length;
+  const nLes=Object.values(daysToSave).reduce((a,b)=>a+b.length,0);
   const msg=$('bi-msg');
-  if(msg)msg.textContent='✓ Saved '+lessons.length+' lessons for '+cls+' '+day+' week '+wk;
+  if(msg)msg.textContent='✓ Saved '+nLes+' lessons across '+nDays+' day'+(nDays>1?'s':'')+' ('+Object.keys(daysToSave).join(', ')+') for '+cls+' week '+wk
+    +(parsed.skipped.length?' — skipped: '+parsed.skipped.join(', '):'');
   $('bi-lines').value='';
+  if(typeof rfSc==='function')try{rfSc()}catch(e){}
 }
 
 function onScCls(){updScWkDropdown();rfSc();}
