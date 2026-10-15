@@ -1209,6 +1209,33 @@ async function bSet(id,data){
   }catch(e){throw new Error(e.message||'Firestore write failed');}
 }
 
+// SCHEDULE COMPACT STORAGE: identical weeks are stored once (template) and referenced,
+// so a full-year import is tiny. In memory SC keeps its normal {cls:{week:{day:[...]}}} shape.
+function scPack(sc){
+  const out={__v:2,c:{}};
+  Object.keys(sc||{}).forEach(cls=>{
+    const t={},tk={},w={},o={};let n=0;
+    Object.entries(sc[cls]||{}).forEach(([k,v])=>{
+      if(/^\d{4}-\d{2}-\d{2}$/.test(k)&&v&&!Array.isArray(v)){
+        const j=JSON.stringify(v);
+        if(!(j in tk)){tk[j]='t'+(n++);t[tk[j]]=v;}
+        w[k]=tk[j];
+      }else o[k]=v;
+    });
+    out.c[cls]={t:t,w:w,o:o};
+  });
+  return out;
+}
+function scUnpack(d){
+  if(!d||d.__v!==2)return d;
+  const sc={};
+  Object.keys(d.c||{}).forEach(cls=>{
+    const e=d.c[cls]||{};const r=Object.assign({},e.o||{});
+    Object.entries(e.w||{}).forEach(([k,id])=>{r[k]=JSON.parse(JSON.stringify((e.t||{})[id]||{}));});
+    sc[cls]=r;
+  });
+  return sc;
+}
 // LOAD/SAVE
 async function loadAll(){
   sLoad('Loading...');
@@ -1225,7 +1252,7 @@ async function loadAll(){
     if(a&&typeof a==='object'&&!a.type)AT=a;
     if(bc&&Array.isArray(bc.items))BCASTS=bc.items;
     if(schedData&&typeof schedData==='object'&&!Array.isArray(schedData)){
-      SC=schedData;
+      SC=scUnpack(schedData);
       // Migrate any week keys that aren't actual Mondays (from older buggy partial-week logic)
       let migrated=false;
       Object.keys(SC).forEach(cls=>{
@@ -1672,7 +1699,7 @@ async function checkForNewNotifs(){
     // uses the real schedule, without forcing a live-rebuild of an open grade table that
     // could contain not-yet-saved edits.
     const freshSc=(await bGet(BC).catch(()=>null))||null;
-    if(freshSc&&typeof freshSc==='object')SC=freshSc;
+    if(freshSc&&typeof freshSc==='object')SC=scUnpack(freshSc);
     // If the person is currently looking at a page driven by this data, refresh it
     // live instead of making them navigate away and back (or reload) to see it.
     // Deliberately skipped for the teacher's own grade-entry page ('gr-book'):
@@ -1933,14 +1960,14 @@ async function svSched(){
   // Trim old weeks to stay under 100KB
   Object.keys(SC).forEach(cls=>{
     const wks=Object.keys(SC[cls]).filter(k=>/^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
-    if(wks.length>16)wks.slice(0,wks.length-16).forEach(w=>delete SC[cls][w]);
+    if(wks.length>45)wks.slice(0,wks.length-45).forEach(w=>delete SC[cls][w]);
   });
   // Check size
-  const json=JSON.stringify(SC);
+  const json=JSON.stringify(scPack(SC));
   const kb=Math.round(json.length/1024);
   if(kb>900){hLoad();alert('❌ Schedule is too large ('+kb+'KB). Delete old weeks first.');return;}
   try{
-    await bSet(BC,SC);
+    await bSet(BC,scPack(SC));
   }catch(e){hLoad();alert('❌ Save error (Schedule): '+e.message+' ('+kb+'KB)');throw e;}
 }
 
@@ -3583,6 +3610,7 @@ function buildASc(){
     +'<label>Year:</label><select id="bi-yr" style="padding:7px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);font-size:13px;font-family:inherit;outline:none">'+ys.map(y=>'<option value="'+y+'"'+(y===ay?' selected':'')+'>'+y+'</option>').join('')+'</select>'
     +'<label>Month:</label><select id="bi-mo" onchange="updBiWeeks()" style="padding:7px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);font-size:13px;font-family:inherit;outline:none">'+ms.map(m=>'<option value="'+m.v+'"'+(m.v===cm?' selected':'')+'>'+m.l+'</option>').join('')+'</select>'
     +'<label>Week:</label><select id="bi-wk" style="padding:7px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);font-size:13px;font-family:inherit;outline:none;min-width:180px"><option>Loading...</option></select>'
+    +'<label>Apply to:</label><select id="bi-scope" style="padding:7px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);font-size:13px;font-family:inherit;outline:none"><option value="all">All weeks of the year</option><option value="from">Selected week and all after it</option><option value="one">Selected week only</option></select>'
     +'<label>Day <small style="color:var(--txt3)">(only if no day name is pasted)</small>:</label><select id="bi-dy" style="padding:7px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);font-size:13px;font-family:inherit;outline:none">'+days.map(d=>'<option value="'+d+'">'+d+'</option>').join('')+'</select>'
     +'</div>'
     +'<textarea id="bi-lines" placeholder="Monday&#10;English — Aram Vardanyan&#10;Mathematics — Gor Petrosyan&#10;Tuesday&#10;Chemistry — Lilia Sargsyan&#10;Armenian Language — Armen Danielyan&#10;..." style="width:100%;min-height:260px;padding:10px 12px;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);font-size:13px;font-family:inherit;outline:none;resize:vertical;line-height:1.7"></textarea>'
@@ -3709,13 +3737,25 @@ async function bulkImportSched(){
     daysToSave[day]=lessons;
   }
   if(!SC[cls])SC[cls]={};
-  if(!SC[cls][wk])SC[cls][wk]={};
-  Object.entries(daysToSave).forEach(([d,ls])=>{SC[cls][wk][d]=ls;});
+  const scope=$('bi-scope')?.value||'all';
+  let targetWks=[wk];
+  if(scope!=='one'){
+    const ay=$('bi-yr')?.value||curAY();
+    const set=new Set();
+    getMonths(ay).forEach(m=>getWeeks(m.v).forEach(w=>set.add(w.ws)));
+    targetWks=[...set].sort();
+    if(scope==='from')targetWks=targetWks.filter(w=>w>=wk);
+    if(!targetWks.length)targetWks=[wk];
+  }
+  targetWks.forEach(w=>{
+    if(!SC[cls][w])SC[cls][w]={};
+    Object.entries(daysToSave).forEach(([d,ls])=>{SC[cls][w][d]=ls.map(x=>({...x}));});
+  });
   sLoad('Saving...');await svSched();hLoad();
   const nDays=Object.keys(daysToSave).length;
   const nLes=Object.values(daysToSave).reduce((a,b)=>a+b.length,0);
   const msg=$('bi-msg');
-  if(msg)msg.textContent='✓ Saved '+nLes+' lessons across '+nDays+' day'+(nDays>1?'s':'')+' ('+Object.keys(daysToSave).join(', ')+') for '+cls+' week '+wk
+  if(msg)msg.textContent='✓ Saved '+nLes+' lessons across '+nDays+' day'+(nDays>1?'s':'')+' ('+Object.keys(daysToSave).join(', ')+') for '+cls+(targetWks.length>1?' in '+targetWks.length+' weeks':' week '+wk)
     +(parsed.skipped.length?' — skipped: '+parsed.skipped.join(', '):'');
   $('bi-lines').value='';
   if(typeof rfSc==='function')try{rfSc()}catch(e){}
