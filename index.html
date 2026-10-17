@@ -1817,6 +1817,12 @@ let DB={users:{},classes:{}},SC={},GR={},LI={},AT={},PE={},MSGS={},CALLS={},BCAS
 let CU=null,sCls=null,sDate='',sSubj=null,sLes=1,cRole='teacher';
 
 const $=id=>document.getElementById(id);
+function dnShort(dt){
+  const d=dt.getDay();
+  if(_lang==='hy')return['Կիր','Երկ','Երք','Չրք','Հնգ','Ուրբ','Շբթ'][d];
+  if(_lang==='ru')return['Вс','Пн','Вт','Ср','Чт','Пт','Сб'][d];
+  return['Su','Mo','Tu','We','Th','Fr','Sa'][d];
+}
 const ini=n=>(n||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
 function tod(){const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
 function pad(n){return String(n).padStart(2,'0')}
@@ -2696,7 +2702,7 @@ async function sendBroadcast(){
     await svBroadcasts();
     if(ti)ti.value='';if(bo)bo.value='';
     hLoad();
-    const o=$('sads');if(o)o.outerHTML=buildAdminAds();
+    const o=$('sads');if(o){o.outerHTML=buildAdminAds();const n=$('sads');if(n)n.classList.add('on');}
     alert('✓ Sent to everyone.');
   }catch(e){/* svBroadcasts already alerted */}
 }
@@ -2707,7 +2713,7 @@ async function deleteBroadcast(id){
   try{
     await svBroadcasts();
     hLoad();
-    const o=$('sads');if(o)o.outerHTML=buildAdminAds();
+    const o=$('sads');if(o){o.outerHTML=buildAdminAds();const n=$('sads');if(n)n.classList.add('on');}
   }catch(e){}
 }
 
@@ -3450,7 +3456,7 @@ function rfGrMonthGrid(){
   const today=tod();
   wrap.innerHTML='<div class="cd"><div style="overflow-x:auto"><table style="font-size:12px">'
     +'<thead><tr><th style="position:sticky;left:0;background:var(--surf2);min-width:140px;z-index:2">Student</th>'
-    +dates.map(ds=>{const dt=new Date(ds);return'<th style="text-align:center;min-width:54px'+(ds===today?';color:var(--acc)':'')+'">'+DN[dt.getDay()].slice(0,2)+'<br>'+dt.getDate()+'.'+pad(dt.getMonth()+1)+'</th>';}).join('')
+    +dates.map(ds=>{const dt=new Date(ds);return'<th style="text-align:center;min-width:54px'+(ds===today?';color:var(--acc)':'')+'">'+dnShort(dt)+'<br>'+dt.getDate()+'.'+pad(dt.getMonth()+1)+'</th>';}).join('')
     +'</tr></thead>'
     +'<tr><td style="position:sticky;left:0;background:var(--surf2)"></td>'
     +dates.map(ds=>{
@@ -5623,6 +5629,27 @@ function mdConfirmLogout(){
     '<div class="md-btns" style="margin-top:18px"><button class="btn bg2" onclick="mdCloseModal()">Ոչ</button><button class="btn bp2" style="background:#dc2626;box-shadow:0 4px 12px rgba(220,38,38,.3)" onclick="mdCloseModal();logout()">Այո, դուրս գալ</button></div>');
 }
 
+
+// Keeps the current section visible: some actions re-render a page via outerHTML, which creates a fresh
+// element without the "on" class and the section would vanish. If no page is active, re-activate the last one.
+(function(){
+  let last=null,busy=false;
+  function check(){
+    if(busy)return;
+    const mn=document.getElementById('mn');if(!mn)return;
+    const on=mn.querySelector('.pg.on');
+    if(on){last=on.id;return;}
+    if(last&&CU){
+      const el=document.getElementById(last);
+      if(el&&el.classList.contains('pg')){busy=true;el.classList.add('on');busy=false;}
+    }
+  }
+  function start(){
+    const mn=document.getElementById('mn');if(!mn){document.addEventListener('DOMContentLoaded',start);return;}
+    new MutationObserver(check).observe(mn,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+  }
+  start();
+})();
 // INIT
 (async()=>{
   startTrObserver();
