@@ -6549,5 +6549,202 @@ button .ico,.btn .ico{width:1.4em;height:1.4em}
   if(document.body)start();else document.addEventListener('DOMContentLoaded',start);
 })();
 </script>
+<!-- =====================================================================
+ MyDigitalSchool — Premium UI layer
+ ՕԳՏԱԳՈՐԾՄԱՆ ԿԱՆՈՆ: տեղադրել ամբողջ այս բլոկը index.html-ի մեջ՝
+ վերջին </script>-ից հետո, <\/body>-ից անմիջապես առաջ (ico-css/ico script-ից ՀԵՏՈ),
+ որպեսզի հաղթի գոյություն ունեցող ոճերին։ Ոչ մի գործող ֆունկցիա չի փոփոխվում։
+===================================================================== -->
+<style id="premium-ui">
+/* ---------- 1. Design tokens ---------- */
+:root{
+  --bg:#f4f5f9;--surf:#fff;--surf2:#f7f8fb;--surf3:#eff1f6;
+  --bdr:#e5e7ef;--bdr2:#d3d7e3;
+  --acc:#4338ca;--acc2:#3730a3;--acc3:#4f46e5;
+  --acc-lt:rgba(79,70,229,.10);--acc-lt2:rgba(79,70,229,.05);
+  --txt:#161a2e;--txt2:#566079;--txt3:#8a93ab;
+  --sh:0 1px 2px rgba(22,26,46,.05),0 1px 1px rgba(22,26,46,.03);
+  --sh2:0 12px 32px rgba(22,26,46,.10),0 2px 6px rgba(22,26,46,.05);
+  --r:10px;--r2:12px;--r3:16px;--r4:22px;
+  --dur:.18s;--ease:cubic-bezier(.22,.9,.35,1);
+}
+[data-theme=dark]{
+  --bg:#0f1119;--surf:#181b27;--surf2:#141722;--surf3:#202435;
+  --bdr:#272b3f;--bdr2:#363b58;
+  --acc:#8b8dff;--acc2:#b0b2ff;--acc3:#6366f1;
+  --acc-lt:rgba(139,141,255,.16);--acc-lt2:rgba(139,141,255,.07);
+  --txt:#eef0fa;--txt2:#aeb4cf;--txt3:#7b82a3;
+  --sh:none;--sh2:0 14px 36px rgba(0,0,0,.45);
+}
+body,#mn,.mn{background:var(--bg)}
+body,.sb,.cd,.sc,.fc,#ubar,.mh,.md,input,select,textarea,.ub-menu,#notif-panel{
+  transition:background-color .2s var(--ease),border-color .2s var(--ease),color .2s var(--ease)}
+:focus-visible{outline:2px solid var(--acc3);outline-offset:2px;border-radius:8px}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none}
+
+/* ---------- 2. Sidebar ---------- */
+.sb{background:var(--surf)!important;border-right:1px solid var(--bdr);box-shadow:none}
+.sbs{padding:16px 18px 6px;font-size:10.5px;letter-spacing:.08em}
+.ni{position:relative;margin:2px 10px;padding:10px 12px;border-radius:12px;color:var(--txt2);font-weight:500;
+  transition:background-color var(--dur) var(--ease),color var(--dur) var(--ease),box-shadow var(--dur) var(--ease)}
+.ni:hover{background:var(--surf3);color:var(--txt);transform:none}
+.ni:active{background:var(--acc-lt2)}
+.ni.on{background:var(--acc-lt);color:var(--acc);font-weight:700;box-shadow:none}
+.ni.on::before{left:-10px;top:22%;height:56%;width:4px;border-radius:0 4px 4px 0;background:var(--acc);box-shadow:none}
+.ni .ico{transition:transform var(--dur) var(--ease)}
+.ni:hover .ico,.ni.on .ico{transform:scale(1.08)}
+.bout{border-radius:12px;font-weight:600}
+
+/* ---------- 3. Headings, cards, stats ---------- */
+.pt{font-size:24px;font-weight:800;letter-spacing:-.3px;color:var(--txt);border-bottom:0;padding-bottom:0;margin-bottom:6px}
+.pt::after{display:inline-block;content:'';width:28px;height:4px;border-radius:4px;background:var(--acc3);box-shadow:none}
+.ps{color:var(--txt2);margin-bottom:22px}
+.cd,.sc,.fc{border-radius:var(--r3);border:1px solid var(--bdr);box-shadow:var(--sh);background:var(--surf)}
+.cd{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+.cdh{background:transparent;padding:14px 20px}
+.sc{transition:transform .22s var(--ease),box-shadow .22s var(--ease),border-color .22s var(--ease)}
+.sc::before{height:3px;background:var(--acc3);opacity:.85}
+.sc:hover{transform:translateY(-2px);box-shadow:var(--sh2);border-color:var(--bdr2)}
+.sc .sv{font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.ddh{background:var(--acc3);background-image:none;padding:12px 18px}
+
+/* staggered, short entrance (≤ 6 items; no looping) */
+.pg.on .srow>.sc,.pg.on>.cd,.pg.on>.fc,.pg.on>div>.cd{animation:mdsRise .38s var(--ease) both}
+.pg.on .srow>.sc:nth-child(2),.pg.on>.cd:nth-of-type(2){animation-delay:.04s}
+.pg.on .srow>.sc:nth-child(3),.pg.on>.cd:nth-of-type(3){animation-delay:.08s}
+.pg.on .srow>.sc:nth-child(n+4),.pg.on>.cd:nth-of-type(n+4){animation-delay:.1s}
+@keyframes mdsRise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* ---------- 4. Tables ---------- */
+table{border-collapse:separate;border-spacing:0}
+th{background:var(--surf2);color:var(--txt3);font-size:11px;letter-spacing:.05em;padding:11px 16px;border-bottom:1px solid var(--bdr);position:relative}
+td{padding:12px 16px;border-bottom:1px solid var(--bdr);transition:background-color .12s}
+tbody tr:last-child td,tr:last-child>td{border-bottom:0}
+tbody tr:hover td{background:var(--acc-lt2)}
+.cd table{min-width:100%}
+
+/* ---------- 5. Buttons & forms ---------- */
+.btn{border-radius:10px;min-height:36px;padding:8px 16px;font-weight:600;
+  transition:transform .12s var(--ease),background-color var(--dur),border-color var(--dur),box-shadow var(--dur),color var(--dur)}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(0) scale(.97)}
+.bp2,.bmain{background:var(--acc3);background-image:none;color:#fff;box-shadow:0 1px 2px rgba(79,70,229,.25),inset 0 1px 0 rgba(255,255,255,.18)}
+.bp2:hover,.bmain:hover{background:var(--acc);box-shadow:0 6px 16px rgba(79,70,229,.28)}
+[data-theme=dark] .bp2,[data-theme=dark] .bmain{background:var(--acc3)}
+.bmain{border-radius:12px;min-height:46px}
+.bg2{background:var(--surf);border:1px solid var(--bdr)!important;color:var(--txt2)}
+.bg2:hover{border-color:var(--acc3)!important;color:var(--acc);background:var(--acc-lt2)}
+.bd2{background:var(--surf);color:var(--red)}
+.bd2:hover{background:var(--red-lt)}
+input,select,textarea{border-radius:12px}
+.fg input,.fg select,.ff input,.ff select,select,input[type=date],input[type=time],input[type=number]{
+  background:var(--surf2);border:1px solid var(--bdr);min-height:40px;
+  transition:border-color var(--dur),box-shadow var(--dur),background-color var(--dur)}
+.fg input:focus,.fg select:focus,.ff input:focus,.ff select:focus,select:focus,input:focus,textarea:focus{
+  border-color:var(--acc3);background:var(--surf);box-shadow:0 0 0 4px var(--acc-lt);outline:none}
+input[type=checkbox]{accent-color:var(--acc3);width:16px;height:16px;cursor:pointer}
+.badge{border-radius:8px}
+.av{border-radius:12px}
+
+/* ---------- 6. Empty states ---------- */
+.pg>p[style*="--txt3"],.cd>p[style*="--txt3"],#mn p[style*="padding:16px"][style*="--txt3"]{
+  text-align:center;padding:36px 16px!important;border:1.5px dashed var(--bdr2);border-radius:var(--r3);background:var(--surf2);font-size:14px}
+
+/* ---------- 7. Modals ---------- */
+.mw{background:rgba(15,17,30,.52);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);animation:mdsFade .18s ease both}
+.md{border-radius:var(--r4);border:1px solid var(--bdr);box-shadow:var(--sh2);animation:mdsPop .26s var(--ease) both}
+@keyframes mdsFade{from{opacity:0}to{opacity:1}}
+@keyframes mdsPop{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+
+/* ---------- 8. Loading: skeleton / shimmer overlay ---------- */
+.ld{background:rgba(244,245,249,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);color:var(--txt2);font-weight:600}
+[data-theme=dark] .ld{background:rgba(15,17,25,.72)}
+.ld .sp{width:34px;height:34px;border:3px solid var(--acc-lt);border-top-color:var(--acc3)}
+.ld p{position:relative;padding:8px 22px;border-radius:999px;overflow:hidden;background:var(--surf);border:1px solid var(--bdr)}
+.ld p::after{content:'';position:absolute;inset:0;transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent,var(--acc-lt),transparent);animation:mdsShimmer 1.2s ease-in-out infinite}
+@keyframes mdsShimmer{to{transform:translateX(100%)}}
+/* Shimmer is bounded: it exists only while the loader is visible (.ld not .h). */
+
+/* ---------- 9. Toast ---------- */
+.fl{border-radius:12px;background:var(--txt);color:var(--surf);box-shadow:var(--sh2)}
+
+/* ---------- 10. Top bar & menus ---------- */
+#ubar{background:color-mix(in srgb,var(--surf) 88%,transparent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.ub-menu,#notif-panel{border-radius:16px;box-shadow:var(--sh2)}
+.ub-it{transition:background-color .12s}
+
+/* ---------- 11. Role-picker & login ---------- */
+.home-card{border-radius:18px;transition:transform .22s var(--ease),box-shadow .22s var(--ease),border-color .22s var(--ease)}
+.home-card:hover{transform:translateY(-3px)}
+.ab{border-radius:24px;box-shadow:var(--sh2)}
+
+/* ---------- 12. Scrollbars ---------- */
+*{scrollbar-width:thin;scrollbar-color:var(--bdr2) transparent}
+
+/* ---------- 13. Mobile ---------- */
+@media(max-width:720px){
+  /* animated overlay + sidebar (display:none replaced with opacity so it can transition) */
+  .ov{display:block!important;opacity:0;pointer-events:none;background:rgba(15,17,30,.5);transition:opacity .25s var(--ease)}
+  .ov.op{opacity:1;pointer-events:auto}
+  .sb{box-shadow:var(--sh2);transition:left .28s var(--ease)}
+  .pg{padding:16px 12px}
+  .pt{font-size:21px}
+  .btn,.ni,.ab2,.rtab{min-height:42px}
+  .btn{display:inline-flex;align-items:center;justify-content:center}
+  .srow{grid-template-columns:repeat(2,1fr)!important;gap:10px}
+  .sc{padding:14px 16px}.sc .sv{font-size:28px}
+  .sr{gap:8px}.sr select,.sr input{flex:1 1 130px;min-width:0}
+  .fr{grid-template-columns:1fr}
+  .md{padding:20px 16px}
+  th,td{padding:10px 12px}
+  body{overflow-x:hidden}
+}
+@media(max-width:360px){.srow{grid-template-columns:1fr!important}}
+
+/* ---------- 14. Reduced motion ---------- */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+}
+</style>
+
+<script id="premium-ui-js">
+/* Count-up ONLY for integer stat values that were already rendered from real data.
+   The final number written is exactly the original text; nothing is invented. */
+(function(){
+  if(window.__mdsCountUp)return;window.__mdsCountUp=true;
+  var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduce)return;
+  function run(el){
+    if(el.dataset.cu)return;
+    var t=el.textContent.trim();
+    if(!/^\d{1,4}$/.test(t))return;          // skip badges, decimals, text
+    if(!el.offsetParent)return;              // hidden page: wait until it is shown
+    var end=parseInt(t,10);el.dataset.cu='1';
+    if(end<2)return;
+    var steps=14,i=0;
+    var id=setInterval(function(){
+      i++;
+      if(!el.isConnected){clearInterval(id);return;}
+      el.textContent=i>=steps?String(end):String(Math.round(end*(1-Math.pow(1-i/steps,3))));
+      if(i>=steps)clearInterval(id);
+    },32);
+  }
+  var queued=false;
+  function scan(){
+    queued=false;
+    document.querySelectorAll('.pg.on .sc .sv').forEach(run);
+  }
+  function schedule(){if(!queued){queued=true;requestAnimationFrame(scan);}}
+  function start(){
+    var mn=document.getElementById('mn');
+    if(!mn){document.addEventListener('DOMContentLoaded',start);return;}
+    new MutationObserver(schedule).observe(mn,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+    schedule();
+  }
+  start();
+})();
+</script>
+
 </body>
 </html>
