@@ -2123,7 +2123,7 @@ async function loadAll(){
 }
 async function svSchool(){
   try{
-    const payload={users:DB.users,classes:DB.classes,pending:PE,maintenance:DB.maintenance||false,maintMsg:DB.maintMsg||'',academicYear:DB.academicYear||'',adminProfile:DB.adminProfile||{}};
+    const payload={users:DB.users,classes:DB.classes,pending:PE,maintenance:DB.maintenance||false,maintMsg:DB.maintMsg||'',academicYear:DB.academicYear||'',adminProfile:DB.adminProfile||{},requests:DB.requests||{}};
     await bSet(BS,payload);
   }catch(e){hLoad();alert('? Save error (School): '+e.message);throw e;}
 }
@@ -6596,5 +6596,618 @@ button .ico,.btn .ico{width:1.4em;height:1.4em}
   if(document.body)start();else document.addEventListener('DOMContentLoaded',start);
 })();
 </script>
+<!-- ===== MyDigitalSchool: main page (portal), access requests and per-user access (additive layer) ===== -->
+<style id="md-portal-css">
+#md-portal{position:fixed;inset:0;z-index:4000;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:inherit;color:var(--txt)}
+#md-portal.h{display:none!important}
+body.md-portal-on #lang-sw{display:none!important}
+.mp-top{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;padding:12px clamp(14px,4vw,32px);background:var(--surf);border-bottom:1px solid var(--bdr);flex-wrap:wrap}
+.mp-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;letter-spacing:-.2px;margin-right:auto}
+.mp-brand img{width:34px;height:34px;object-fit:contain}
+.mp-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mp-lang{display:flex;gap:4px}
+.mp-lang button{border:1px solid var(--bdr);background:var(--surf2);color:var(--txt2);border-radius:8px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
+.mp-lang button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.mp-btn{border:1px solid var(--bdr);background:var(--surf2);color:var(--txt);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;min-height:38px}
+.mp-btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.mp-btn:hover{filter:brightness(1.06)}
+.mp-user{font-size:13px;font-weight:600;color:var(--txt2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mp-wrap{max-width:1180px;margin:0 auto;padding:clamp(18px,4vw,36px) clamp(14px,4vw,32px) 60px}
+.mp-h1{font-size:clamp(22px,4vw,30px);font-weight:800;letter-spacing:-.4px;margin:0 0 4px}
+.mp-sub{color:var(--txt2);font-size:14px;margin-bottom:22px}
+.mp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+.mp-card{background:var(--surf);border:1px solid var(--bdr);border-radius:16px;padding:22px;cursor:pointer;display:flex;flex-direction:column;gap:12px;text-align:left;font-family:inherit;color:inherit;transition:transform .15s,box-shadow .15s,border-color .15s;min-height:190px}
+.mp-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(20,30,70,.12);border-color:var(--acc)}
+.mp-card:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.mp-ic{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex:none}
+.mp-ic svg{width:30px;height:30px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mp-t{font-size:16px;font-weight:700;line-height:1.3}
+.mp-d{font-size:13px;color:var(--txt2);line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.mp-new{align-self:flex-start;font-size:10px;font-weight:800;letter-spacing:.04em;background:var(--acc);color:#fff;border-radius:999px;padding:2px 8px}
+.mp-empty{padding:40px 16px;text-align:center;color:var(--txt3);border:1px dashed var(--bdr);border-radius:16px}
+#md-ptoast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#1b1f33;color:#fff;padding:11px 18px;border-radius:12px;font-size:13px;z-index:9000;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw;display:none}
+#md-reg{position:fixed;inset:0;z-index:6000;background:rgba(10,14,30,.55);display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:5vh 14px}
+#md-reg.on{display:flex}
+.mr-box{background:var(--surf);border:1px solid var(--bdr);border-radius:18px;width:100%;max-width:480px;padding:26px;position:relative;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.mr-x{position:absolute;right:12px;top:10px;border:none;background:none;color:var(--txt2);font-size:20px;cursor:pointer;padding:6px 10px}
+.mr-box h2{font-size:22px;font-weight:800;margin:0 0 6px}
+.mr-box p.s{color:var(--txt2);font-size:13px;margin:0 0 18px;line-height:1.5}
+.mr-roles{display:grid;gap:10px}
+.mr-role{display:flex;align-items:center;gap:14px;border:1px solid var(--bdr);background:var(--surf2);border-radius:14px;padding:14px 16px;cursor:pointer;font-family:inherit;color:var(--txt);font-size:15px;font-weight:700;text-align:left;min-height:56px}
+.mr-role:hover{border-color:var(--acc)}
+.mr-role .mp-ic{width:40px;height:40px;border-radius:11px}
+.mr-role .mp-ic svg{width:22px;height:22px}
+.mr-fg{margin-bottom:12px}
+.mr-fg label{display:block;font-size:12px;font-weight:700;color:var(--txt2);margin-bottom:5px}
+.mr-fg input,.mr-fg select{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--surf2);color:var(--txt);font-size:14px;font-family:inherit}
+.mr-fg input:focus,.mr-fg select:focus{outline:2px solid var(--acc);outline-offset:1px}
+.mr-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){.mr-row{grid-template-columns:1fr}}
+.mr-err{color:var(--red);font-size:13px;min-height:18px;margin:6px 0}
+.mr-link{background:none;border:none;color:var(--acc);cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;padding:6px 0}
+.mr-main{width:100%;padding:12px;border:none;border-radius:11px;background:var(--acc);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;min-height:44px}
+.mr-main:disabled{opacity:.6;cursor:default}
+.mr-done{text-align:center;padding:10px 0}
+.mr-done .big{font-size:44px;margin-bottom:8px}
+#areq .rq-tabs{display:flex;gap:8px;margin:6px 0 14px;flex-wrap:wrap}
+#areq .rq-tabs button,#areq .rq-chips button{border:1px solid var(--bdr);background:var(--surf2);color:var(--txt2);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+#areq .rq-tabs button.on,#areq .rq-chips button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+#areq .rq-chips{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+#areq .rq-tw{overflow-x:auto;background:var(--surf);border:1px solid var(--bdr);border-radius:14px}
+#areq table{width:100%;border-collapse:collapse;min-width:640px}
+#areq th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--txt3);padding:11px 14px;border-bottom:1px solid var(--bdr)}
+#areq td{padding:11px 14px;border-bottom:1px solid var(--bdr);font-size:13px;vertical-align:middle}
+#areq tr:last-child td{border-bottom:none}
+.rq-st{display:inline-block;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:700}
+.rq-st.p{background:rgba(255,159,10,.15);color:#c77700}
+.rq-st.a{background:rgba(34,197,94,.15);color:#15803d}
+.rq-st.r{background:rgba(255,69,58,.14);color:#c62d24}
+.rq-ac{display:grid;gap:6px;margin:8px 0 12px}
+.rq-ac label{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--surf2);font-size:13px;cursor:pointer}
+.rq-ac input{width:18px;height:18px;accent-color:var(--acc);flex:none}
+.rq-dl{display:grid;grid-template-columns:130px 1fr;gap:6px 12px;font-size:13px;margin:6px 0 12px}
+.rq-dl dt{color:var(--txt3)}.rq-dl dd{margin:0;font-weight:600;word-break:break-word}
+.rq-fl{margin-bottom:10px}.rq-fl label{display:block;font-size:12px;font-weight:700;color:var(--txt2);margin-bottom:4px}
+.rq-fl input,.rq-fl select{width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid var(--bdr);border-radius:9px;background:var(--surf2);color:var(--txt);font-size:13px;font-family:inherit}
+.rq-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.md-homebtn{display:flex;align-items:center;gap:8px;margin:8px 14px 0;padding:9px 12px;border:1px solid var(--bdr);background:var(--surf2);color:var(--txt);border-radius:10px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;width:calc(100% - 28px)}
+.md-homebtn:hover{border-color:var(--acc)}
+@media(prefers-reduced-motion:reduce){.mp-card{transition:none}.mp-card:hover{transform:none}}
+</style>
+
+<script>window.MD_FR_NEW={"Ուսուցիչների պարտադիր վերապատրաստման համակարգ, որը թույլ է տալիս ուսուցիչներին գրանցվել վերապատրաստման դասընթացներին։": "Système de formation continue obligatoire des enseignants, qui permet aux enseignants de s'inscrire aux cours de formation.", "Ձեր հայտը ստացել է ադմինը։ Հաստատումից հետո կկարողանաք մուտք գործել և կտեսնեք միայն ձեզ տրամադրված բաժինները։": "Votre demande a bien été reçue par l'administrateur. Après validation, vous pourrez vous connecter et vous ne verrez que les sections qui vous sont accordées.", "«Կրթության տեղեկատվական համակարգ» (ադմինի համակարգ) չի կարող տրամադրվել սովորական օգտատերերին։": "Le « Système d'information de l'éducation » (système d'administration) ne peut pas être accordé aux utilisateurs ordinaires.", "Ադմինի կառավարման համակարգ՝ օգտատերեր, դասարաններ, դասացուցակ, հայտեր և հասանելիություններ։": "Système d'administration : utilisateurs, classes, emploi du temps, demandes et accès.", "Աշակերտի և ծնողի օրագիրը՝ դասացուցակ, գնահատականներ, տնային առաջադրանքներ և ծանուցումներ։": "Carnet de l'élève et du parent : emploi du temps, notes, devoirs et notifications.", "Ընտրեք ձեր դերը։ Դրանից հետո կլրացնեք գրանցման տվյալները, իսկ հայտը կուղարկվի ադմինին։": "Choisissez votre rôle. Vous remplirez ensuite les données d'inscription et la demande sera envoyée à l'administrateur.", "Լրացրեք տվյալները։ Մինչև ադմինի հաստատումը փակ բաժիններին հասանելիություն չեք ունենա։": "Remplissez vos informations. Tant que l'administrateur n'a pas validé, vous n'aurez pas accès aux sections protégées.", "Դասարաններ, աշակերտների ցուցակներ, գնահատականներ և ներկայություն՝ ուսուցիչների համար։": "Classes, listes d'élèves, notes et présences, pour les enseignants.", "ԴՁԱՔ համակարգը նախատեսված է դիմորդների հայտագրման ու քննություններին գրանցման համար։": "Le système DZAK est destiné à l'enregistrement des candidats et à leur inscription aux examens.", "ՀՀ պետական հանրակրթական դպրոցներում առաջին դասարանցիների հայտագրման համակարգ": "Système d'enregistrement des élèves de première année dans les écoles publiques d'enseignement général de la RA", "Մասնագիտական կրթության ուսումնական հաստատություններում հայտագրման համակարգ": "Système d'enregistrement dans les établissements d'enseignement professionnel", "Գաղտնաբառը պետք է պարունակի մեծատառ, փոքրատառ, թիվ, նշան և առնվազն 8 նիշ։": "Le mot de passe doit contenir une majuscule, une minuscule, un chiffre, un symbole et au moins 8 caractères.", "Համակարգը նախատեսված է դպրոցներում թափուր հաստիքների ձևավորման համար": "Le système est destiné à la création des postes vacants dans les écoles", "Համակարգը նախատեսված է դպրոցներում թափուր հաստիքների դիմելու համար": "Le système est destiné aux candidatures aux postes vacants dans les écoles", "Ձեզ դեռ հասանելիություն չի տրամադրվել որևէ բաժնի։ Դիմեք ադմինին։": "Aucun accès ne vous a encore été accordé. Contactez l'administrateur.", "Ձեր հասանելիությունը ժամանակավորապես անջատված է։ Դիմեք ադմինին։": "Votre accès est temporairement désactivé. Contactez l'administrateur.", "Հաշիվը ակտիվ է (հանեք նշումը՝ ժամանակավորապես անջատելու համար)": "Le compte est actif (décochez pour le désactiver temporairement)", "Համակարգ՝ նախատեսված ուսուցիչների կամավոր ատեստավորման համար": "Système destiné à l'attestation volontaire des enseignants", "Նոր օգտատերերի հայտերը և յուրաքանչյուրի հասանելի բաժինները": "Demandes des nouveaux utilisateurs et sections accessibles à chacun", "Այս էլեկտրոնային փոստով հայտն արդեն սպասում է հաստատման։": "Une demande avec cet e-mail est déjà en attente de validation.", "Ժամանակավորապես անջատե՞լ այս օգտատիրոջ հասանելիությունը։": "Désactiver temporairement l'accès de cet utilisateur ?", "Դրսեկության ձևով ավարտական քննությունների համակարգ": "Système des examens de fin d'études en candidat libre", "Առանձին գործող ավագ դպրոցների հայտագրման համակարգ": "Système d'enregistrement des lycées indépendants", "Ձեր հասանելիությունը ժամանակավորապես անջատված է։": "Votre accès est temporairement désactivé.", "Այս բաժնի հասանելիությունը ձեզ չի տրամադրվել։": "L'accès à cette section ne vous a pas été accordé.", "Ուսուցիչների պարտադիր վերապատրաստման համակարգ": "Système de formation continue obligatoire des enseignants", "մեծատառ, փոքրատառ, թիվ, նշան, առնվազն 8 նիշ)": "majuscule, minuscule, chiffre, symbole, au moins 8 caractères)", "Ուսուցիչների կամավոր ատեստավորման համակարգ": "Système d'attestation volontaire des enseignants", "Դասարաններ (ստորակետով, ըստ ցանկության)": "Classes (séparées par des virgules, facultatif)", "Չհաջողվեց ուղարկել հայտը։ Փորձեք կրկին։": "Impossible d'envoyer la demande. Réessayez.", "Այս էլեկտրոնային փոստով հաշիվ արդեն կա։": "Un compte existe déjà avec cet e-mail.", "Ձեր հայտը սպասում է ադմինի հաստատմանը։": "Votre demande est en attente de validation par l'administrateur.", "Ընտրեք երեխայի դասարանը և աշակերտին։": "Choisissez la classe de l'enfant et l'élève.", "Այս բաժինը հասանելի է միայն ադմինին։": "Cette section n'est accessible qu'à l'administrateur.", "Թափուր հաստիքների ձևավորման համակարգ": "Système de création des postes vacants", "Հաստատել և տրամադրել հասանելիություն": "Valider et accorder l'accès", "Հայտագրում ՄԿՈՒ հաստատություններում": "Enregistrement dans les établissements d'enseignement professionnel", "Ձեր հայտը մերժվել է։ Դիմեք ադմինին։": "Votre demande a été refusée. Contactez l'administrateur.", "Լրացրեք երեխայի անունը և դասարանը։": "Renseignez le nom et la classe de l'enfant.", "Չհաջողվեց պահպանել։ Փորձեք կրկին։": "Échec de l'enregistrement. Réessayez.", "Ընտրեք բաժինը՝ շարունակելու համար": "Choisissez une section pour continuer", "Երեխա՝ ընտրեք գրանցված աշակերտին": "Enfant : choisissez l'élève enregistré", "Դասղեկ՝ դասարան (ըստ ցանկության)": "Professeur principal : classe (facultatif)", "Առաջին դասարանցիների հայտագրում": "Enregistrement des élèves de première année", "Կրթության տեղեկատվական համակարգ": "Système d'information de l'éducation", "Լրացրեք բոլոր պարտադիր դաշտերը։": "Remplissez tous les champs obligatoires.", "Այս էլ. փոստով հաշիվ արդեն կա։": "Un compte existe déjà avec cet e-mail.", "Դպրոցների էլեկտրոնային օրագիր": "Carnet électronique des écoles", "Այս բաժնի էջը դեռ միացված չէ։": "La page de cette section n'est pas encore connectée.", "Գաղտնաբառերը չեն համընկնում։": "Les mots de passe ne correspondent pas.", "Հայտագրում ավագ դպրոցներում": "Enregistrement dans les lycées", "Օգտատերերի հասանելիություն": "Accès des utilisateurs", "Այս հայտը արդեն մշակված է։": "Cette demande a déjà été traitée.", "Երեխայի դասարան (պարտադիր)": "Classe de l'enfant (obligatoire)", "Էլեկտրոնային փոստը սխալ է։": "L'adresse e-mail est incorrecte.", "Ընտրեք աշակերտի դասարանը։": "Choisissez la classe de l'élève.", "Արդեն ունեմ հաշիվ՝ մուտք": "J'ai déjà un compte : me connecter", "Այս էջը ձեզ հասանելի չէ։": "Cette page ne vous est pas accessible.", "Երեխայի անուն, ազգանուն": "Nom et prénom de l'enfant", "Դասարաններ (ստորակետով)": "Classes (séparées par des virgules)", "Ձեր հաշիվը հասանելի չէ։": "Votre compte n'est pas accessible.", "Ձեզ հասանելի բաժինները": "Sections qui vous sont accessibles", "Վերադառնալ գլխավոր էջ": "Retour à la page d'accueil", "Չհաջողվեց պահպանել։": "Échec de l'enregistrement.", "Էլեկտրոնային օրագիր": "Carnet électronique", "Էլեկտրոնային մատյան": "Registre électronique", "Վերադառնալ համակարգ": "Retour au système", "Դասարան (պարտադիր)": "Classe (obligatoire)", "Մերժե՞լ այս հայտը։": "Refuser cette demande ?", "Ուղարկման ամսաթիվ": "Date d'envoi", "Էլեկտրոնային փոստ": "E-mail", "Կրկնել գաղտնաբառը": "Répéter le mot de passe", "Հասանելի բաժիններ": "Sections accessibles", "Հայտն ուղարկված է": "Demande envoyée", "Թափուր հաստիքներ": "Postes vacants", "Ընտրեք դասարանը։": "Choisissez la classe.", "Մուտքի հայտեր": "Demandes d'accès", "Հասանելիություն": "Accès", "Անուն, ազգանուն": "Prénom, nom", "Օգտատերեր չկան։": "Aucun utilisateur.", "Երեխայի դասարան": "Classe de l'enfant", "Ո՞վ եք դուք": "Qui êtes-vous ?", "Գրանցման հայտ՝ Ուսուցիչ": "Demande d'inscription : Enseignant", "Գրանցման հայտ՝ Աշակերտ": "Demande d'inscription : Élève", "Գրանցման հայտ՝ Ծնող": "Demande d'inscription : Parent", "Գրանցման հայտ՝": "Demande d'inscription :", "Ուղարկել հայտը": "Envoyer la demande", "Անուն Ազգանուն": "Prénom Nom", "Ստեղծել հաշիվ": "Créer un compte", "Նշեք առարկան։": "Indiquez la matière.", "Մերժել հայտը": "Refuser la demande", "Հայտեր չկան։": "Aucune demande.", "Վերականգնել": "Rétablir", "Առարկա(ներ)": "Matière(s)", "Ընտրված դեր": "Rôle choisi", "Մուտքի հայտ": "Demande d'accès", "Հաստատված է": "Validée", "Անհայտ դեր։": "Rôle inconnu.", "Կարգավիճակ": "Statut", "Դասարաններ": "Classes", "Մուտքանուն": "Nom d'utilisateur", "← Փոխել դերը": "← Changer de rôle", "Փոխել դերը": "Changer de rôle", "← Գլխավոր էջ": "← Page d'accueil", "Գլխավոր էջ": "Page d'accueil", "Հաստատված": "Validées", "Թարմացնել": "Actualiser", "Սպասում է": "En attente", "Գաղտնաբառ": "Mot de passe", "Մերժված է": "Refusée", "Ընտրեք...": "Choisissez...", "Էլ. փոստ": "E-mail", "Ուսուցիչ": "Enseignant", "Բաժիններ": "Sections", "Անջատված": "Désactivé", "Աշակերտ": "Élève", "Օգտատեր": "Utilisateur", "Մերժված": "Refusées", "Երեխայի": "de l'enfant", "Անջատել": "Désactiver", "Հայտեր": "Demandes", "Բոլորը": "Toutes", "Մուտք": "Connexion", "Բացել": "Ouvrir", "Ադմին": "Admin", "Ակտիվ": "Actif", "Երեխա": "Enfant", "Ծնող": "Parent", "ՆՈՐ": "NOUVEAU", "Դեր": "Rôle", "PIN-ը պետք է լինի 4 թիվ։": "Le PIN doit comporter 4 chiffres."};</script>
+<div id="md-portal" class="h"></div>
+<div id="md-reg"></div>
+<div id="md-ptoast"></div>
+
+<script id="md-portal-js">
+(function(){
+'use strict';
+/* ------------------------------------------------------------------
+   1) SECTIONS — the three new systems + the nine existing sections.
+   The 'link' for each of the nine sections is the page that section opens.
+   Put your own page address here (e.g. 'training.html' or a full https:// address).
+   Empty = the card is shown, but it reports that no page is connected yet.
+------------------------------------------------------------------- */
+const MD_LINKS={
+  training:'',      // Ուսուցիչների պարտադիր վերապատրաստման համակարգ
+  first_grade:'',   // Առաջին դասարանցիների հայտագրում
+  mku:'',           // Հայտագրում ՄԿՈՒ հաստատություններում
+  vac_form:'',      // Թափուր հաստիքների ձևավորման համակարգ
+  dzaq:'',          // Դրսեկության ձևով ավարտական քննությունների համակարգ
+  high_school:'',   // Հայտագրում ավագ դպրոցներում
+  attest:'',        // Ուսուցիչների կամավոր ատեստավորման համակարգ
+  vacancies:'',     // Թափուր հաստիքներ
+  school_diary:''   // Դպրոցների էլեկտրոնային օրագիր
+};
+window.MD_LINKS=MD_LINKS;
+const IC={
+ book:'<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5V21.5"/><path d="M9 8h7M9 12h7"/>',
+ diary:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v18M12.5 8h4M12.5 12h4"/>',
+ shield:'<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2.2 2.2L15.5 10"/>',
+ check:'<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2.2 2.2L15.5 10"/>',
+ read:'<path d="M12 7c-1.6-1.6-4-2-7-2v12c3 0 5.4.4 7 2 1.6-1.6 4-2 7-2V5c-3 0-5.4.4-7 2z"/><path d="M12 7v12"/>',
+ cap:'<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11.2V16c0 1.3 2.7 3 6 3s6-1.7 6-3v-4.8"/>',
+ bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
+ cert:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 9h6M7 12h4"/><circle cx="17" cy="14" r="2.5"/><path d="M16 16.5L15 21l2-1 2 1-1-4.5"/>',
+ school:'<path d="M3 10l9-6 9 6"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/>',
+ star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+ users:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 5.5a3 3 0 0 1 0 5.6M18 14.4c2 .8 3.5 2.8 3.5 5.6"/>',
+ teach:'<rect x="3" y="4" width="18" height="11" rx="2"/><path d="M8 20l4-5 4 5M9 9h6"/>',
+ kid:'<circle cx="12" cy="8" r="3.4"/><path d="M5 21c0-3.9 3.1-7 7-7s7 3.1 7 7"/>',
+ parent:'<circle cx="8" cy="8" r="3"/><circle cx="17" cy="10" r="2.2"/><path d="M2.5 20c0-3.1 2.5-5.5 5.5-5.5S13.5 16.9 13.5 20M14.5 20c0-2.3 1.5-4 3.5-4s3.5 1.7 3.5 4"/>'
+};
+const GRAD=['linear-gradient(135deg,#3b82f6,#1d4ed8)','linear-gradient(135deg,#34d399,#059669)','linear-gradient(135deg,#8b5cf6,#6d28d9)','linear-gradient(135deg,#fb923c,#ea580c)','linear-gradient(135deg,#f472b6,#db2777)','linear-gradient(135deg,#22d3ee,#0891b2)','linear-gradient(135deg,#fbbf24,#d97706)','linear-gradient(135deg,#f87171,#dc2626)','linear-gradient(135deg,#4ade80,#15803d)','linear-gradient(135deg,#60a5fa,#4f46e5)','linear-gradient(135deg,#a78bfa,#7c3aed)','linear-gradient(135deg,#fb7185,#e11d48)'];
+const SECS=[
+ {id:'journal',type:'system',isNew:true,ic:'book',title:'Էլեկտրոնային մատյան',desc:'Դասարաններ, աշակերտների ցուցակներ, գնահատականներ և ներկայություն՝ ուսուցիչների համար։'},
+ {id:'diary',type:'system',isNew:true,ic:'diary',title:'Էլեկտրոնային օրագիր',desc:'Աշակերտի և ծնողի օրագիրը՝ դասացուցակ, գնահատականներ, տնային առաջադրանքներ և ծանուցումներ։'},
+ {id:'smis',type:'system',isNew:true,ic:'shield',title:'Կրթության տեղեկատվական համակարգ',desc:'Ադմինի կառավարման համակարգ՝ օգտատերեր, դասարաններ, դասացուցակ, հայտեր և հասանելիություններ։'},
+ {id:'training',type:'link',ic:'check',title:'Ուսուցիչների պարտադիր վերապատրաստման համակարգ',desc:'Ուսուցիչների պարտադիր վերապատրաստման համակարգ, որը թույլ է տալիս ուսուցիչներին գրանցվել վերապատրաստման դասընթացներին։'},
+ {id:'first_grade',type:'link',ic:'read',title:'Առաջին դասարանցիների հայտագրում',desc:'ՀՀ պետական հանրակրթական դպրոցներում առաջին դասարանցիների հայտագրման համակարգ'},
+ {id:'mku',type:'link',ic:'cap',title:'Հայտագրում ՄԿՈՒ հաստատություններում',desc:'Մասնագիտական կրթության ուսումնական հաստատություններում հայտագրման համակարգ'},
+ {id:'vac_form',type:'link',ic:'bell',title:'Թափուր հաստիքների ձևավորման համակարգ',desc:'Համակարգը նախատեսված է դպրոցներում թափուր հաստիքների ձևավորման համար'},
+ {id:'dzaq',type:'link',ic:'cert',title:'Դրսեկության ձևով ավարտական քննությունների համակարգ',desc:'ԴՁԱՔ համակարգը նախատեսված է դիմորդների հայտագրման ու քննություններին գրանցման համար։'},
+ {id:'high_school',type:'link',ic:'school',title:'Հայտագրում ավագ դպրոցներում',desc:'Առանձին գործող ավագ դպրոցների հայտագրման համակարգ'},
+ {id:'attest',type:'link',ic:'star',title:'Ուսուցիչների կամավոր ատեստավորման համակարգ',desc:'Համակարգ՝ նախատեսված ուսուցիչների կամավոր ատեստավորման համար'},
+ {id:'vacancies',type:'link',ic:'bell',title:'Թափուր հաստիքներ',desc:'Համակարգը նախատեսված է դպրոցներում թափուր հաստիքների դիմելու համար'},
+ {id:'school_diary',type:'link',ic:'diary',title:'Դպրոցների էլեկտրոնային օրագիր',desc:'Դպրոցների էլեկտրոնային օրագիր'}
+];
+const SEC={};SECS.forEach((s,i)=>{SEC[s.id]=s;s.g=GRAD[i%GRAD.length];});
+const svg=n=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+IC[n]+'</svg>';
+const ROLE_LBL={teacher:'Ուսուցիչ',student:'Աշակերտ',parent:'Ծնող',admin:'Ադմին'};
+const ST_LBL={pending:'Սպասում է',approved:'Հաստատված է',rejected:'Մերժված է'};
+const ADMIN_PAGES=['adash','atch','astu','acls','asc','aexam','acert','apend','checkin','sads','anur','areq'];
+
+const E=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const $=id=>document.getElementById(id);
+function toast(msg){const t=$('md-ptoast');if(!t)return;t.textContent=msg;t.style.display='block';clearTimeout(toast._t);toast._t=setTimeout(()=>{t.style.display='none'},3200);}
+
+/* ------------------------------------------------------------------
+   2) ACCESS MODEL — stored on each user: user.access={enabled:bool,sections:[ids]}
+   Users created before this feature (no 'access') keep their old behaviour:
+   teachers -> Journal, students/parents -> Diary.
+------------------------------------------------------------------- */
+function defSections(role){return role==='teacher'?['journal']:(role==='student'||role==='parent')?['diary']:[];}
+function userAccess(u){
+  if(!u)return{enabled:false,sections:[]};
+  const a=u.access;
+  if(!a||typeof a!=='object')return{enabled:true,sections:defSections(u.role),legacy:true};
+  return{enabled:a.enabled!==false,sections:Array.isArray(a.sections)?a.sections.filter(x=>SEC[x]&&x!=='smis'):[]};
+}
+function sysFor(role){return role==='teacher'?'journal':(role==='student'||role==='parent')?'diary':role==='admin'?'smis':null;}
+function offered(role){ // sections an admin may tick for a user of this role (SMIS is never grantable)
+  return SECS.filter(s=>s.id!=='smis'&&(s.id!=='journal'||role==='teacher')&&(s.id!=='diary'||role==='student'||role==='parent'));
+}
+function can(id){
+  if(!CU)return false;
+  if(CU.role==='admin'&&CU.username==='admin')return id!=='journal'&&id!=='diary';
+  if(id==='smis')return false;
+  const a=userAccess(CU);
+  if(!a.enabled)return false;
+  if(SEC[id].type==='system'&&sysFor(CU.role)!==id)return false;
+  return a.sections.indexOf(id)!==-1;
+}
+function pageAllowed(id){
+  if(!CU)return true;
+  const isAdm=CU.role==='admin'&&CU.username==='admin';
+  if(!isAdm&&ADMIN_PAGES.indexOf(id)!==-1)return false;
+  if(!isAdm&&!userAccess(CU).enabled)return false;
+  return true;
+}
+
+/* ------------------------------------------------------------------
+   3) PORTAL (main page)
+------------------------------------------------------------------- */
+let started=false;           // true once a system (Journal/Diary/SMIS) has been opened this session
+function logoSrc(){const i=document.querySelector('#aw img');return i?i.src:'';}
+function portalVisible(){const p=$('md-portal');return p&&!p.classList.contains('h');}
+function langBtns(){
+  const cur=(typeof _lang!=='undefined'?_lang:'hy');
+  return '<div class="mp-lang">'+['hy','en','ru','fr'].map(l=>'<button class="'+(l===cur?'on':'')+'" onclick="mdPLang(\''+l+'\')">'+(l==='hy'?'ՀԱՅ':l.toUpperCase())+'</button>').join('')+'</div>';
+}
+function visibleSecs(){
+  if(!CU)return SECS;
+  return SECS.filter(s=>can(s.id));
+}
+function renderPortal(){
+  const p=$('md-portal');if(!p)return;
+  const logged=!!CU;
+  const vs=visibleSecs();
+  let right='<div class="mp-right">'+langBtns();
+  if(logged){
+    if(started)right+='<button class="mp-btn" onclick="mdBackToApp()">Վերադառնալ համակարգ</button>';
+    right+='<span class="mp-user">'+E(CU.name||'')+'</span><button class="mp-btn" onclick="mdPLogout()">Ելք</button>';
+  }else{
+    right+='<button class="mp-btn pri" onclick="mdGoLogin()">Մուտք</button><button class="mp-btn" onclick="mdShowRoleQ(false)">Ստեղծել հաշիվ</button>';
+  }
+  right+='</div>';
+  p.innerHTML='<div class="mp-top"><div class="mp-brand">'+(logoSrc()?'<img alt="" src="'+logoSrc()+'">':'')+'<span>MyDigitalSchool</span></div>'+right+'</div>'
+   +'<div class="mp-wrap"><h1 class="mp-h1">Գլխավոր էջ</h1><div class="mp-sub">'+(logged?'Ձեզ հասանելի բաժինները':'Ընտրեք բաժինը՝ շարունակելու համար')+'</div>'
+   +(vs.length?'<div class="mp-grid">'+vs.map(s=>'<button type="button" class="mp-card" onclick="mdCard(\''+s.id+'\')">'
+      +'<span class="mp-ic" style="background:'+s.g+'">'+svg(s.ic)+'</span>'
+      +(s.isNew?'<span class="mp-new">ՆՈՐ</span>':'')
+      +'<span class="mp-t">'+E(s.title)+'</span><span class="mp-d">'+E(s.desc)+'</span></button>').join('')+'</div>'
+     :'<div class="mp-empty">Ձեզ դեռ հասանելիություն չի տրամադրվել որևէ բաժնի։ Դիմեք ադմինին։</div>')
+   +'</div>';
+  try{if(typeof trDOM==='function')trDOM(p);}catch(e){}
+}
+function portalShow(){
+  const p=$('md-portal');if(!p)return;
+  const aw=$('aw');if(aw)aw.classList.add('h');
+  renderPortal();p.classList.remove('h');document.body.classList.add('md-portal-on');p.scrollTop=0;
+}
+function portalHide(){const p=$('md-portal');if(p)p.classList.add('h');document.body.classList.remove('md-portal-on');}
+window.mdPLang=function(l){if(typeof setLang==='function')setLang(l);if(portalVisible())renderPortal();};
+window.mdGoLogin=function(){
+  closeReg();
+  portalHide();
+  if(!seen()){showRoleQ(true);return;}
+  const aw=$('aw');if(aw)aw.classList.remove('h');
+  if(typeof showF==='function')_origShowF('lf');
+  const le=$('le');if(le&&!le.dataset.keep)le.textContent='';
+  setTimeout(()=>{const x=$('lu');if(x)x.focus();},60);
+};
+window.mdBackPortal=function(){const aw=$('aw');if(aw)aw.classList.add('h');portalShow();};
+window.mdBackToApp=function(){if(started)portalHide();};
+window.mdPLogout=function(){if(typeof logout==='function')logout();};
+window.mdCard=function(id){
+  const s=SEC[id];if(!s)return;
+  if(!CU){window._mdIntent=id;mdGoLogin();return;}
+  if(!can(id)){toast(id==='smis'?'Այս բաժինը հասանելի է միայն ադմինին։':'Այս բաժնի հասանելիությունը ձեզ չի տրամադրվել։');return;}
+  if(s.type==='system'){enter(id);return;}
+  const url=MD_LINKS[id];
+  if(!url){toast('Այս բաժնի էջը դեռ միացված չէ։');return;}
+  window.open(url,'_blank','noopener');
+};
+function seen(){try{return localStorage.getItem('md_seen')==='1';}catch(e){return true;}}
+function markSeen(){try{localStorage.setItem('md_seen','1');}catch(e){}}
+
+/* entering one of the three systems = starting the existing app unchanged */
+function enter(id){
+  if(started){portalHide();return;}
+  window._mdEnterFlag=true;
+  window._mdRestoring=!!window._mdLandRestoring;
+  try{_origStart();started=true;portalHide();}
+  catch(e){console.error(e);}
+  finally{window._mdEnterFlag=false;window._mdRestoring=false;}
+}
+
+/* ------------------------------------------------------------------
+   4) Hooks into the existing app (wrappers; original functions are kept and still run)
+------------------------------------------------------------------- */
+const _origStart=window.startApp;
+window.startApp=function(){
+  if(window._mdEnterFlag)return _origStart.apply(this,arguments);
+  if(CU&&!(CU.role==='admin'&&CU.username==='admin')){
+    const a=userAccess(CU);
+    if(!a.enabled){
+      const msg='Ձեր հասանելիությունը ժամանակավորապես անջատված է։ Դիմեք ադմինին։';
+      CU=null;try{mdSessionClear();}catch(e){}
+      const aw=$('aw');if(aw)aw.classList.remove('h');portalHide();
+      const le=$('le');if(le)le.textContent=msg;toast(msg);
+      return;
+    }
+  }
+  window._mdLandRestoring=!!window._mdRestoring;
+  if(!window._mdRestoring){try{mdSessionSave();}catch(e){}}
+  markSeen();
+  started=false;
+  portalShow();
+  const it=window._mdIntent;window._mdIntent=null;
+  if(it&&can(it))setTimeout(()=>mdCard(it),0);
+};
+const _origLogout=window.logout;
+window.logout=function(){
+  const r=_origLogout.apply(this,arguments);
+  started=false;window._mdIntent=null;window._mdEnterFlag=false;
+  portalShow();
+  return r;
+};
+const _origShowF=window.showF;
+window.showF=function(id){
+  if(id==='rf'){showRoleQ(false);return;}
+  return _origShowF.apply(this,arguments);
+};
+const _origLogin=window.login;
+window.login=function(){
+  const u=(($('lu')||{}).value||'').trim().toLowerCase(),p=(($('lp')||{}).value||'').trim();
+  if(u&&p&&u!=='admin'&&DB){
+    let found=null;
+    for(const[k,v]of Object.entries(DB.users||{})){
+      const lk=k.replace(/_t$|_s$/,'').toLowerCase();
+      if((lk===u||(v.login&&String(v.login).toLowerCase()===u))&&v.pass===p){found=v;break;}
+    }
+    if(!found){
+      const rq=Object.values(DB.requests||{}).filter(r=>String(r.email).toLowerCase()===u).sort((a,b)=>b.ts-a.ts)[0];
+      if(rq&&rq.status==='pending'){$('le').textContent='Ձեր հայտը սպասում է ադմինի հաստատմանը։';return;}
+      if(rq&&rq.status==='rejected'){$('le').textContent='Ձեր հայտը մերժվել է։ Դիմեք ադմինին։';return;}
+    }
+  }
+  return _origLogin.apply(this,arguments);
+};
+const _origShowPg=window.showPg;
+window.showPg=function(id){
+  if(!pageAllowed(id)){toast('Այս էջը ձեզ հասանելի չէ։');return;}
+  if(id==='areq')renderReq();
+  return _origShowPg.apply(this,arguments);
+};
+const _origBuildNav=window.buildNav;
+window.buildNav=function(){
+  const r=_origBuildNav.apply(this,arguments);
+  try{
+    if(CU&&CU.role==='admin'&&CU.username==='admin'){
+      const ap=document.querySelector('#nav [data-p="apend"]');
+      const item=document.createElement('div');item.className='ni';item.setAttribute('data-p','areq');item.setAttribute('onclick',"showPg('areq')");
+      item.innerHTML='🔑 Մուտքի հայտեր <span class="pb" id="rqc"></span>';
+      if(ap)ap.parentNode.insertBefore(item,ap);else $('nav').appendChild(item);
+      if(!$('areq'))$('mn').insertAdjacentHTML('beforeend','<div class="pg" id="areq"></div>');
+      updReqCount();
+    }
+    addHomeBtn();
+  }catch(e){console.error(e);}
+  return r;
+};
+const _origSetLang=window.setLang;
+window.setLang=function(l){
+  // while only the main page is open there is no sidebar to rebuild
+  const keep=CU&&!started;
+  let cu=null;if(keep){cu=CU;CU=null;}
+  try{_origSetLang.apply(this,arguments);}finally{if(keep)CU=cu;}
+  if(portalVisible())renderPortal();
+};
+function addHomeBtn(){
+  if($('md-homebtn'))return;
+  const b=document.querySelector('.bout');if(!b||!b.parentNode)return;
+  const h=document.createElement('button');h.id='md-homebtn';h.className='md-homebtn';h.type='button';
+  h.textContent='⌂ Գլխավոր էջ';h.onclick=function(){portalShow();};
+  b.parentNode.insertBefore(h,b);
+}
+
+/* ------------------------------------------------------------------
+   5) First-time visitor: «Ո՞վ եք դուք» -> registration request
+------------------------------------------------------------------- */
+let regState={role:null,a:0,b:0};
+function closeReg(){const r=$('md-reg');if(r)r.classList.remove('on');}
+window.mdCloseReg=function(){closeReg();if(!CU&&!portalVisible()){portalShow();}};
+function showRoleQ(fromLogin){
+  const r=$('md-reg');
+  const roles=[['teacher','teach','Ուսուցիչ',GRAD[0]],['student','kid','Աշակերտ',GRAD[1]],['parent','parent','Ծնող',GRAD[2]]];
+  r.innerHTML='<div class="mr-box"><button class="mr-x" onclick="mdCloseReg()" aria-label="Փակել">✕</button>'
+   +'<h2>Ո՞վ եք դուք</h2><p class="s">Ընտրեք ձեր դերը։ Դրանից հետո կլրացնեք գրանցման տվյալները, իսկ հայտը կուղարկվի ադմինին։</p>'
+   +'<div class="mr-roles">'+roles.map(x=>'<button type="button" class="mr-role" onclick="mdPickRole(\''+x[0]+'\')"><span class="mp-ic" style="background:'+x[3]+'">'+svg(x[1])+'</span>'+x[2]+'</button>').join('')+'</div>'
+   +'<div style="margin-top:16px;text-align:center"><button class="mr-link" onclick="mdHaveAccount()">Արդեն ունեմ հաշիվ՝ մուտք</button></div></div>';
+  portalHide();r.classList.add('on');
+  try{if(typeof trDOM==='function')trDOM(r);}catch(e){}
+}
+window.mdShowRoleQ=showRoleQ;
+window.mdHaveAccount=function(){
+  markSeen();closeReg();
+  const aw=$('aw');if(aw)aw.classList.remove('h');
+  _origShowF('lf');setTimeout(()=>{const x=$('lu');if(x)x.focus();},60);
+};
+function clsOptions(sel){
+  const k=Object.keys((DB&&DB.classes)||{}).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  return '<option value="">Ընտրեք...</option>'+k.map(c=>'<option value="'+E(c)+'"'+(c===sel?' selected':'')+'>'+E(c)+'</option>').join('');
+}
+window.mdPickRole=function(role){
+  regState.role=role;regState.a=Math.floor(Math.random()*9)+1;regState.b=Math.floor(Math.random()*9)+1;
+  const extra=role==='teacher'?'<div class="mr-fg"><label>Առարկա(ներ)</label><input id="mdr-subj" autocomplete="off"></div><div class="mr-fg"><label>Դասարաններ (ստորակետով, ըստ ցանկության)</label><input id="mdr-cls" autocomplete="off"></div>'
+    :role==='student'?'<div class="mr-fg"><label>Դասարան</label><select id="mdr-cls">'+clsOptions('')+'</select></div>'
+    :'<div class="mr-fg"><label>Երեխայի անուն, ազգանուն</label><input id="mdr-child" autocomplete="off"></div><div class="mr-fg"><label>Երեխայի դասարան</label><select id="mdr-cls">'+clsOptions('')+'</select></div>';
+  const r=$('md-reg');
+  r.innerHTML='<div class="mr-box"><button class="mr-x" onclick="mdCloseReg()" aria-label="Փակել">✕</button>'
+   +'<h2>Գրանցման հայտ՝ '+ROLE_LBL[role]+'</h2><p class="s">Լրացրեք տվյալները։ Մինչև ադմինի հաստատումը փակ բաժիններին հասանելիություն չեք ունենա։</p>'
+   +'<div class="mr-row"><div class="mr-fg"><label>Անուն</label><input id="mdr-fn" autocomplete="given-name"></div><div class="mr-fg"><label>Ազգանուն</label><input id="mdr-ln" autocomplete="family-name"></div></div>'
+   +'<div class="mr-fg"><label>Էլեկտրոնային փոստ</label><input id="mdr-em" type="email" autocomplete="email"></div>'
+   +extra
+   +'<div class="mr-fg"><label>Գաղտնաբառ <small>(մեծատառ, փոքրատառ, թիվ, նշան, առնվազն 8 նիշ)</small></label><input id="mdr-p1" type="password" autocomplete="new-password"></div>'
+   +'<div class="mr-fg"><label>Կրկնել գաղտնաբառը</label><input id="mdr-p2" type="password" autocomplete="new-password"></div>'
+   +'<div class="mr-fg"><label>Captcha՝ '+regState.a+' + '+regState.b+' = ?</label><input id="mdr-ca" inputmode="numeric" autocomplete="off"></div>'
+   +'<div class="mr-err" id="mdr-err"></div>'
+   +'<button class="mr-main" id="mdr-go" onclick="mdSubmitReq()">Ուղարկել հայտը</button>'
+   +'<div style="margin-top:12px;text-align:center"><button class="mr-link" onclick="mdShowRoleQ(false)">← Փոխել դերը</button></div></div>';
+  try{if(typeof trDOM==='function')trDOM(r);}catch(e){}
+};
+async function fresh(){
+  const s=await bGet(BS);
+  if(s&&s.users){DB=s;PE=s.pending||{};}
+  return DB;
+}
+window.mdSubmitReq=async function(){
+  const g=id=>(($(id)||{}).value||'').trim();
+  const err=m=>{$('mdr-err').textContent=m;};
+  const role=regState.role,fn=g('mdr-fn'),ln=g('mdr-ln'),em=g('mdr-em').toLowerCase(),p1=($('mdr-p1')||{}).value||'',p2=($('mdr-p2')||{}).value||'';
+  if(!fn||!ln||!em||!p1){err('Լրացրեք բոլոր պարտադիր դաշտերը։');return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)){err('Էլեկտրոնային փոստը սխալ է։');return;}
+  if(role==='student'&&!g('mdr-cls')){err('Ընտրեք դասարանը։');return;}
+  if(role==='parent'&&(!g('mdr-child')||!g('mdr-cls'))){err('Լրացրեք երեխայի անունը և դասարանը։');return;}
+  if(role==='teacher'&&!g('mdr-subj')){err('Նշեք առարկան։');return;}
+  if(!(typeof vPass==='function'?vPass(p1):p1.length>=8)){err('Գաղտնաբառը պետք է պարունակի մեծատառ, փոքրատառ, թիվ, նշան և առնվազն 8 նիշ։');return;}
+  if(p1!==p2){err('Գաղտնաբառերը չեն համընկնում։');return;}
+  if(g('mdr-ca')!==String(regState.a+regState.b)){err('Captcha-ն սխալ է։');mdPickRole(role);return;}
+  const btn=$('mdr-go');btn.disabled=true;err('');
+  try{
+    await fresh();
+    const D=DB;
+    const taken=Object.keys(D.users||{}).some(k=>k.replace(/_t$|_s$/,'').toLowerCase()===em||String((D.users[k]||{}).login||'').toLowerCase()===em)||em==='admin';
+    if(taken){err('Այս էլեկտրոնային փոստով հաշիվ արդեն կա։');btn.disabled=false;return;}
+    const reqs=D.requests=D.requests||{};
+    if(Object.values(reqs).some(r=>String(r.email).toLowerCase()===em&&r.status==='pending')||(D.pending&&D.pending[em])){err('Այս էլեկտրոնային փոստով հայտն արդեն սպասում է հաստատման։');btn.disabled=false;return;}
+    const id='rq'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    reqs[id]={id:id,first:fn,last:ln,email:em,role:role,ts:Date.now(),status:'pending',pass:p1,
+      extra:{subject:g('mdr-subj'),classes:role==='teacher'?g('mdr-cls'):'',cls:role!=='teacher'?g('mdr-cls'):'',child:g('mdr-child')}};
+    await svSchool();
+    markSeen();
+    $('md-reg').innerHTML='<div class="mr-box"><div class="mr-done"><div class="big">✅</div><h2>Հայտն ուղարկված է</h2>'
+      +'<p class="s">Ձեր հայտը ստացել է ադմինը։ Հաստատումից հետո կկարողանաք մուտք գործել և կտեսնեք միայն ձեզ տրամադրված բաժինները։</p>'
+      +'<button class="mr-main" onclick="mdCloseReg()">Վերադառնալ գլխավոր էջ</button></div></div>';
+    try{if(typeof trDOM==='function')trDOM($('md-reg'));}catch(e){}
+  }catch(e){console.error(e);err('Չհաջողվեց ուղարկել հայտը։ Փորձեք կրկին։');btn.disabled=false;}
+};
+
+/* ------------------------------------------------------------------
+   6) Admin page «Մուտքի հայտեր»: requests + access of existing users
+------------------------------------------------------------------- */
+let tab='req',filt='all';
+function reqList(){return Object.values((DB&&DB.requests)||{}).sort((a,b)=>(b.ts||0)-(a.ts||0));}
+function fmtDate(ts){if(!ts)return '—';const d=new Date(ts),p=n=>String(n).padStart(2,'0');return p(d.getDate())+'.'+p(d.getMonth()+1)+'.'+d.getFullYear()+' '+p(d.getHours())+':'+p(d.getMinutes());}
+function updReqCount(){const n=reqList().filter(r=>r.status==='pending').length;const e=$('rqc');if(e)e.textContent=n>0?n:'';}
+function stBadge(s){return '<span class="rq-st '+(s==='approved'?'a':s==='rejected'?'r':'p')+'">'+(ST_LBL[s]||s)+'</span>';}
+function renderReq(){
+  const el=$('areq');if(!el)return;
+  const rs=reqList(),pend=rs.filter(r=>r.status==='pending').length;
+  let h='<div class="pt">🔑 Մուտքի հայտեր</div><div class="ps">Նոր օգտատերերի հայտերը և յուրաքանչյուրի հասանելի բաժինները</div>'
+   +'<div class="rq-tabs"><button class="'+(tab==='req'?'on':'')+'" onclick="mdReqTab(\'req\')">Հայտեր'+(pend?' ('+pend+')':'')+'</button><button class="'+(tab==='users'?'on':'')+'" onclick="mdReqTab(\'users\')">Օգտատերերի հասանելիություն</button>'
+   +'<button onclick="mdReqRefresh()">Թարմացնել</button></div>';
+  if(tab==='req'){
+    const cnt=s=>rs.filter(r=>s==='all'||r.status===s).length;
+    h+='<div class="rq-chips">'+[['all','Բոլորը'],['pending','Սպասում է'],['approved','Հաստատված'],['rejected','Մերժված']].map(x=>'<button class="'+(filt===x[0]?'on':'')+'" onclick="mdReqFilter(\''+x[0]+'\')">'+x[1]+' ('+cnt(x[0])+')</button>').join('')+'</div>';
+    const list=rs.filter(r=>filt==='all'||r.status===filt);
+    h+=list.length?'<div class="rq-tw"><table><thead><tr><th>Անուն Ազգանուն</th><th>Էլ. փոստ</th><th>Դեր</th><th>Ուղարկման ամսաթիվ</th><th>Կարգավիճակ</th><th></th></tr></thead><tbody>'
+      +list.map(r=>'<tr><td><b>'+E(r.first+' '+r.last)+'</b></td><td>'+E(r.email)+'</td><td>'+(ROLE_LBL[r.role]||E(r.role))+'</td><td>'+fmtDate(r.ts)+'</td><td>'+stBadge(r.status)+'</td><td><button class="btn bp2" onclick="mdOpenReq(\''+r.id+'\')">Բացել</button></td></tr>').join('')+'</tbody></table></div>'
+      :'<div class="mp-empty">Հայտեր չկան։</div>';
+  }else{
+    const us=Object.entries((DB&&DB.users)||{}).filter(([k,v])=>v&&v.role&&v.role!=='admin');
+    h+=us.length?'<div class="rq-tw"><table><thead><tr><th>Անուն</th><th>Մուտքանուն</th><th>Դեր</th><th>Կարգավիճակ</th><th>Բաժիններ</th><th></th></tr></thead><tbody>'
+      +us.map(([k,v])=>{const a=userAccess(v);return '<tr><td><b>'+E(v.name||k)+'</b></td><td>'+E(v.login||k.replace(/_t$|_s$/,''))+'</td><td>'+(ROLE_LBL[v.role]||E(v.role))+'</td>'
+        +'<td>'+(a.enabled?'<span class="rq-st a">Ակտիվ</span>':'<span class="rq-st r">Անջատված</span>')+'</td>'
+        +'<td style="max-width:260px">'+(a.sections.map(s=>E(SEC[s].title)).join(', ')||'—')+'</td>'
+        +'<td style="white-space:nowrap"><button class="btn bp2" onclick="mdOpenAccess(\''+E(k).replace(/'/g,"\\'")+'\')">Հասանելիություն</button> <button class="btn '+(a.enabled?'bd2':'bp2')+'" onclick="mdToggleUser(\''+E(k).replace(/'/g,"\\'")+'\')">'+(a.enabled?'Անջատել':'Վերականգնել')+'</button></td></tr>';}).join('')+'</tbody></table></div>'
+      :'<div class="mp-empty">Օգտատերեր չկան։</div>';
+  }
+  el.innerHTML=h;updReqCount();
+  try{if(typeof trDOM==='function')trDOM(el);}catch(e){}
+}
+window.mdReqTab=function(t){tab=t;renderReq();};
+window.mdReqFilter=function(f){filt=f;renderReq();};
+window.mdReqRefresh=async function(){try{if(typeof sLoad==='function')sLoad('Loading...');await fresh();}catch(e){console.error(e);}finally{if(typeof hLoad==='function')hLoad();}renderReq();};
+function acBoxes(role,sel){
+  return '<div class="rq-ac">'+offered(role).map(s=>'<label><input type="checkbox" class="md-ac" value="'+s.id+'"'+(sel.indexOf(s.id)!==-1?' checked':'')+'>'+E(s.title)+'</label>').join('')+'</div>'
+   +'<div style="font-size:12px;color:var(--txt3);margin-bottom:6px">«Կրթության տեղեկատվական համակարգ» (ադմինի համակարգ) չի կարող տրամադրվել սովորական օգտատերերին։</div>';
+}
+function picked(){return Array.from(document.querySelectorAll('#md-modal .md-ac')).filter(c=>c.checked).map(c=>c.value);}
+window.mdOpenReq=function(id){
+  const r=((DB&&DB.requests)||{})[id];if(!r)return;
+  const ex=r.extra||{};
+  let h='<dl class="rq-dl"><dt>Անուն, ազգանուն</dt><dd>'+E(r.first+' '+r.last)+'</dd><dt>Էլ. փոստ</dt><dd>'+E(r.email)+'</dd><dt>Ընտրված դեր</dt><dd>'+(ROLE_LBL[r.role]||E(r.role))+'</dd><dt>Ուղարկման ամսաթիվ</dt><dd>'+fmtDate(r.ts)+'</dd><dt>Կարգավիճակ</dt><dd>'+stBadge(r.status)+'</dd>'
+    +(ex.subject?'<dt>Առարկա(ներ)</dt><dd>'+E(ex.subject)+'</dd>':'')+(ex.classes?'<dt>Դասարաններ</dt><dd>'+E(ex.classes)+'</dd>':'')
+    +(ex.cls?'<dt>Դասարան</dt><dd>'+E(ex.cls)+'</dd>':'')+(ex.child?'<dt>Երեխա</dt><dd>'+E(ex.child)+'</dd>':'')+'</dl>';
+  if(r.status==='pending'){
+    if(r.role==='student')h+='<div class="rq-fl"><label>Դասարան (պարտադիր)</label><select id="rq-cls">'+clsOptions(ex.cls)+'</select></div>';
+    if(r.role==='teacher')h+='<div class="rq-fl"><label>Առարկա(ներ)</label><input id="rq-subj" value="'+E(ex.subject)+'"></div><div class="rq-fl"><label>Դասարաններ (ստորակետով)</label><input id="rq-clss" value="'+E(ex.classes)+'"></div><div class="rq-fl"><label>Դասղեկ՝ դասարան (ըստ ցանկության)</label><input id="rq-hr"></div>';
+    if(r.role==='parent')h+='<div class="rq-fl"><label>Երեխայի դասարան (պարտադիր)</label><select id="rq-pcls" onchange="mdFillKids()">'+clsOptions(ex.cls)+'</select></div><div class="rq-fl"><label>Երեխա՝ ընտրեք գրանցված աշակերտին</label><select id="rq-kid"><option value="">Ընտրեք...</option></select></div><div class="rq-fl"><label>Երեխայի PIN (4 թիվ)</label><input id="rq-pin" inputmode="numeric" maxlength="4"></div>';
+    h+='<div style="font-weight:700;font-size:13px;margin:12px 0 2px">Հասանելի բաժիններ</div>'+acBoxes(r.role,defSections(r.role))
+      +'<div class="er" id="md-err" style="color:var(--red);font-size:13px;min-height:16px"></div>'
+      +'<div class="rq-btns"><button class="btn bp2" onclick="mdApprove(\''+r.id+'\')">Հաստատել և տրամադրել հասանելիություն</button><button class="btn bd2" onclick="mdReject(\''+r.id+'\')">Մերժել հայտը</button></div>';
+  }
+  mdModal('Մուտքի հայտ','',h);
+  if(r.status==='pending'&&r.role==='parent')mdFillKids(ex.child);
+  try{if(typeof trDOM==='function')trDOM($('md-modal'));}catch(e){}
+};
+window.mdFillKids=function(pref){
+  const c=($('rq-pcls')||{}).value,sel=$('rq-kid');if(!sel)return;
+  const list=((DB&&DB.classes)||{})[c]||[];
+  const want=(typeof pref==='string'?pref:'').trim().toLowerCase();
+  sel.innerHTML='<option value="">Ընտրեք...</option>'+list.map(n=>'<option value="'+E(n)+'"'+(String(n).trim().toLowerCase()===want?' selected':'')+'>'+E(n)+'</option>').join('');
+};
+window.mdApprove=async function(id){
+  const g=i=>(($(i)||{}).value||'').trim();
+  const bad=(m,ids)=>{if(typeof mdErr==='function')mdErr(m,ids);else{const e=$('md-err');if(e)e.textContent=m;}};
+  try{
+    await fresh();
+    const D=DB,r=(D.requests||{})[id];
+    if(!r||r.status!=='pending'){bad('Այս հայտը արդեն մշակված է։');return;}
+    const key=String(r.email).toLowerCase();
+    if((D.users||{})[key]||key==='admin'){bad('Այս էլ. փոստով հաշիվ արդեն կա։');return;}
+    const name=(r.first+' '+r.last).trim(),sections=picked().filter(s=>SEC[s]&&s!=='smis');
+    let u;
+    if(r.role==='student'){
+      const cls=g('rq-cls');if(!cls){bad('Ընտրեք աշակերտի դասարանը։',['rq-cls']);return;}
+      D.classes=D.classes||{};D.classes[cls]=D.classes[cls]||[];if(D.classes[cls].indexOf(name)===-1)D.classes[cls].push(name);
+      u={role:'student',name:name,pass:r.pass,class:cls};
+    }else if(r.role==='teacher'){
+      const subj=g('rq-subj'),cl=g('rq-clss').split(',').map(x=>x.trim()).filter(Boolean),hr=g('rq-hr');
+      if(!subj){bad('Նշեք առարկան։',['rq-subj']);return;}
+      u={role:'teacher',name:name,pass:r.pass,subject:subj,classes:cl,homeroom:hr||null,phone:''};
+    }else if(r.role==='parent'){
+      const cls=g('rq-pcls'),kid=g('rq-kid'),pin=g('rq-pin');
+      if(!cls||!kid){bad('Ընտրեք երեխայի դասարանը և աշակերտին։',['rq-pcls','rq-kid']);return;}
+      if(!/^\d{4}$/.test(pin)){bad('PIN-ը պետք է լինի 4 թիվ։',['rq-pin']);return;}
+      u={role:'parent',name:name,pass:r.pass,children:[{name:kid,cls:cls,pin:pin}]};
+    }else{bad('Անհայտ դեր։');return;}
+    u.login=key;u.email=key;u.access={enabled:true,sections:sections};
+    D.users[key]=u;
+    r.status='approved';r.decidedAt=Date.now();r.grant=sections;delete r.pass;
+    if(typeof sLoad==='function')sLoad('Saving...');
+    await svSchool();
+    if(typeof hLoad==='function')hLoad();
+    if(typeof mdCloseModal==='function')mdCloseModal();
+    renderReq();if(typeof flash==='function')flash();
+  }catch(e){console.error(e);if(typeof hLoad==='function')hLoad();bad('Չհաջողվեց պահպանել։ Փորձեք կրկին։');}
+};
+window.mdReject=async function(id){
+  if(!confirm('Մերժե՞լ այս հայտը։'))return;
+  try{
+    await fresh();
+    const r=((DB&&DB.requests)||{})[id];
+    if(!r||r.status!=='pending'){renderReq();return;}
+    r.status='rejected';r.decidedAt=Date.now();delete r.pass;
+    if(typeof sLoad==='function')sLoad('Saving...');
+    await svSchool();
+    if(typeof hLoad==='function')hLoad();
+    if(typeof mdCloseModal==='function')mdCloseModal();
+    renderReq();if(typeof flash==='function')flash();
+  }catch(e){console.error(e);if(typeof hLoad==='function')hLoad();}
+};
+window.mdOpenAccess=function(key){
+  const u=((DB&&DB.users)||{})[key];if(!u)return;
+  const a=userAccess(u);
+  const h='<dl class="rq-dl"><dt>Օգտատեր</dt><dd>'+E(u.name||key)+'</dd><dt>Դեր</dt><dd>'+(ROLE_LBL[u.role]||E(u.role))+'</dd></dl>'
+   +'<div style="font-weight:700;font-size:13px;margin:6px 0 2px">Հասանելի բաժիններ</div>'+acBoxes(u.role,a.sections)
+   +'<label style="display:flex;align-items:center;gap:10px;font-size:13px;margin:8px 0"><input type="checkbox" id="ac-en" style="width:18px;height:18px;accent-color:var(--acc)"'+(a.enabled?' checked':'')+'> Հաշիվը ակտիվ է (հանեք նշումը՝ ժամանակավորապես անջատելու համար)</label>'
+   +'<div class="er" id="md-err" style="color:var(--red);font-size:13px;min-height:16px"></div>'
+   +'<div class="rq-btns"><button class="btn bp2" onclick="mdSaveAccess(\''+E(key).replace(/'/g,"\\'")+'\')">Պահպանել</button><button class="btn bg2" onclick="mdCloseModal()">Փակել</button></div>';
+  mdModal('Հասանելիություն','',h);
+  try{if(typeof trDOM==='function')trDOM($('md-modal'));}catch(e){}
+};
+async function saveUserAccess(key,enabled,sections){
+  await fresh();
+  const u=(DB.users||{})[key];if(!u)throw new Error('missing');
+  u.access={enabled:enabled,sections:sections};
+  if(typeof sLoad==='function')sLoad('Saving...');
+  try{await svSchool();}finally{if(typeof hLoad==='function')hLoad();}
+}
+window.mdSaveAccess=async function(key){
+  try{await saveUserAccess(key,!!($('ac-en')||{}).checked,picked().filter(s=>SEC[s]&&s!=='smis'));mdCloseModal();renderReq();if(typeof flash==='function')flash();}
+  catch(e){console.error(e);const x=$('md-err');if(x)x.textContent='Չհաջողվեց պահպանել։';}
+};
+window.mdToggleUser=async function(key){
+  const u=((DB&&DB.users)||{})[key];if(!u)return;
+  const a=userAccess(u);
+  if(a.enabled&&!confirm('Ժամանակավորապես անջատե՞լ այս օգտատիրոջ հասանելիությունը։'))return;
+  try{await saveUserAccess(key,!a.enabled,a.sections);renderReq();if(typeof flash==='function')flash();}catch(e){console.error(e);}
+};
+
+/* ------------------------------------------------------------------
+   7) Keep sessions in step with the admin's changes (disabled / removed accounts)
+------------------------------------------------------------------- */
+async function pollAccess(){
+  try{
+    if(!CU||(CU.role==='admin'&&CU.username==='admin')||document.hidden)return;
+    const s=await bGet(BS);
+    if(!s||!s.users)return;
+    const u=s.users[CU.username];
+    if(!u||!userAccess(u).enabled){
+      DB=s;
+      const msg=!u?'Ձեր հաշիվը հասանելի չէ։':'Ձեր հասանելիությունը ժամանակավորապես անջատված է։';
+      logout();toast(msg);const le=$('le');if(le)le.textContent=msg;return;
+    }
+    CU.access=u.access;
+    if(portalVisible())renderPortal();
+  }catch(e){}
+}
+setInterval(pollAccess,90000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)pollAccess();});
+
+/* ------------------------------------------------------------------
+   8) Back link on the login screen + French text for the new screens
+------------------------------------------------------------------- */
+function patchLogin(){
+  const lf=$('lf');if(!lf||$('md-back'))return;
+  const b=document.createElement('div');b.id='md-back';b.style.cssText='margin-bottom:12px';
+  b.innerHTML='<button class="lb" type="button" style="color:var(--txt2)" onclick="mdBackPortal()">← Գլխավոր էջ</button>';
+  lf.insertBefore(b,lf.firstChild);
+}
+try{
+  const FRN=window.MD_FR_NEW||{};
+  Object.assign(FR_MAP,FRN);
+  TR_LANGS.fr=trBuild(FR_MAP);
+}catch(e){}
+patchLogin();
+// the main page is the first screen
+(function(){const aw=$('aw');if(aw)aw.classList.add('h');portalShow();})();
+})();
+</script>
+
 </body>
 </html>
