@@ -9130,7 +9130,6 @@ window.plDel=async function(id){
     delete S.polls[id];if(S.pid===id)S.pid=null;render();toast('✓ Քվեարկությունը ջնջվեց։');
   }catch(e){console.error(e);toast('Չհաջողվեց ջնջել։ Փորձեք կրկին։');}
 };
-
 /* ---------- hook into the existing app ---------- */
 const _mom=window.mdOpenModule;
 window.mdOpenModule=function(id){if(id==='polls'){openPolls();return true;}return _mom?_mom.apply(this,arguments):false;};
