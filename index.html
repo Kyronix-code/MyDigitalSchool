@@ -7832,218 +7832,109 @@ window.mdDiaryStu=function(v){window._mdDiary.stu=v;renderDiary();};
 syncFR();
 })();
 </script>
-<!-- ===== MyDigitalSchool: «Սահիկաշարեր» (slideshows) — works inside Journal (teachers) and Diary (students, families, admin) ===== -->
+<!-- ===== MyDigitalSchool: «Սահիկաշարեր» (Enhanced Slideshows) ===== -->
 <style id="md-slides-css">
-.sl-hero{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
-.sl-hero p{color:var(--txt2);font-size:13px;margin:4px 0 0}
-.sl-btn{border:1px solid var(--bdr);background:var(--surf2);color:var(--txt);border-radius:11px;padding:9px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;min-height:40px;display:inline-flex;align-items:center;gap:7px;transition:transform .15s,box-shadow .15s,background .15s}
-.sl-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.14)}
-.sl-btn.pri{background:linear-gradient(135deg,var(--acc),#7c3aed);border-color:transparent;color:#fff}
-.sl-btn.dng{color:var(--red);border-color:rgba(255,69,58,.4)}
-.sl-btn.sm{padding:6px 10px;min-height:32px;font-size:12px}
-.sl-btn:disabled{opacity:.45;cursor:default;transform:none;box-shadow:none}
-.sl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px}
-.sl-card{background:var(--surf);border:1px solid var(--bdr);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 2px 10px rgba(0,0,0,.08);transition:transform .2s,box-shadow .2s;animation:slIn .35s both}
-.sl-card:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(0,0,0,.18)}
-@keyframes slIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.sl-cover{aspect-ratio:16/9;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;container-type:inline-size}
-.sl-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.sl-cover .sl-ct{position:relative;font-weight:800;font-size:8cqw;padding:0 8%;text-align:center;line-height:1.2;text-shadow:0 1px 8px rgba(0,0,0,.25)}
-.sl-cover .sl-cn{position:absolute;right:10px;bottom:8px;background:rgba(0,0,0,.55);color:#fff;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:700}
-.sl-info{padding:14px 16px;display:flex;flex-direction:column;gap:6px;flex:1}
-.sl-info h3{margin:0;font-size:15px;font-weight:800;line-height:1.3}
-.sl-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--txt2)}
-.sl-chip{background:var(--acc-lt,rgba(124,92,255,.14));color:var(--acc);border-radius:999px;padding:2px 10px;font-weight:700;font-size:11px}
-.sl-act{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:8px}
-.sl-empty{text-align:center;padding:48px 20px;border:2px dashed var(--bdr);border-radius:22px;background:var(--surf)}
-.sl-empty svg{width:96px;height:96px;margin-bottom:10px}
-.sl-empty h3{margin:0 0 6px;font-size:18px}.sl-empty p{color:var(--txt2);font-size:13px;margin:0 0 18px}
-/* slide canvas (shared by thumbnails, editor, present mode and print) */
-.sl-box{position:relative;aspect-ratio:16/9;overflow:hidden;container-type:inline-size;border-radius:inherit;background:#fff}
-.sl-s{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;padding:6cqw 7cqw;line-height:1.25;overflow:hidden}
-.sl-s h1,.sl-s h2{margin:0;font-weight:800;line-height:1.15;letter-spacing:-.01em;word-break:break-word}
-.sl-s p,.sl-s .sl-ln{margin:0}
-.sl-center{text-align:center;display:flex;flex-direction:column;gap:2.4cqw;align-items:center}
-.sl-center p{opacity:.85}
-.sl-body{display:flex;flex-direction:column;gap:1.4cqw;margin-top:3cqw;word-break:break-word}
-.sl-s.top{justify-content:flex-start}
-.sl-full{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-.sl-full img{max-width:100%;max-height:100%;object-fit:contain}
-.sl-cap{position:absolute;left:0;right:0;bottom:0;padding:2.2cqw 4cqw;background:linear-gradient(transparent,rgba(0,0,0,.65));color:#fff;font-weight:700;text-align:center}
-.sl-split{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr}
-.sl-pic{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;background:rgba(0,0,0,.08)}
-.sl-pic img{width:100%;height:100%;object-fit:cover}
-.sl-txt{padding:5cqw 4.5cqw;display:flex;flex-direction:column;justify-content:center}
-.sl-ph{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:2.4cqw;opacity:.55;border:.4cqw dashed currentColor;box-sizing:border-box;text-align:center;padding:2cqw}
-/* editor + presenter overlays */
-#sl-ed,#sl-pr,#sl-sh{position:fixed;inset:0;display:none}
-#sl-ed{z-index:3500;background:var(--bg);color:var(--txt);flex-direction:column}
-#sl-ed.on{display:flex}
-.sl-top{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surf);border-bottom:1px solid var(--bdr);flex-wrap:wrap}
-.sl-top input{border:1px solid var(--bdr);background:var(--surf2);color:var(--txt);border-radius:10px;padding:8px 11px;font-size:14px;font-family:inherit;min-width:0}
-.sl-top .ti{font-weight:800;flex:1 1 200px;font-size:15px}.sl-top .su{flex:0 1 170px}
-.sl-st{font-size:12px;color:var(--txt2);min-width:110px}.sl-st.ok{color:#16a34a}.sl-st.er{color:var(--red);font-weight:700}
-.sl-main{flex:1;display:grid;grid-template-columns:190px minmax(0,1fr) 290px;min-height:0}
-.sl-rail{overflow-y:auto;padding:12px;border-right:1px solid var(--bdr);background:var(--surf);display:flex;flex-direction:column;gap:10px}
-.sl-th{border:2px solid transparent;border-radius:10px;cursor:pointer;position:relative;flex:0 0 auto;transition:border-color .15s,transform .15s}
-.sl-th:hover{transform:scale(1.02)}.sl-th.on{border-color:var(--acc);box-shadow:0 0 0 3px rgba(124,92,255,.22)}
-.sl-th .sl-box{border-radius:8px;border:1px solid var(--bdr);pointer-events:none}
-.sl-th .no{position:absolute;left:5px;top:3px;font-size:10px;font-weight:800;background:rgba(0,0,0,.6);color:#fff;border-radius:6px;padding:1px 6px;z-index:2}
-.sl-stage{overflow-y:auto;padding:18px;display:flex;flex-direction:column;align-items:center;gap:12px;background:var(--bg)}
-.sl-stage .sl-box{width:min(100%,960px);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.28)}
-.sl-tools{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
-.sl-side{overflow-y:auto;padding:14px;border-left:1px solid var(--bdr);background:var(--surf);display:flex;flex-direction:column;gap:14px}
-.sl-side label{display:block;font-size:11px;font-weight:800;color:var(--txt2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
-.sl-side input[type=text],.sl-side textarea,.sl-side select{width:100%;box-sizing:border-box;border:1px solid var(--bdr);background:var(--surf2);color:var(--txt);border-radius:10px;padding:9px 11px;font-size:13px;font-family:inherit}
-.sl-side textarea{min-height:110px;resize:vertical}
-.sl-lay{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.sl-lay button{border:2px solid var(--bdr);background:var(--surf2);color:var(--txt2);border-radius:10px;padding:6px 2px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px}
-.sl-lay button.on{border-color:var(--acc);color:var(--acc)}
-.sl-lay svg{width:34px;height:22px}
-.sl-sw{display:flex;gap:6px;flex-wrap:wrap}
-.sl-sw button{width:28px;height:28px;border-radius:50%;border:2px solid var(--bdr);cursor:pointer;padding:0}
-.sl-sw button.on{outline:3px solid var(--acc);outline-offset:1px}
-.sl-sw input[type=color]{width:34px;height:30px;border:none;background:none;padding:0;cursor:pointer}
-#sl-pr{z-index:6500;background:#05060d;color:#fff;flex-direction:column;align-items:center;justify-content:center;user-select:none}
-#sl-pr.on{display:flex}
-#sl-pr .sl-box{width:min(100vw,calc(100vh*16/9));border-radius:0;animation:slFade .35s both}
-@keyframes slFade{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:none}}
-.sl-pbar{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;background:linear-gradient(transparent,rgba(0,0,0,.7));opacity:0;transition:opacity .25s}
-#sl-pr:hover .sl-pbar,#sl-pr.show .sl-pbar{opacity:1}
-.sl-pbar button,.sl-nav{border:none;background:rgba(255,255,255,.16);color:#fff;border-radius:999px;min-width:46px;height:46px;font-size:20px;cursor:pointer;font-family:inherit;padding:0 16px;backdrop-filter:blur(6px)}
-.sl-pbar button:hover,.sl-nav:hover{background:rgba(255,255,255,.3)}
-.sl-nav{position:absolute;top:50%;transform:translateY(-50%);width:54px;height:54px;padding:0;opacity:.0;transition:opacity .25s}
-#sl-pr:hover .sl-nav,#sl-pr.show .sl-nav{opacity:1}
-.sl-nav.l{left:14px}.sl-nav.r{right:14px}
-.sl-pc{color:#fff;font-weight:700;font-size:14px;min-width:70px;text-align:center}
-#sl-sh{z-index:6600;background:rgba(10,14,30,.6);align-items:center;justify-content:center}#sl-sh.on{display:flex}
-.sl-shbox{background:var(--surf);color:var(--txt);border-radius:18px;padding:22px;width:min(420px,92vw);max-height:86vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,.5)}
-.sl-shbox h3{margin:0 0 6px}.sl-shbox p{font-size:12px;color:var(--txt2);margin:0 0 12px}
-.sl-cls{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-bottom:14px}
-.sl-cls label{display:flex;align-items:center;gap:7px;border:1px solid var(--bdr);border-radius:10px;padding:8px 10px;font-size:13px;cursor:pointer;background:var(--surf2)}
-@media(max-width:900px){
-  .sl-main{grid-template-columns:1fr;grid-template-rows:auto auto;overflow-y:auto;display:block}
-  .sl-rail{flex-direction:row;overflow-x:auto;overflow-y:hidden;border-right:none;border-bottom:1px solid var(--bdr);padding:10px}
-  .sl-th{width:130px}
-  .sl-stage{padding:12px;overflow:visible}
-  .sl-side{border-left:none;border-top:1px solid var(--bdr);overflow:visible}
-  .sl-top .su{flex:1 1 120px}
-}
-</style>
-<div id="sl-ed"></div>
-<div id="sl-pr"></div>
-<div id="sl-sh"></div>
-
-<style id="md-slides-css">
-/* ===== Enhanced Slideshows — MyDigitalSchool ===== */
 .sl-hero{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
 .sl-hero p{color:var(--txt2);font-size:13px;margin:4px 0 0;max-width:560px;line-height:1.5}
-.sl-btn{border:1px solid var(--bdr);background:var(--surf2);color:var(--txt);border-radius:11px;padding:9px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;min-height:40px;display:inline-flex;align-items:center;gap:7px;transition:transform .15s,box-shadow .15s,background .15s}
+.sl-btn{border:1px solid var(--bdr);background:var(--surf2);color:var(--txt);border-radius:11px;padding:9px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;min-height:40px;display:inline-flex;align-items:center;gap:7px;transition:.15s}
 .sl-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.14)}
 .sl-btn.pri{background:linear-gradient(135deg,var(--acc),#7c3aed);border-color:transparent;color:#fff}
 .sl-btn.dng{color:var(--red);border-color:rgba(255,69,58,.4)}
 .sl-btn.sm{padding:6px 10px;min-height:32px;font-size:12px}
-.sl-btn:disabled{opacity:.45;cursor:default;transform:none;box-shadow:none}
+.sl-btn:disabled{opacity:.45;cursor:default;transform:none}
 .sl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px}
-.sl-card{background:var(--surf);border:1px solid var(--bdr);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 2px 10px rgba(0,0,0,.08);transition:transform .2s,box-shadow .2s;animation:slIn .35s both}
+.sl-card{background:var(--surf);border:1px solid var(--bdr);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 2px 10px rgba(0,0,0,.08);transition:.2s;animation:slIn .35s both}
 .sl-card:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(0,0,0,.18)}
 @keyframes slIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.sl-cover{aspect-ratio:16/9;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;container-type:inline-size}
+.sl-cover{aspect-ratio:16/9;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;background:#1e293b}
 .sl-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.sl-cover .sl-ct{position:relative;font-weight:800;font-size:8cqw;padding:0 8%;text-align:center;line-height:1.2;text-shadow:0 1px 8px rgba(0,0,0,.25)}
+.sl-cover .sl-ct{position:relative;font-weight:800;font-size:20px;padding:0 10%;text-align:center;line-height:1.25;text-shadow:0 2px 10px rgba(0,0,0,.4);color:#fff}
 .sl-cover .sl-cn{position:absolute;right:10px;bottom:8px;background:rgba(0,0,0,.55);color:#fff;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:700}
 .sl-info{padding:14px 16px;display:flex;flex-direction:column;gap:6px;flex:1}
 .sl-info h3{margin:0;font-size:15px;font-weight:800;line-height:1.3}
 .sl-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--txt2)}
-.sl-chip{background:var(--acc-lt,rgba(124,92,255,.14));color:var(--acc);border-radius:999px;padding:2px 10px;font-weight:700;font-size:11px}
+.sl-chip{background:var(--acc-lt);color:var(--acc);border-radius:999px;padding:2px 10px;font-weight:700;font-size:11px}
 .sl-act{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .sl-empty{text-align:center;padding:48px 16px;color:var(--txt2)}
-.sl-empty svg{width:110px;height:110px;margin-bottom:8px}
 .sl-empty h3{margin:0 0 6px;font-size:18px;color:var(--txt)}
 .sl-empty p{margin:0 auto 16px;max-width:420px;line-height:1.5;font-size:13px}
 .sl-fil{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
 .sl-fil input,.sl-fil select{border:1px solid var(--bdr);background:var(--surf2);color:var(--txt);border-radius:11px;padding:10px 12px;font-size:13px;font-family:inherit;min-height:40px}
-.sl-fil input{flex:1;min-width:180px}
+.sl-fil input{flex:1;min-width:160px}
 
-/* Editor shell */
 #sl-ed{position:fixed;inset:0;z-index:6400;background:var(--bg);display:none;flex-direction:column;color:var(--txt)}
 #sl-ed.on{display:flex}
 .sl-top{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--bdr);background:var(--surf);flex-wrap:wrap}
-.sl-top .su{flex:1;min-width:140px;border:1px solid var(--bdr);background:var(--surf2);color:var(--txt);border-radius:10px;padding:8px 12px;font-size:14px;font-weight:700;font-family:inherit}
-.sl-top .st{font-size:12px;color:var(--txt3);min-width:90px}
-.sl-main{flex:1;display:grid;grid-template-columns:200px 1fr 300px;min-height:0;overflow:hidden}
+.sl-top input.su{flex:1;min-width:130px;border:1px solid var(--bdr);background:var(--surf2);color:var(--txt);border-radius:10px;padding:8px 12px;font-size:14px;font-weight:700;font-family:inherit}
+.sl-top .st{font-size:12px;color:var(--txt3)}
+.sl-main{flex:1;display:grid;grid-template-columns:180px 1fr 290px;min-height:0;overflow:hidden}
 .sl-rail{border-right:1px solid var(--bdr);background:var(--surf);overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
 .sl-th{aspect-ratio:16/9;border-radius:10px;border:2px solid transparent;cursor:pointer;overflow:hidden;position:relative;background:var(--surf3)}
 .sl-th.on{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-lt)}
 .sl-th .n{position:absolute;left:6px;top:6px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px}
-.sl-stage{padding:18px;display:flex;align-items:center;justify-content:center;overflow:auto;background:var(--bg)}
-.sl-box{width:min(100%,920px);aspect-ratio:16/9;border-radius:14px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.25);position:relative;container-type:size}
-.sl-side{border-left:1px solid var(--bdr);background:var(--surf);overflow-y:auto;padding:14px 16px}
-.sl-side h4{margin:0 0 10px;font-size:12px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em}
-.sl-side .fg{margin-bottom:14px}
-.sl-side label{display:block;font-size:12px;font-weight:700;color:var(--txt2);margin-bottom:5px}
-.sl-side input[type=text],.sl-side textarea,.sl-side select{width:100%;border:1px solid var(--bdr);background:var(--surf2);color:var(--txt);border-radius:10px;padding:9px 11px;font-size:13px;font-family:inherit}
-.sl-side textarea{min-height:90px;resize:vertical}
+.sl-stage{padding:16px;display:flex;align-items:center;justify-content:center;overflow:auto;background:var(--bg)}
+.sl-box{width:min(100%,880px);aspect-ratio:16/9;border-radius:12px;overflow:hidden;box-shadow:0 18px 45px rgba(0,0,0,.28);position:relative;container-type:size}
+.sl-side{border-left:1px solid var(--bdr);background:var(--surf);overflow-y:auto;padding:14px 14px}
+.sl-side h4{margin:16px 0 8px;font-size:11px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em}
+.sl-side h4:first-child{margin-top:0}
+.sl-side .fg{margin-bottom:12px}
+.sl-side label{display:block;font-size:12px;font-weight:700;color:var(--txt2);margin-bottom:4px}
+.sl-side input[type=text],.sl-side textarea,.sl-side select{width:100%;border:1px solid var(--bdr);background:var(--surf2);color:var(--txt);border-radius:10px;padding:8px 10px;font-size:13px;font-family:inherit}
+.sl-side textarea{min-height:78px;resize:vertical}
 .sl-sw{display:flex;flex-wrap:wrap;gap:6px}
-.sl-sw button{border:1.5px solid var(--bdr);background:var(--surf2);color:var(--txt);border-radius:9px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.sl-sw button{border:1.5px solid var(--bdr);background:var(--surf2);color:var(--txt);border-radius:8px;padding:5px 9px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
 .sl-sw button.on{border-color:var(--acc);background:var(--acc-lt);color:var(--acc)}
-.sl-sw input[type=color]{width:34px;height:30px;border:none;background:none;padding:0;cursor:pointer}
+.sl-sw input[type=color]{width:32px;height:28px;border:none;background:none;padding:0;cursor:pointer}
 .sl-bgimg{width:100%;aspect-ratio:16/9;border-radius:10px;background:var(--surf3);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;margin-bottom:8px;border:1px dashed var(--bdr)}
 .sl-bgimg img{width:100%;height:100%;object-fit:cover}
-.sl-bgimg .rm{position:absolute;top:6px;right:6px}
-.sl-ai{background:linear-gradient(135deg,rgba(99,102,241,.12),rgba(139,92,246,.12));border:1px solid rgba(99,102,241,.35);border-radius:14px;padding:12px;margin-bottom:16px}
-.sl-ai h4{color:var(--acc)!important;display:flex;align-items:center;gap:6px}
-.sl-ai textarea{min-height:70px;margin-bottom:8px}
-.sl-ai .out{font-size:12.5px;line-height:1.55;max-height:220px;overflow-y:auto;background:var(--surf);border-radius:10px;padding:10px;margin-top:8px;border:1px solid var(--bdr);white-space:pre-wrap}
-.sl-note{font-size:12px;color:var(--txt3);line-height:1.45;margin-top:4px}
+.sl-ai{background:linear-gradient(135deg,rgba(99,102,241,.13),rgba(139,92,246,.13));border:1px solid rgba(99,102,241,.35);border-radius:14px;padding:12px;margin-bottom:14px}
+.sl-ai h4{color:var(--acc)!important;margin:0 0 8px;font-size:13px}
+.sl-ai textarea{min-height:64px;margin-bottom:8px}
+.sl-ai .out{font-size:12.5px;line-height:1.5;max-height:200px;overflow-y:auto;background:var(--surf);border-radius:10px;padding:10px;margin-top:8px;border:1px solid var(--bdr);white-space:pre-wrap}
+.sl-note{font-size:11.5px;color:var(--txt3);line-height:1.4;margin-top:3px}
 
-/* Slide content (shared) */
+/* Slide content */
 .sl-slide{width:100%;height:100%;position:relative;overflow:hidden;display:flex;flex-direction:column}
 .sl-slide .bgimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
 .sl-slide .ov{position:absolute;inset:0;z-index:1;pointer-events:none}
-.sl-slide .cnt{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;padding:6% 7%;box-sizing:border-box;min-height:0}
+.sl-slide .cnt{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;padding:5.5% 6.5%;box-sizing:border-box;min-height:0}
 .sl-title{display:flex;align-items:center;justify-content:center;text-align:center;height:100%}
-.sl-title h1{font-size:7.2cqw;font-weight:800;line-height:1.15;margin:0;text-shadow:0 2px 12px rgba(0,0,0,.25)}
-.sl-title p{font-size:2.8cqw;margin-top:1.2cqw;opacity:.9}
-.sl-text h2,.sl-quote h2,.sl-bullets h2,.sl-twocol h2,.sl-section h2{font-size:4.6cqw;font-weight:800;margin:0 0 2.2cqw;line-height:1.2}
-.sl-body{font-size:2.55cqw;line-height:1.55;white-space:pre-wrap}
-.sl-ln{margin-bottom:.35em}
+.sl-title h1{font-size:6.8cqw;font-weight:800;line-height:1.15;margin:0;text-shadow:0 2px 14px rgba(0,0,0,.3)}
+.sl-title p{font-size:2.6cqw;margin-top:1cqw;opacity:.9}
+.sl-text h2,.sl-bullets h2,.sl-quote h2{font-size:4.2cqw;font-weight:800;margin:0 0 1.8cqw;line-height:1.2}
+.sl-body{font-size:2.4cqw;line-height:1.5;white-space:pre-wrap}
+.sl-ln{margin-bottom:.3em}
 .sl-full{flex:1;display:flex;align-items:center;justify-content:center;position:relative}
 .sl-full img{max-width:100%;max-height:100%;object-fit:contain}
-.sl-cap{position:absolute;left:0;right:0;bottom:0;padding:2.5% 4%;background:linear-gradient(transparent,rgba(0,0,0,.65));color:#fff;font-weight:700;font-size:3cqw}
-.sl-split{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:3.5%;min-height:0}
-.sl-split .sl-pic{display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:1.2cqw}
+.sl-cap{position:absolute;left:0;right:0;bottom:0;padding:2.2% 4%;background:linear-gradient(transparent,rgba(0,0,0,.7));color:#fff;font-weight:700;font-size:2.8cqw}
+.sl-split{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:3%;min-height:0}
+.sl-split .sl-pic{display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:1cqw}
 .sl-split .sl-pic img{width:100%;height:100%;object-fit:cover}
 .sl-split .sl-txt{display:flex;flex-direction:column;justify-content:center;min-width:0}
 .sl-quote{justify-content:center;text-align:center}
-.sl-quote .q{font-size:4.2cqw;font-style:italic;line-height:1.4;margin:0 auto;max-width:90%}
-.sl-quote .a{font-size:2.4cqw;margin-top:2cqw;opacity:.85;font-weight:700}
-.sl-bullets .sl-body{font-size:2.7cqw}
-.sl-twocol .cols{display:grid;grid-template-columns:1fr 1fr;gap:3.5%;flex:1}
+.sl-quote .q{font-size:3.8cqw;font-style:italic;line-height:1.4;margin:0 auto;max-width:92%}
+.sl-quote .a{font-size:2.2cqw;margin-top:1.8cqw;opacity:.85;font-weight:700}
 .sl-section{align-items:center;justify-content:center;text-align:center}
-.sl-section h1{font-size:6.5cqw;font-weight:800;margin:0}
-.sl-ph{color:rgba(255,255,255,.55);font-size:2.4cqw;text-align:center;padding:8%}
+.sl-section h1{font-size:5.8cqw;font-weight:800;margin:0}
+.sl-ph{color:rgba(255,255,255,.5);font-size:2.2cqw;text-align:center;padding:8%}
 
-/* Present mode */
-#sl-pr{z-index:6500;background:#05060d;color:#fff;flex-direction:column;align-items:center;justify-content:center;user-select:none;display:none}
+/* Present */
+#sl-pr{z-index:6500;background:#05060d;color:#fff;flex-direction:column;align-items:center;justify-content:center;user-select:none;display:none;position:fixed;inset:0}
 #sl-pr.on{display:flex}
 #sl-pr .sl-box{width:min(100vw,calc(100vh*16/9));border-radius:0}
 #sl-pr.tr-fade .sl-box{animation:slFade .35s both}
-#sl-pr.tr-slide .sl-box{animation:slSlide .4s both}
 @keyframes slFade{from{opacity:0}to{opacity:1}}
-@keyframes slSlide{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
-.sl-pbar{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;background:linear-gradient(transparent,rgba(0,0,0,.7));opacity:0;transition:opacity .25s}
+.sl-pbar{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;background:linear-gradient(transparent,rgba(0,0,0,.75));opacity:0;transition:opacity .25s}
 #sl-pr:hover .sl-pbar,#sl-pr.show .sl-pbar{opacity:1}
-.sl-pbar button,.sl-nav{border:none;background:rgba(255,255,255,.16);color:#fff;border-radius:999px;min-width:46px;height:46px;font-size:20px;cursor:pointer;font-family:inherit;padding:0 16px;backdrop-filter:blur(6px)}
+.sl-pbar button,.sl-nav{border:none;background:rgba(255,255,255,.16);color:#fff;border-radius:999px;min-width:46px;height:46px;font-size:20px;cursor:pointer;font-family:inherit;padding:0 16px}
 .sl-pbar button:hover,.sl-nav:hover{background:rgba(255,255,255,.3)}
-.sl-nav{position:absolute;top:50%;transform:translateY(-50%);width:54px;height:54px;padding:0;opacity:0;transition:opacity .25s}
+.sl-nav{position:absolute;top:50%;transform:translateY(-50%);width:52px;height:52px;padding:0;opacity:0;transition:opacity .25s}
 #sl-pr:hover .sl-nav,#sl-pr.show .sl-nav{opacity:1}
 .sl-nav.l{left:14px}.sl-nav.r{right:14px}
 .sl-pc{color:#fff;font-weight:700;font-size:14px;min-width:70px;text-align:center}
-.sl-pnotes{position:absolute;left:16px;bottom:70px;max-width:340px;background:rgba(0,0,0,.7);color:#fff;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.45;display:none}
+.sl-pnotes{position:absolute;left:16px;bottom:70px;max-width:320px;background:rgba(0,0,0,.72);color:#fff;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.45;display:none}
 #sl-pr.show-notes .sl-pnotes{display:block}
 
-/* Share dialog */
 #sl-sh{z-index:6600;background:rgba(10,14,30,.6);align-items:center;justify-content:center;display:none;position:fixed;inset:0}
 #sl-sh.on{display:flex}
 .sl-shbox{background:var(--surf);color:var(--txt);border-radius:18px;padding:22px;width:min(420px,92vw);max-height:86vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,.5)}
@@ -8052,14 +7943,382 @@ syncFR();
 .sl-cls label{display:flex;align-items:center;gap:7px;border:1px solid var(--bdr);border-radius:10px;padding:8px 10px;font-size:13px;cursor:pointer;background:var(--surf2)}
 
 @media(max-width:900px){
-  .sl-main{grid-template-columns:1fr;grid-template-rows:auto auto;overflow-y:auto;display:block}
+  .sl-main{grid-template-columns:1fr;display:block;overflow-y:auto}
   .sl-rail{flex-direction:row;overflow-x:auto;overflow-y:hidden;border-right:none;border-bottom:1px solid var(--bdr);padding:10px}
-  .sl-th{width:130px;flex:none}
-  .sl-stage{padding:12px;overflow:visible}
-  .sl-side{border-left:none;border-top:1px solid var(--bdr);overflow:visible}
-  .sl-top .su{flex:1 1 120px}
+  .sl-th{width:120px;flex:none}
+  .sl-stage{padding:12px}
+  .sl-side{border-left:none;border-top:1px solid var(--bdr)}
 }
 </style>
+<div id="sl-ed"></div>
+<div id="sl-pr"></div>
+<div id="sl-sh"></div>
+
+<script id="md-slides-js">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const IDX='slides_index',DK=id=>'deck_'+id,IK=id=>'simg_'+id;
+const FONTS={sans:'"Segoe UI","Noto Sans Armenian",system-ui,sans-serif',serif:'Georgia,"Noto Serif Armenian",serif',round:'"Trebuchet MS","Noto Sans Armenian",sans-serif',mono:'"Courier New",monospace'};
+const FONT_LBL={sans:'Ժամանակակից',serif:'Դասական',round:'Կլոր',mono:'Մեքենագիր'};
+const SIZES={s:.8,m:1,l:1.25,xl:1.55};const SIZE_LBL={s:'Փոքր',m:'Միջին',l:'Մեծ',xl:'Շատ մեծ'};
+const LAYOUTS=[['title','Վերնագիր'],['text','Տեքստ'],['image','Նկար'],['imgtext','Նկար+տեքստ'],['split','Երկսյուն'],['quote','Մեջբերում'],['bullets','Կետեր'],['section','Բաժին'],['blank','Դատարկ']];
+const BGS=[['#ffffff','#1b1f33'],['#f8fafc','#0f172a'],['#0f172a','#f1f5f9'],['#1e1b4b','#e0e7ff'],['#2563eb','#fff'],['#7c3aed','#fff'],['#059669','#fff'],['#d97706','#fff'],['#dc2626','#fff'],
+['linear-gradient(135deg,#6366f1,#8b5cf6)','#fff'],['linear-gradient(135deg,#0ea5e9,#2563eb)','#fff'],['linear-gradient(135deg,#f59e0b,#ef4444)','#fff'],['linear-gradient(135deg,#10b981,#047857)','#fff'],['linear-gradient(135deg,#1e293b,#0f172a)','#f8fafc']];
+const SUBJECTS=['Հայոց լեզու','Գրականություն','Մաթեմատիկա','Ֆիզիկա','Քիմիա','Կենսաբանություն','Աշխարհագրություն','Հայոց պատմություն','Համաշխարհային պատմություն','Անգլերեն','Ռուսերեն','Ինֆորմատիկա','Երաժշտություն','Կերպարվեստ','Ֆիզկուլտուրա','Շրջակա աշխարհ'];
+const isAdm=()=>CU&&CU.role==='admin';
+const me=()=>CU&&CU.username;
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const fmtDate=ts=>{if(!ts)return'';const d=new Date(ts),p=n=>String(n).padStart(2,'0');return p(d.getDate())+'.'+p(d.getMonth()+1)+'.'+d.getFullYear();};
+const S={idx:{},loaded:false,deck:null,sel:0,dirty:false,saving:false,timer:null,status:'',isNew:false,imgs:{},q:'',subFilter:'',aiText:'',aiResult:null};
+let listErr='';
+
+function myClasses(){
+  const u=(DB.users||{})[CU.username]||CU;
+  if(CU.role==='student')return[u.class||CU.class||CU.studentClass].filter(Boolean);
+  if(CU.role==='parent')return((u.children||[]).map(c=>c.cls||c.class)).filter(Boolean);
+  if(CU.role==='teacher')return[].concat(u.classes||[],[u.homeroom]).filter(Boolean);
+  return[];
+}
+function canSee(d){if(!d)return false;if(isAdm()||d.owner===me())return true;const mc=myClasses();return (d.classes||[]).some(c=>mc.indexOf(c)!==-1);}
+function canEdit(d){return isAdm()||(d&&d.owner===me());}
+
+function idxRef(){return fsdb.collection(FS_COL).doc(IDX);}
+async function loadIdx(){const d=await bGet(IDX);S.idx=(d&&d.decks)||{};S.loaded=true;}
+async function putIdx(meta){await idxRef().set(fsClean({decks:{[meta.id]:meta}}),{merge:true});}
+async function delIdx(id){await idxRef().set({decks:{[id]:firebase.firestore.FieldValue.delete()}},{merge:true});}
+async function getImg(id){if(!id)return'';if(S.imgs[id])return S.imgs[id];try{const d=await bGet(IK(id));if(d&&d.data)S.imgs[id]=d.data;}catch(e){}return S.imgs[id]||'';}
+function resizeImage(file,max){return new Promise((ok,no)=>{if(!file||!/^image\//.test(file.type||'')){no(new Error('Ընտրեք նկար'));return;}const rd=new FileReader();rd.onerror=()=>no(new Error('Չհաջողվեց'));rd.onload=ev=>{const im=new Image();im.onerror=()=>no(new Error('Չի բացվում'));im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.82));};im.src=ev.target.result;};rd.readAsDataURL(file);});}
+function thumbOf(dataUrl,max){return new Promise(ok=>{const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.7));};im.onerror=()=>ok('');im.src=dataUrl;});}
+function lum(c){const m=/^#([0-9a-f]{6})$/i.exec(c||'');if(!m)return.5;const n=parseInt(m[1],16);return(.299*(n>>16)+.587*((n>>8)&255)+.114*(n&255))/255;}
+function autoTc(bg){if(/^linear-gradient/i.test(bg||''))return'#ffffff';return lum(bg)>.55?'#1b1f33':'#ffffff';}
+
+function blankSlide(layout,title){return{id:uid(),layout:layout||'text',title:title||'',text:'',img:'',bgImg:'',bg:'#ffffff',tc:'#1b1f33',font:'sans',size:'m',overlay:.4,notes:''};}
+function cur(){return S.deck&&S.deck.slides[S.sel];}
+
+function lines(t){return String(t||'').split('\n').filter(x=>x.trim()).map(l=>/^\s*[-•*]\s+/.test(l)?'<div class="sl-ln">• '+esc(l.replace(/^\s*[-•*]\s+/,''))+'</div>':'<div class="sl-ln">'+esc(l)+'</div>').join('');}
+function slideInner(sl,ph){
+  const sf=SIZES[sl.size||'m']||1,bg=sl.bg||'#ffffff',tc=sl.tc||autoTc(bg),ff=FONTS[sl.font||'sans']||FONTS.sans;
+  const ov=Math.max(0,Math.min(.85,+(sl.overlay!=null?sl.overlay:.4)));
+  const bgImg=sl.bgImg?'<img class="bgimg" data-imgid="'+esc(sl.bgImg)+'" alt="">':'';
+  const overlay=sl.bgImg?'<div class="ov" style="background:rgba(0,0,0,'+ov+')"></div>':'';
+  const T=esc(sl.title||''),imgHtml=sl.img?'<img data-imgid="'+esc(sl.img)+'" alt="">':(ph?'<div class="sl-ph">Ավելացրեք նկար</div>':'');
+  let body='';const L=sl.layout||'text';
+  if(L==='title')body='<div class="sl-title"><div><h1 style="font-size:'+(6.8*sf).toFixed(2)+'cqw">'+T+'</h1>'+(sl.text?'<p style="font-size:'+(2.6*sf).toFixed(2)+'cqw">'+esc(sl.text)+'</p>':'')+'</div></div>';
+  else if(L==='image')body='<div class="sl-full">'+imgHtml+(T?'<div class="sl-cap">'+T+'</div>':'')+'</div>';
+  else if(L==='imgtext'||L==='split')body='<div class="sl-split"><div class="sl-pic">'+imgHtml+'</div><div class="sl-txt"><h2 style="font-size:'+(4*sf).toFixed(2)+'cqw">'+T+'</h2><div class="sl-body" style="font-size:'+(2.3*sf).toFixed(2)+'cqw">'+lines(sl.text)+'</div></div></div>';
+  else if(L==='quote')body='<div class="sl-quote"><div class="q" style="font-size:'+(3.6*sf).toFixed(2)+'cqw">«'+esc(sl.text||sl.title)+'»</div>'+(sl.title&&sl.text?'<div class="a">— '+T+'</div>':'')+'</div>';
+  else if(L==='bullets')body='<div class="sl-bullets"><h2 style="font-size:'+(4.1*sf).toFixed(2)+'cqw">'+T+'</h2><div class="sl-body" style="font-size:'+(2.5*sf).toFixed(2)+'cqw">'+lines(sl.text)+'</div></div>';
+  else if(L==='section')body='<div class="sl-section"><h1 style="font-size:'+(5.6*sf).toFixed(2)+'cqw">'+T+'</h1></div>';
+  else if(L==='blank')body='';
+  else body='<div class="sl-text"><h2 style="font-size:'+(4.1*sf).toFixed(2)+'cqw">'+T+'</h2><div class="sl-body" style="font-size:'+(2.35*sf).toFixed(2)+'cqw">'+lines(sl.text)+'</div></div>';
+  return '<div class="sl-slide" style="background:'+bg+';color:'+tc+';font-family:'+ff+'">'+bgImg+overlay+'<div class="cnt">'+body+'</div></div>';
+}
+function box(sl,ph){return '<div class="sl-box">'+slideInner(sl,ph)+'</div>';}
+async function hydrate(root){if(!root)return;const els=[...root.querySelectorAll('img[data-imgid]')];await Promise.all(els.map(async el=>{const id=el.getAttribute('data-imgid');const d=S.imgs[id]||await getImg(id).catch(()=>'');if(d&&el.isConnected)el.src=d;}));}
+
+/* ===== AI Suggestion Engine ===== */
+function aiSuggest(prompt){
+  const p=(prompt||'').toLowerCase().trim();
+  if(p.length<3)return null;
+  const isHist=/պատմ|ավարայր|տիգրան|արշակունի|բագրատունի|ցեղասպան|անկախություն|հայոց/.test(p);
+  const isMath=/մաթեմատիկ|հանրահաշիվ|երկրաչափ|կոտորակ|հավասարում|թվեր/.test(p);
+  const isBio=/կենսաբան|բջիջ|բույս|կենդանի|մարմին|օրգան/.test(p);
+  const isPhys=/ֆիզիկ|ուժ|էներգի|շարժում|լույս|ձայն/.test(p);
+  const isLit=/գրական|բանաստեղծ|պոեմ|վեպ|թումանյան|չարենց|իսահակյան/.test(p);
+  let title='Սահիկաշար',slides=[];
+  if(isHist){
+    title='Հայոց պատմություն';
+    if(/ավարայր/.test(p)){
+      slides=[
+        {layout:'title',title:'Ավարայրի ճակատամարտ',text:'451 թ.',bg:'linear-gradient(135deg,#1e293b,#0f172a)',tc:'#f8fafc',imgHint:'Ավարայրի դաշտ կամ Վարդան Մամիկոնյանի արձան'},
+        {layout:'bullets',title:'Պատճառները',text:'• Հազկերտ II-ի կրոնական քաղաքականություն\n• Հայերի դիմադրությունը զրադաշտականությանը\n• Ազգային և կրոնական ինքնության պաշտպանություն',bg:'#0f172a',tc:'#e2e8f0',imgHint:'Հին հայկական եկեղեցի կամ խաչքար'},
+        {layout:'imgtext',title:'Վարդան Մամիկոնյան',text:'Հայոց սպարապետը գլխավորեց հայկական զորքը և դարձավ ազգային հերոս։',bg:'#1e1b4b',tc:'#e0e7ff',imgHint:'Վարդան Մամիկոնյանի դիմանկար'},
+        {layout:'text',title:'Ճակատամարտի ընթացքը',text:'451 թ. մայիսի 26-ին Ավարայրի դաշտում հայկական զորքը դիմադրեց պարսկական մեծ բանակին։',bg:'#0f172a',tc:'#f1f5f9',imgHint:'Մարտի պատմական վերարտադրություն'},
+        {layout:'quote',title:'',text:'Մահ ոչ իմացեալ՝ մահ է, մահ իմացեալ՝ անմահություն է։',bg:'linear-gradient(135deg,#7c3aed,#4c1d95)',tc:'#fff',imgHint:''},
+        {layout:'bullets',title:'Նշանակությունը',text:'• Հայոց եկեղեցու և ինքնության պահպանում\n• Ազգային միասնության խորհրդանիշ\n• Վարդանանց տոն',bg:'#0f172a',tc:'#e2e8f0',imgHint:'Ժամանակակից հուշարձան'}
+      ];
+    }else{
+      slides=[
+        {layout:'title',title:title,text:p.slice(0,50),bg:'linear-gradient(135deg,#1e293b,#334155)',tc:'#fff',imgHint:'Արարատ լեռան համայնապատկեր'},
+        {layout:'bullets',title:'Հիմնական կետեր',text:'• Առաջին կարևոր փաստ\n• Երկրորդ կարևոր փաստ\n• Երրորդ կարևոր փաստ',bg:'#0f172a',tc:'#e2e8f0',imgHint:'Պատմական քարտեզ'},
+        {layout:'text',title:'Մանրամասն',text:'Այստեղ ավելացրեք թեմայի բացատրությունը։',bg:'#1e1b4b',tc:'#e0e7ff',imgHint:'Պատմական ձեռագիր'},
+        {layout:'section',title:'Ամփոփում',text:'',bg:'#2563eb',tc:'#fff',imgHint:''}
+      ];
+    }
+  }else if(isMath){
+    title='Մաթեմատիկա';
+    slides=[
+      {layout:'title',title:'Մաթեմատիկա',text:p.slice(0,55),bg:'linear-gradient(135deg,#2563eb,#1d4ed8)',tc:'#fff',imgHint:'Գրատախտակ բանաձևերով'},
+      {layout:'bullets',title:'Սահմանում',text:'• Հիմնական հասկացություն 1\n• Հիմնական հասկացություն 2\n• Հիմնական հասկացություն 3',bg:'#eff6ff',tc:'#1e3a8a',imgHint:'Պարզ գծապատկեր'},
+      {layout:'text',title:'Օրինակ',text:'Լուծենք միասին։\nՔայլ 1՝ ...\nՔայլ 2՝ ...',bg:'#fff',tc:'#1e293b',imgHint:'Լուծման քայլեր'},
+      {layout:'section',title:'Առաջադրանք',text:'',bg:'#7c3aed',tc:'#fff',imgHint:''}
+    ];
+  }else if(isBio){
+    title='Կենսաբանություն';
+    slides=[
+      {layout:'title',title:'Կենսաբանություն',text:p.slice(0,50),bg:'linear-gradient(135deg,#059669,#047857)',tc:'#fff',imgHint:'Մանրադիտակի տակ բջիջ'},
+      {layout:'imgtext',title:'Կառուցվածք',text:'Նկարագրեք հիմնական մասերը և գործառույթները։',bg:'#ecfdf5',tc:'#064e3b',imgHint:'Սխեմատիկ նկար'},
+      {layout:'bullets',title:'Հիմնական փաստեր',text:'• Փաստ 1\n• Փաստ 2\n• Փաստ 3',bg:'#fff',tc:'#1e293b',imgHint:'Բնության լուսանկար'},
+      {layout:'section',title:'Եզրակացություն',text:'',bg:'#0f766e',tc:'#fff',imgHint:''}
+    ];
+  }else if(isPhys){
+    title='Ֆիզիկա';
+    slides=[
+      {layout:'title',title:'Ֆիզիկա',text:p.slice(0,50),bg:'linear-gradient(135deg,#0ea5e9,#0284c7)',tc:'#fff',imgHint:'Փորձարարական սարք'},
+      {layout:'bullets',title:'Օրենք / սահմանում',text:'• Ձևակերպում\n• Միավորներ\n• Բանաձև',bg:'#f0f9ff',tc:'#0c4a6e',imgHint:'Բանաձևով գրատախտակ'},
+      {layout:'text',title:'Օրինակ',text:'Դիտարկենք գործնական օրինակ։',bg:'#fff',tc:'#1e293b',imgHint:'Փորձի լուսանկար'},
+      {layout:'section',title:'Ամփոփում',text:'',bg:'#0369a1',tc:'#fff',imgHint:''}
+    ];
+  }else if(isLit){
+    title='Գրականություն';
+    slides=[
+      {layout:'title',title:'Գրականություն',text:p.slice(0,50),bg:'linear-gradient(135deg,#7c3aed,#5b21b6)',tc:'#fff',imgHint:'Հին գրքեր կամ գրողի դիմանկար'},
+      {layout:'quote',title:'',text:'Այստեղ տեղադրեք կարևոր մեջբերումը։',bg:'#1e1b4b',tc:'#e0e7ff',imgHint:''},
+      {layout:'bullets',title:'Հեղինակ և ստեղծագործություն',text:'• Հեղինակ\n• Ստեղծման տարեթիվ\n• Ժանր\n• Հիմնական թեմա',bg:'#faf5ff',tc:'#4c1d95',imgHint:'Գրքի շապիկ'},
+      {layout:'text',title:'Վերլուծություն',text:'Հիմնական գաղափարները և գեղարվեստական հնարները։',bg:'#fff',tc:'#1e293b',imgHint:''},
+      {layout:'section',title:'Եզրակացություն',text:'',bg:'#6d28d9',tc:'#fff',imgHint:''}
+    ];
+  }else{
+    title=p.length>45?p.slice(0,45)+'…':p;
+    slides=[
+      {layout:'title',title:title,text:'Ուսումնական սահիկաշար',bg:'linear-gradient(135deg,#6366f1,#8b5cf6)',tc:'#fff',imgHint:'Թեմային համապատասխան գեղեցիկ նկար'},
+      {layout:'bullets',title:'Նպատակներ',text:'• Իմանալ...\n• Հասկանալ...\n• Կարողանալ...',bg:'#f8fafc',tc:'#1e293b',imgHint:''},
+      {layout:'text',title:'Հիմնական բովանդակություն',text:'Այստեղ գրեք թեմայի հիմնական բացատրությունը։',bg:'#fff',tc:'#1e293b',imgHint:'Թեմային առնչվող նկար'},
+      {layout:'imgtext',title:'Կարևոր կետ',text:'Ավելացրեք կարևոր բացատրություն և համապատասխան նկար։',bg:'#eef2ff',tc:'#312e81',imgHint:'Բացատրող սխեմա'},
+      {layout:'section',title:'Ամփոփում',text:'',bg:'#4f46e5',tc:'#fff',imgHint:''}
+    ];
+  }
+  return {title,slides};
+}
+
+/* ===== List view ===== */
+async function renderList(refresh){
+  const el=$('slides');if(!el||!CU)return;
+  if(!S.loaded||refresh){try{listErr='';await loadIdx();}catch(e){listErr='Չհաջողվեց բեռնել։';}}
+  const decks=Object.values(S.idx).filter(canSee).sort((a,b)=>(b.updated||0)-(a.updated||0));
+  const q=(S.q||'').toLowerCase().trim();
+  const filtered=decks.filter(d=>{if(S.subFilter&&d.subject!==S.subFilter)return false;if(q&&((d.title||'')+' '+(d.subject||'')+' '+(d.ownerName||'')).toLowerCase().indexOf(q)===-1)return false;return true;});
+  const mk=CU.role==='teacher'||isAdm();
+  let h='<div class="pt">🎞️ Սահիկաշարեր</div><div class="sl-hero"><div><p>'+(CU.role==='parent'?'Ձեր երեխայի դասարանի սահիկաշարերը։':'Ստեղծեք ուսումնական սահիկաշարեր՝ ֆոնային նկարով, ԱԲ օգնականով և շատ այլ հնարավորություններով։')+'</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="sl-btn" onclick="slReload()">↻ Թարմացնել</button>'+(mk?'<button class="sl-btn pri" onclick="slNew()">＋ Ստեղծել</button>':'')+'</div></div>';
+  h+='<div class="sl-fil"><input type="search" placeholder="Որոնել..." value="'+esc(S.q)+'" oninput="S.q=this.value;renderList(false)"><select onchange="S.subFilter=this.value;renderList(false)"><option value="">Բոլոր առարկաները</option>'+SUBJECTS.map(s=>'<option value="'+esc(s)+'"'+(S.subFilter===s?' selected':'')+'>'+esc(s)+'</option>').join('')+'</select></div>';
+  if(listErr)h+='<div class="sl-empty"><h3>Սխալ</h3><p>'+esc(listErr)+'</p><button class="sl-btn pri" onclick="slReload()">Կրկին</button></div>';
+  else if(!filtered.length)h+='<div class="sl-empty"><h3>Դեռ սահիկաշարեր չկան</h3><p>'+(mk?'Ստեղծեք առաջինը և օգտագործեք ԱԲ-ն։':'Երբ ուսուցիչը կիսի, կերևա այստեղ։')+'</p>'+(mk?'<button class="sl-btn pri" onclick="slNew()">＋ Ստեղծել</button>':'')+'</div>';
+  else h+='<div class="sl-grid">'+filtered.map((d,i)=>'<div class="sl-card" style="animation-delay:'+Math.min(i,8)*40+'ms"><div class="sl-cover" style="background:'+esc(d.bg||'#6366f1')+'" onclick="slPresent(\''+d.id+'\')">'+(d.cover?'<img src="'+esc(d.cover)+'" alt="">':'<div class="sl-ct">'+esc(d.title||'')+'</div>')+'<span class="sl-cn">'+(d.count||0)+' սահիկ</span></div><div class="sl-info"><h3>'+esc(d.title||'Անանուն')+'</h3><div class="sl-meta">'+(d.subject?'<span class="sl-chip">'+esc(d.subject)+'</span>':'')+'<span>'+esc(d.ownerName||'')+'</span><span>'+fmtDate(d.updated||d.created)+'</span></div><div class="sl-act"><button class="sl-btn sm" onclick="slPresent(\''+d.id+'\')">▶ Ցուցադրել</button>'+(canEdit(d)?'<button class="sl-btn sm" onclick="slEdit(\''+d.id+'\')">Խմբագրել</button><button class="sl-btn sm dng" onclick="slDelete(\''+d.id+'\')">Ջնջել</button>':'')+'</div></div></div>').join('')+'</div>';
+  el.innerHTML=h;
+}
+window.slReload=()=>{S.loaded=false;renderList(true);};
+
+/* ===== Editor ===== */
+function setStatus(t,cls){S.status=t;const el=$('sl-status');if(el){el.textContent=t;el.className='st '+(cls||'');}}
+function slMark(){S.dirty=true;setStatus('Չպահպանված փոփոխություններ');}
+function drawAll(){
+  if(!S.deck)return;
+  const ed=$('sl-ed');if(!ed)return;
+  const sl=cur();
+  // rail
+  const rail=ed.querySelector('.sl-rail');
+  if(rail)rail.innerHTML=S.deck.slides.map((s,i)=>'<div class="sl-th'+(i===S.sel?' on':'')+'" onclick="slSel('+i+')"><span class="n">'+(i+1)+'</span>'+box(s,false)+'</div>').join('')+'<button class="sl-btn sm" style="margin-top:6px" onclick="slAdd()">＋ Սահիկ</button>';
+  // stage
+  const stage=ed.querySelector('.sl-stage');
+  if(stage){stage.innerHTML=box(sl,true);hydrate(stage);}
+  // side panel
+  drawSide();
+  hydrate(rail);
+}
+function drawSide(){
+  const side=$('sl-side');if(!side||!cur())return;
+  const sl=cur();
+  let h='';
+  // AI
+  h+='<div class="sl-ai"><h4>🤖 ԱԲ օգնական</h4><textarea id="sl-ai-in" placeholder="Օր․ Ավարայրի ճակատամարտ, կամ Մաթեմատիկա՝ կոտորակներ 5-րդ դասարան">'+esc(S.aiText)+'</textarea><button class="sl-btn pri sm" onclick="slAiGo()">Առաջարկել սահիկաշար</button>';
+  if(S.aiResult){
+    h+='<div class="out">';
+    S.aiResult.slides.forEach((s,i)=>{h+='<b>'+(i+1)+'. '+esc(s.title||'(առանց վերնագրի)')+'</b> ('+esc(s.layout)+')\n';if(s.imgHint)h+='   📷 Նկար՝ '+esc(s.imgHint)+'\n';if(s.text)h+='   '+esc(s.text.slice(0,80))+(s.text.length>80?'…':'')+'\n';h+='\n';});
+    h+='</div><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="sl-btn pri sm" onclick="slAiApply()">Կիրառել ամբողջը</button><button class="sl-btn sm" onclick="S.aiResult=null;drawSide()">Փակել</button></div>';
+  }
+  h+='</div>';
+
+  h+='<h4>Դասավորություն</h4><div class="sl-sw">'+LAYOUTS.map(l=>'<button class="'+(sl.layout===l[0]?'on':'')+'" onclick="slSet(\'layout\',\''+l[0]+'\')">'+l[1]+'</button>').join('')+'</div>';
+  h+='<div class="fg"><label>Վերնագիր</label><input type="text" value="'+esc(sl.title)+'" oninput="slSet(\'title\',this.value)"></div>';
+  h+='<div class="fg"><label>Տեքստ</label><textarea oninput="slSet(\'text\',this.value)">'+esc(sl.text)+'</textarea></div>';
+
+  h+='<h4>Ֆոն</h4><div class="sl-bgimg" id="sl-bgprev">'+(sl.bgImg?'<img data-imgid="'+esc(sl.bgImg)+'" alt="">':'<span style="color:var(--txt3);font-size:12px">Ֆոնային նկար չկա</span>')+'</div>';
+  h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><label class="sl-btn sm" style="cursor:pointer">📷 Նկար<input type="file" accept="image/*" style="display:none" onchange="slBgImg(this)"></label>'+(sl.bgImg?'<button class="sl-btn sm dng" onclick="slSet(\'bgImg\',\'\')">Հեռացնել</button>':'')+'</div>';
+  if(sl.bgImg)h+='<div class="fg"><label>Մթնեցում ('+Math.round((sl.overlay||.4)*100)+'%)</label><input type="range" min="0" max="80" value="'+Math.round((sl.overlay||.4)*100)+'" oninput="slSet(\'overlay\',this.value/100)"></div>';
+  h+='<div class="sl-sw" style="margin-bottom:8px">'+BGS.map((b,i)=>'<button style="background:'+b[0]+';color:'+b[1]+';min-width:28px;height:28px;padding:0;border-radius:8px" class="'+(sl.bg===b[0]?'on':'')+'" onclick="slBg('+i+')"></button>').join('')+'<input type="color" value="'+(/^#[0-9a-f]{6}$/i.test(sl.bg)?sl.bg:'#ffffff')+'" oninput="slCustomBg(this.value)" title="Գույն"></div>';
+
+  h+='<h4>Նկար (բովանդակություն)</h4><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><label class="sl-btn sm" style="cursor:pointer">＋ Նկար<input type="file" accept="image/*" style="display:none" onchange="slPick(this)"></label>'+(sl.img?'<button class="sl-btn sm dng" onclick="slSet(\'img\',\'\')">Հեռացնել</button>':'')+'</div>';
+
+  h+='<h4>Տեսք</h4><div class="fg"><label>Տառատեսակ</label><select onchange="slSet(\'font\',this.value)">'+Object.keys(FONT_LBL).map(k=>'<option value="'+k+'"'+(sl.font===k?' selected':'')+'>'+FONT_LBL[k]+'</option>').join('')+'</select></div>';
+  h+='<div class="fg"><label>Չափ</label><div class="sl-sw">'+Object.keys(SIZE_LBL).map(k=>'<button class="'+(sl.size===k?'on':'')+'" onclick="slSet(\'size\',\''+k+'\')">'+SIZE_LBL[k]+'</button>').join('')+'</div></div>';
+  h+='<div class="fg"><label>Նշումներ (ներկայացման ժամանակ)</label><textarea oninput="slSet(\'notes\',this.value)" placeholder="Միայն դուք կտեսնեք...">'+esc(sl.notes||'')+'</textarea></div>';
+
+  h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px"><button class="sl-btn sm" onclick="slDup()">Կրկնօրինակել</button><button class="sl-btn sm" onclick="slMove(-1)">↑</button><button class="sl-btn sm" onclick="slMove(1)">↓</button><button class="sl-btn sm dng" onclick="slDel()">Ջնջել սահիկը</button></div>';
+  side.innerHTML=h;
+  hydrate(side);
+}
+
+window.slSel=i=>{S.sel=i;drawAll();};
+window.slSet=function(k,v){const sl=cur();if(!sl)return;sl[k]=v;if(k==='bg'||k==='bgImg')sl.tc=autoTc(sl.bg);slMark();drawAll();};
+window.slBg=function(i){const b=BGS[i],sl=cur();sl.bg=b[0];sl.tc=b[1];slMark();drawAll();};
+window.slCustomBg=function(v){const sl=cur();sl.bg=v;sl.tc=autoTc(v);slMark();drawAll();};
+window.slAdd=function(){const prev=cur()||{};const n=blankSlide('text','');n.bg=prev.bg||'#ffffff';n.tc=prev.tc||'#1b1f33';n.font=prev.font||'sans';S.deck.slides.splice(S.sel+1,0,n);S.sel++;slMark();drawAll();};
+window.slDup=function(){const c=JSON.parse(JSON.stringify(cur()));c.id=uid();S.deck.slides.splice(S.sel+1,0,c);S.sel++;slMark();drawAll();};
+window.slDel=function(){if(S.deck.slides.length<2)return;if(!confirm('Ջնջե՞լ այս սահիկը։'))return;S.deck.slides.splice(S.sel,1);S.sel=Math.max(0,S.sel-1);slMark();drawAll();};
+window.slMove=function(d){const a=S.deck.slides,j=S.sel+d;if(j<0||j>=a.length)return;[a[S.sel],a[j]]=[a[j],a[S.sel]];S.sel=j;slMark();drawAll();};
+
+window.slPick=async function(inp){
+  const f=inp.files&&inp.files[0];if(!f)return;
+  try{const data=await resizeImage(f,1200);const id=uid();await bSet(IK(id),{data,ts:Date.now()});S.imgs[id]=data;cur().img=id;slMark();drawAll();}catch(e){alert(e.message||'Չհաջողվեց');}
+};
+window.slBgImg=async function(inp){
+  const f=inp.files&&inp.files[0];if(!f)return;
+  try{const data=await resizeImage(f,1600);const id=uid();await bSet(IK(id),{data,ts:Date.now()});S.imgs[id]=data;cur().bgImg=id;slMark();drawAll();}catch(e){alert(e.message||'Չհաջողվեց');}
+};
+
+window.slAiGo=function(){
+  const t=($('sl-ai-in')&&$('sl-ai-in').value)||'';
+  S.aiText=t;
+  S.aiResult=aiSuggest(t);
+  if(!S.aiResult){alert('Գրեք ավելի մանրամասն նկարագրություն։');return;}
+  drawSide();
+};
+window.slAiApply=function(){
+  if(!S.aiResult||!S.deck)return;
+  if(!confirm('Ընթացիկ սահիկները կփոխարինվե՞ն ԱԲ-ի առաջարկով։'))return;
+  S.deck.title=S.aiResult.title||S.deck.title;
+  S.deck.slides=S.aiResult.slides.map(s=>{
+    const n=blankSlide(s.layout,s.title);
+    n.text=s.text||'';n.bg=s.bg||n.bg;n.tc=s.tc||autoTc(n.bg);
+    n._imgHint=s.imgHint||'';
+    return n;
+  });
+  S.sel=0;S.aiResult=null;slMark();drawAll();
+  alert('ԱԲ-ի առաջարկը կիրառվեց։ Հիմա կարող եք յուրաքանչյուր սահիկի համար ավելացնել համապատասխան նկարները (ԱԲ-ն տվել է նկարագրություններ)։');
+};
+
+window.slSave=async function(){
+  if(!S.deck||S.saving)return;
+  S.saving=true;setStatus('Պահպանվում է...');
+  try{
+    const d=S.deck,now=Date.now();
+    d.updated=now;
+    if(S.isNew){d.created=now;d.owner=me();d.ownerName=CU.name||CU.username;}
+    await bSet(DK(d.id),fsClean(d));
+    const first=d.slides[0]||{};
+    let cover='';
+    if(first.bgImg)cover=await thumbOf(await getImg(first.bgImg),240);
+    else if(first.img)cover=await thumbOf(await getImg(first.img),240);
+    const meta={id:d.id,title:d.title,subject:d.subject||'',owner:d.owner,ownerName:d.ownerName||'',created:d.created,updated:d.updated,classes:d.classes||[],count:d.slides.length,cover,bg:first.bg||'#6366f1',tc:first.tc||'#fff'};
+    await putIdx(meta);S.idx[d.id]=meta;S.dirty=false;S.isNew=false;setStatus('Պահպանված է ✓','ok');
+  }catch(e){console.error(e);setStatus('Սխալ պահպանելիս','er');alert('Չհաջողվեց պահպանել։');}
+  S.saving=false;
+};
+window.slClose=async function(){
+  if(S.dirty&&!confirm('Կան չպահպանված փոփոխություններ։ Փակե՞լ։'))return;
+  $('sl-ed').classList.remove('on');S.deck=null;document.body.style.overflow='';
+  renderList(false);
+};
+window.slNew=function(){
+  if(!(CU.role==='teacher'||isAdm()))return;
+  S.deck={id:uid(),title:'Նոր սահիկաշար',subject:'',slides:[blankSlide('title','Վերնագիր')],classes:[],owner:me(),ownerName:CU.name||''};
+  S.sel=0;S.isNew=true;S.dirty=false;S.aiResult=null;S.aiText='';
+  openEditor();
+};
+window.slEdit=async function(id){
+  try{
+    const d=await bGet(DK(id));
+    if(!d||!d.slides){alert('Չի գտնվել');return;}
+    S.deck=Object.assign({id},d);S.sel=0;S.isNew=false;S.dirty=false;S.aiResult=null;
+    await Promise.all([...new Set(d.slides.flatMap(s=>[s.img,s.bgImg]).filter(Boolean))].map(i=>getImg(i)));
+    openEditor();
+  }catch(e){alert('Չհաջողվեց բացել');}
+};
+function openEditor(){
+  const ed=$('sl-ed');
+  ed.innerHTML='<div class="sl-top"><button class="sl-btn" onclick="slClose()">← Ետ</button><input class="su" value="'+esc(S.deck.title)+'" oninput="S.deck.title=this.value;slMark()" placeholder="Սահիկաշարի վերնագիր"><select onchange="S.deck.subject=this.value;slMark()" style="border:1px solid var(--bdr);background:var(--surf2);color:var(--txt);border-radius:10px;padding:8px;font-size:13px"><option value="">Առարկա</option>'+SUBJECTS.map(s=>'<option value="'+esc(s)+'"'+(S.deck.subject===s?' selected':'')+'>'+esc(s)+'</option>').join('')+'</select><span class="st" id="sl-status"></span><button class="sl-btn" onclick="slShare()">Կիսվել</button><button class="sl-btn pri" onclick="slSave()">Պահպանել</button><button class="sl-btn" onclick="slPresent(S.deck.id,true)">▶ Ցուցադրել</button></div><div class="sl-main"><div class="sl-rail"></div><div class="sl-stage"></div><div class="sl-side" id="sl-side"></div></div>';
+  ed.classList.add('on');document.body.style.overflow='hidden';drawAll();
+}
+
+window.slShare=function(){
+  const classes=Object.keys(DB.classes||{}).sort();
+  const sh=$('sl-sh');
+  sh.innerHTML='<div class="sl-shbox"><h3>Կիսվել դասարանների հետ</h3><p>Նշված դասարանների աշակերտներն ու ծնողները կտեսնեն այս սահիկաշարը։</p><div class="sl-cls">'+classes.map(c=>'<label><input type="checkbox" class="sl-clsck" value="'+esc(c)+'" '+( (S.deck.classes||[]).indexOf(c)!==-1?'checked':'')+'>'+esc(c)+'</label>').join('')+'</div><div style="display:flex;gap:8px;justify-content:flex-end"><button class="sl-btn" onclick="$(\'sl-sh\').classList.remove(\'on\')">Փակել</button><button class="sl-btn pri" onclick="slShareOk()">Պահպանել</button></div></div>';
+  sh.classList.add('on');
+};
+window.slShareOk=function(){S.deck.classes=[...document.querySelectorAll('.sl-clsck:checked')].map(c=>c.value);$('sl-sh').classList.remove('on');slMark();slSave();};
+
+window.slDelete=async function(id){
+  if(!confirm('Ջնջե՞լ սահիկաշարը անվերադարձ։'))return;
+  try{await delIdx(id);await fsdb.collection(FS_COL).doc(DK(id)).delete();delete S.idx[id];renderList(false);}catch(e){alert('Չհաջողվեց ջնջել');}
+};
+
+/* ===== Present mode ===== */
+let P=null;
+window.slPresent=async function(id,fromEditor){
+  let deck;
+  if(fromEditor&&S.deck)deck=S.deck;
+  else{try{deck=await bGet(DK(id));if(!deck||!deck.slides){alert('Չի գտնվել');return;}await Promise.all([...new Set(deck.slides.flatMap(s=>[s.img,s.bgImg]).filter(Boolean))].map(i=>getImg(i)));}catch(e){alert('Չհաջողվեց');return;}}
+  P={deck,i:0};
+  const pr=$('sl-pr');
+  pr.className='on tr-fade';
+  pr.innerHTML='<div class="sl-box" id="sl-pbox"></div><button class="sl-nav l" onclick="slPn(-1)">‹</button><button class="sl-nav r" onclick="slPn(1)">›</button><div class="sl-pbar"><button onclick="slPn(-1)">‹</button><span class="sl-pc" id="sl-pc"></span><button onclick="slPn(1)">›</button><button onclick="slPrClose()">✕</button><button onclick="this.closest(\'#sl-pr\').classList.toggle(\'show-notes\')">Նշումներ</button></div><div class="sl-pnotes" id="sl-pnotes"></div>';
+  document.body.style.overflow='hidden';
+  paintP();
+  pr.onclick=e=>{if(e.target===pr)slPrClose();};
+};
+function paintP(){
+  if(!P)return;
+  const sl=P.deck.slides[P.i];
+  const b=$('sl-pbox');b.innerHTML=slideInner(sl,false);hydrate(b);
+  $('sl-pc').textContent=(P.i+1)+' / '+P.deck.slides.length;
+  const n=$('sl-pnotes');if(n)n.textContent=sl.notes||'Նշումներ չկան';
+}
+window.slPn=function(d){if(!P)return;const j=P.i+d;if(j<0||j>=P.deck.slides.length)return;P.i=j;const pr=$('sl-pr');pr.classList.remove('tr-fade');void pr.offsetWidth;pr.classList.add('tr-fade');paintP();};
+window.slPrClose=function(){$('sl-pr').classList.remove('on');P=null;if(!$('sl-ed').classList.contains('on'))document.body.style.overflow='';};
+document.addEventListener('keydown',e=>{
+  if(!P)return;
+  if(e.key==='ArrowRight'||e.key===' ' ||e.key==='PageDown'){e.preventDefault();slPn(1);}
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();slPn(-1);}
+  else if(e.key==='Escape')slPrClose();
+  else if(e.key==='Home'){P.i=0;paintP();}
+  else if(e.key==='End'){P.i=P.deck.slides.length-1;paintP();}
+});
+
+/* ===== Hook into app ===== */
+function ensureUI(){
+  if(!CU)return;
+  const nav=$('nav'),mn=$('mn');if(!nav||!mn)return;
+  if(!mn.querySelector('#slides'))mn.insertAdjacentHTML('beforeend','<div class="pg" id="slides"></div>');
+  if(!nav.querySelector('[data-p="slides"]')){
+    const it=document.createElement('div');it.className='ni';it.setAttribute('data-p','slides');it.setAttribute('onclick',"showPg('slides')");it.textContent='🎞️ Սահիկաշարեր';
+    const before=nav.querySelector('[data-p="prof"]')||nav.querySelector('[data-p="apend"]');
+    if(before)before.parentNode.insertBefore(it,before);else nav.appendChild(it);
+  }
+}
+let obsBusy=false;
+function watch(){
+  const f=()=>{if(obsBusy)return;obsBusy=true;setTimeout(()=>{obsBusy=false;try{ensureUI();}catch(e){}},0);};
+  ['nav','mn'].forEach(id=>{const e=$(id);if(e)new MutationObserver(f).observe(e,{childList:true});});
+}
+const _showPg=window.showPg;
+window.showPg=function(id){
+  const r=_showPg.apply(this,arguments);
+  if(id==='slides'){ensureUI();const pg=$('slides');if(pg){document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));pg.classList.add('on');document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('on',n.getAttribute('data-p')==='slides'));renderList(true);}}
+  return r;
+};
+watch();
+try{
+  idxRef().onSnapshot(snap=>{
+    if(snap.metadata&&snap.metadata.hasPendingWrites)return;
+    const d=snap.exists?snap.data():{};S.idx=(d&&d.decks)||{};S.loaded=true;
+    const pg=$('slides');if(CU&&pg&&pg.classList.contains('on')&&!$('sl-ed').classList.contains('on'))renderList(false);
+  },e=>console.warn('slides listener',e&&e.message));
+}catch(e){}
+})();
+</script>
 <!-- ===== MyDigitalSchool: «Դպրոցական քվեարկություններ» (school polls) — additive module ===== -->
 <style id="md-polls-css">
 #pl-root{position:fixed;inset:0;z-index:4550;background:var(--bg);color:var(--txt);overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:inherit}
