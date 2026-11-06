@@ -1,50 +1,139 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="hy">
 <head>
-  <meta charset="utf-8">
-  <title>Տեխնիկական սպասարկում</title>
-  <style>
-    body { 
-      text-align: center; 
-      padding: 150px; 
-      font: 20px Helvetica, sans-serif; 
-      color: #333; 
-      background-color: #f4f4f4;
-    }
-    article { 
-      display: block; 
-      text-align: left; 
-      width: 650px; 
-      margin: 0 auto; 
-      background: #fff; 
-      padding: 40px; 
-      border-radius: 5px; 
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    h1 { 
-      font-size: 40px; 
-      color: #d9534f; 
-      margin-top: 0;
-    }
-    p {
-      line-height: 1.6;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Կայքը գտնվում է տեխնիկական սպասարկման մեջ</title>
+    <style>
+        :root {
+            --am-red: #D32F2F;
+            --am-blue: #1976D2;
+            --am-orange: #F57C00;
+            --text-dark: #2C3E50;
+            --bg-light: #F9F9F9;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .maintenance-container {
+            background: #ffffff;
+            padding: 40px 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            max-width: 550px;
+            width: 100%;
+            border-top: 6px solid var(--am-red);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle Armenian Tricolor Accent Line at the bottom */
+        .maintenance-container::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(to right, var(--am-red) 33.3%, var(--am-blue) 33.3%, var(--am-blue) 66.6%, var(--am-orange) 66.6%);
+        }
+
+        /* SVG Eternity Sign Animation */
+        .eternity-icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 24px;
+            animation: rotateEternity 20s linear infinite;
+        }
+
+        @keyframes rotateEternity {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(-360deg); }
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 16px;
+            color: #1a1a1a;
+            font-weight: 600;
+        }
+
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #666;
+            margin-bottom: 24px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background-color: #FFF3E0;
+            color: var(--am-orange);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 24px;
+            border: 1px solid #FFE0B2;
+        }
+
+        .contact-info {
+            border-top: 1px solid #EEEEEE;
+            padding-top: 20px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .contact-info a {
+            color: var(--am-blue);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .contact-info a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-  <article>
-    <h1>Կայքը ժամանակավորապես անհասանելի է</h1>
-    <div>
-      <p>Այս պահին կայքում իրականացվում են տեխնիկական սպասարկման աշխատանքներ։ Խնդրում ենք այցելել մի փոքր ուշ։ Հայցում ենք ձեր ներողամտությունը պատճառված անհանգստության համար։</p>
-      <p>&mdash; <span id="site-name">Մեր թիմ</span></p>
-    </div>
-  </article>
 
-  <script type="text/javascript">
-    var host = window.location.hostname;
-    if (host) {
-      document.getElementById('site-name').innerHTML = host;
-    }
-  </script>
+    <div class="maintenance-container">
+        <!-- Armenian Eternity Sign SVG -->
+        <svg class="eternity-icon" viewBox="0 0 100 100" xmlns="http://w3.org">
+            <g fill="none" stroke="#1976D2" stroke-width="5" stroke-linecap="round">
+                <circle cx="50" cy="50" r="40" stroke="#D32F2F" stroke-dasharray="10 15" />
+                <path d="M50,10 C25,10 10,35 30,50 C50,65 50,35 70,50 C90,65 75,90 50,90" stroke="#F57C00" stroke-width="4"/>
+                <path d="M10,50 C10,25 35,10 50,30 C65,50 35,50 50,70 C65,90 90,75 90,50" stroke="#1976D2" stroke-width="4"/>
+            </g>
+        </svg>
+
+        <span class="status-badge">Ընթացիկ Աշխատանքներ</span>
+        
+        <h1>Կայքը թարմացվում է</h1>
+        
+        <p>Հարգելի այցելու, այս պահին մեր կայքում իրականացվում են տեխնիկական կարգավորման և բարելավման աշխատանքներ ձեզ ավելի լավ ծառայություն մատուցելու համար։ Հայցում ենք ձեր ներողամտությունը պատճառված անհանգստության համար։</p>
+        
+        <div class="contact-info">
+            Հարցերի դեպքում կարող եք գրել մեզ՝ 
+            <a href="mailto:info@example.am">info@example.am</a>
+        </div>
+    </div>
+
 </body>
 </html>
