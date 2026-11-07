@@ -14,7 +14,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
 /* =======================================
    SCHOOLDESK — Modern Clean Design
@@ -7146,7 +7145,7 @@ function showRoleQ(fromLogin){
   const r=$('md-reg');
   const roles=[['teacher','teach','Ուսուցիչ',GRAD[0]],['student','kid','Աշակերտ',GRAD[1]],['parent','parent','Ծնող',GRAD[2]]];
   r.innerHTML='<div class="mr-box"><button class="mr-x" onclick="mdCloseReg()" aria-label="Փակել">✕</button>'
-   +'<h2>Ո՞վ եք դուք</h2><p class="s">Ընտրեք ձեր դերը։ Դրանից հետո կլրացնեք տվյալները, էլ. փոստին կստանաք հաստատման հղում, և ակտիվացումից հետո անմիջապես կկարողանաք մուտք գործել։</p>'
+   +'<h2>Ո՞վ եք դուք</h2><p class="s">Ընտրեք ձեր դերը։ Դրանից հետո կլրացնեք տվյալները, կտեսնեք դրանք «Ակտիվացնել հաշիվը» էջում և ակտիվացումից հետո անմիջապես կկարողանաք մուտք գործել։</p>'
    +'<div class="mr-roles">'+roles.map(x=>'<button type="button" class="mr-role" onclick="mdPickRole(\''+x[0]+'\')"><span class="mp-ic" style="background:'+x[3]+'">'+svg(x[1])+'</span>'+x[2]+'</button>').join('')+'</div>'
    +'<div style="margin-top:16px;text-align:center"><button class="mr-link" onclick="mdHaveAccount()">Արդեն ունեմ հաշիվ՝ մուտք</button></div></div>';
   portalHide();r.classList.add('on');
@@ -7169,7 +7168,7 @@ window.mdPickRole=function(role){
     :'<div class="mr-fg"><label>Երեխայի դասարան</label><select id="mdr-cls" onchange="mdFillKid()">'+clsOptions('')+'</select></div><div class="mr-fg"><label>Երեխա (ընտրեք գրանցված աշակերտին)</label><select id="mdr-child"><option value="">Ընտրեք...</option></select></div><div class="mr-fg"><label>Երեխայի PIN <small>(4 թիվ, դուք եք սահմանում)</small></label><input id="mdr-pin" inputmode="numeric" maxlength="4" autocomplete="off"></div>';
   const r=$('md-reg');
   r.innerHTML='<div class="mr-box"><button class="mr-x" onclick="mdCloseReg()" aria-label="Փակել">✕</button>'
-   +'<h2>Գրանցում՝ '+ROLE_LBL[role]+'</h2><p class="s">Լրացրեք տվյալները։ Ձեր էլ. փոստին կուղարկվի հաստատման հղումով նամակ։ Հղումը բացելուց հետո կտեսնեք ձեր տվյալները և կակտիվացնեք հաշիվը։</p>'
+   +'<h2>Գրանցում՝ '+ROLE_LBL[role]+'</h2><p class="s">Լրացրեք տվյալները։ Դրանից հետո կտեսնեք ձեր տվյալները և մեկ սեղմումով կակտիվացնեք հաշիվը։</p>'
    +'<div class="mr-row"><div class="mr-fg"><label>Անուն</label><input id="mdr-fn" autocomplete="given-name"></div><div class="mr-fg"><label>Ազգանուն</label><input id="mdr-ln" autocomplete="family-name"></div></div>'
    +'<div class="mr-fg"><label>Էլեկտրոնային փոստ</label><input id="mdr-em" type="email" autocomplete="email"></div>'
    +extra
@@ -7192,11 +7191,8 @@ async function fresh(){
   return DB;
 }
 
-/* ---- Registration with a REAL e-mail (Firebase Authentication e-mail link) ----
-   1) the form is saved as a temporary pending record and Firebase sends the e-mail with a personal link
-   2) the link opens this site -> the «Ակտիվացնել հաշիվը» page (see md-land-js) verifies the link with Firebase
-   3) the person presses «Activate» -> the account is created ACTIVE (no admin step) -> login.
-   Nothing is created in the users list before the link is confirmed, so an unconfirmed address can never log in. */
+/* ---- Registration: form -> «Ակտիվացնել հաշիվը» page (see md-land-js) -> account is created ACTIVE (no admin step) -> login.
+   Nothing is stored before the person presses «Activate». */
 const MX={
  hy:{mailT:'Ստուգեք ձեր փոստը',mailS:'Նամակ՝ անձնական հղումով, ուղարկվել է <b>{e}</b> հասցեին։ Բացեք նամակը և սեղմեք հղումը՝ հաշիվն ակտիվացնելու համար։ Եթե նամակը չեք տեսնում, ստուգեք «Spam» թղթապանակը։',resend:'Նորից ուղարկել',sent:'Նամակը նորից ուղարկվեց։',back:'← Փոխել էլ. փոստը',close:'Փակել',
   eInvalid:'Էլեկտրոնային փոստը սխալ է։',eNet:'Ինտերնետ կապի խնդիր։ Փորձեք կրկին։',eMany:'Չափազանց շատ փորձեր։ Փորձեք մի փոքր ուշ։',eOff:'Էլ. փոստով գրանցումը դեռ միացված չէ Firebase-ում։ Դիմեք ադմինին։',eDomain:'Այս դոմենը թույլատրված չէ Firebase-ում (Authorized domains)։ Դիմեք ադմինին։',eGen:'Չհաջողվեց ուղարկել նամակը։ Փորձեք կրկին։',eTaken:'Այս էլ. փոստով հաշիվ արդեն կա։'},
@@ -7209,26 +7205,6 @@ const MX={
 };
 const X=k=>((MX[typeof _lang!=='undefined'?_lang:'hy']||MX.en)[k])||MX.en[k]||k;
 window.mdPk=function(e){return 'regp_'+String(e).toLowerCase().replace(/[^a-z0-9]/g,'_');};
-let regPend=null,_resendT=null;
-function mdAuthErr(e){
-  const c=(e&&e.code)||'';
-  if(c==='auth/invalid-email')return X('eInvalid');
-  if(c==='auth/too-many-requests'||c==='auth/quota-exceeded')return X('eMany');
-  if(c==='auth/network-request-failed')return X('eNet');
-  if(c==='auth/operation-not-allowed'||c==='auth/admin-restricted-operation')return X('eOff');
-  if(c==='auth/unauthorized-continue-uri'||c==='auth/invalid-continue-uri'||c==='auth/missing-continue-uri')return X('eDomain');
-  if(e&&e.message==='taken')return X('eTaken');
-  return X('eGen');
-}
-function mdAuth(){
-  if(!(window.firebase&&firebase.auth))throw {code:'auth/network-request-failed'};
-  const a=firebase.auth();try{a.languageCode=(typeof _lang!=='undefined'?_lang:'hy');}catch(e){}return a;
-}
-// sends the real e-mail (Firebase) whose link opens THIS page
-async function mdSendLink(em){
-  if(!/^https?:$/.test(location.protocol))throw {code:'auth/invalid-continue-uri'};
-  await mdAuth().sendSignInLinkToEmail(em,{url:location.origin+location.pathname,handleCodeInApp:true});
-}
 function mdTaken(D,em){
   return Object.keys(D.users||{}).some(k=>k.replace(/_t$|_s$/,'').toLowerCase()===em||String((D.users[k]||{}).login||'').toLowerCase()===em)||em==='admin'||!!(D.pending&&D.pending[em]);
 }
@@ -7251,45 +7227,14 @@ window.mdSubmitReq=async function(){
   try{
     await fresh();
     if(mdTaken(DB,em)){err(X('eTaken'));btn.disabled=false;return;}
-    const pend={email:em,pass:p1,first:fn,last:ln,role:role,cls:g('mdr-cls'),subj:g('mdr-subj'),kid:role==='parent'?g('mdr-child'):'',pin:role==='parent'?g('mdr-pin'):'',ts:Date.now()};
-    await bSet(mdPk(em),pend);                         // temporary pending record (NOT an account)
-    try{await mdSendLink(em);}                         // real e-mail
-    catch(e){try{await fsdb.collection(FS_COL).doc(mdPk(em)).delete();}catch(_){}throw e;}
-    try{localStorage.setItem('md_regemail',em);}catch(e){}
-    regPend={email:em};
-    mdShowCheck();
-  }catch(e){console.error(e);err(mdAuthErr(e));btn.disabled=false;}
-};
-function mdShowCheck(){
-  const r=$('md-reg');
-  r.innerHTML='<div class="mr-box"><button class="mr-x" onclick="mdCloseReg()" aria-label="'+E(X('close'))+'">✕</button>'
-   +'<div class="mr-done"><div class="big">📧</div><h2>'+E(X('mailT'))+'</h2>'
-   +'<p class="s">'+X('mailS').replace('{e}',E(regPend.email))+'</p></div>'
-   +'<div class="mr-err" id="mdr-err"></div>'
-   +'<button class="mr-main" id="mdc-resend" onclick="mdResendMail()" disabled>'+E(X('resend'))+'</button>'
-   +'<div style="margin-top:12px;text-align:center"><button class="mr-link" onclick="mdPickRole(regState.role)">'+E(X('back'))+'</button></div></div>';
-  mdResendCooldown(45);
-}
-function mdResendCooldown(n){
-  clearInterval(_resendT);
-  const b=$('mdc-resend');if(!b)return;
-  b.disabled=true;
-  _resendT=setInterval(()=>{
-    const bb=$('mdc-resend');if(!bb){clearInterval(_resendT);return;}
-    n--;
-    if(n<=0){clearInterval(_resendT);bb.disabled=false;bb.textContent=X('resend');}
-    else bb.textContent=X('resend')+' ('+n+')';
-  },1000);
-}
-window.mdResendMail=async function(){
-  if(!regPend)return;
-  const err=m=>{const e=$('mdr-err');if(e)e.textContent=m;};
-  err('');const b=$('mdc-resend');if(b)b.disabled=true;
-  try{await mdSendLink(regPend.email);err(X('sent'));mdResendCooldown(45);}
-  catch(e){console.error(e);err(mdAuthErr(e));mdResendCooldown(15);}
+    // nothing is created yet: the person sees their data on the «Activate account» page and confirms there
+    const pend={email:em,pass:p1,first:fn,last:ln,role:role,cls:g('mdr-cls'),subj:g('mdr-subj'),kid:role==='parent'?g('mdr-child'):'',pin:role==='parent'?g('mdr-pin'):''};
+    btn.disabled=false;closeReg();
+    window.mdStartActivation(pend);
+  }catch(e){console.error(e);err(X('eGen'));btn.disabled=false;}
 };
 try{Object.assign(FR_MAP,{
- 'Լրացրեք տվյալները։ Ձեր էլ. փոստին կուղարկվի հաստատման հղումով նամակ։ Հղումը բացելուց հետո կտեսնեք ձեր տվյալները և կակտիվացնեք հաշիվը։':'Remplissez vos données. Un e-mail avec un lien de confirmation sera envoyé. Après avoir ouvert le lien, vous verrez vos données et activerez votre compte.',
+ 'Լրացրեք տվյալները։ Դրանից հետո կտեսնեք ձեր տվյալները և մեկ սեղմումով կակտիվացնեք հաշիվը։':'Remplissez vos données. Vous les verrez ensuite et activerez votre compte en un clic.',
  'Գրանցվել':'S\'inscrire','Գրանցում՝':'Inscription :','Երեխա (ընտրեք գրանցված աշակերտին)':'Enfant (choisissez un élève inscrit)','Երեխայի PIN':'PIN de l\'enfant','(4 թիվ, դուք եք սահմանում)':'(4 chiffres, que vous définissez)'
 });TR_LANGS.fr=trBuild(FR_MAP);}catch(e){}
 
@@ -9957,7 +9902,7 @@ try{
 #splash-icon img{filter:drop-shadow(0 14px 26px rgba(0,47,166,.28))}
 #md-land,#md-act{font-family:'Inter','Noto Sans Armenian',system-ui,sans-serif;color:var(--txt)}
 #md-land{position:fixed;inset:0;z-index:4800;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--bg);display:none}
-#md-land.on{display:block;animation:ldFade .5s both}
+#md-land.on{display:block}#md-land.hold .ld-a,#md-land.hold .ld-mark img{animation-play-state:paused}
 @keyframes ldFade{from{opacity:0}to{opacity:1}}@keyframes ldUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
 @keyframes ldFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}@keyframes ldPop{from{opacity:0;transform:scale(.6) rotate(-6deg)}to{opacity:1;transform:none}}
 .ld-a{animation:ldUp .75s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--i,0)*90ms)}
@@ -10026,13 +9971,13 @@ const SECT={teacher:['journal','polls'],student:['diary','polls'],parent:['diary
 
 /* ---------- texts (hy / en / ru / fr) ---------- */
 const AX={
-hy:{title:'Ակտիվացնել հաշիվը',sub:'Ձեր էլ. փոստը հաստատվեց։ Ստուգեք տվյալները և ակտիվացրեք հաշիվը՝ համակարգ մուտք գործելու համար։',load:'Հաստատումը ստուգվում է...',first:'Անուն',last:'Ազգանուն',email:'Էլեկտրոնային փոստ',role:'Դեր',cls:'Դասարան',subj:'Առարկա',clss:'Դասարաններ',kid:'Երեխա',kcls:'Երեխայի դասարան',btn:'Ակտիվացնել հաշիվը',busy:'Ակտիվացվում է...',retry:'Փորձել կրկին',okT:'Ձեր հաշիվը հաջողությամբ ակտիվացված է 🎉',okS:'Դուք հաջողությամբ գրանցվեցիք։ Այժմ կարող եք մուտք գործել համակարգ։',login:'Մուտք գործել համակարգ',errT:'Ակտիվացումը չհաջողվեց',again:'Գրանցվել նորից',eLink:'Հղումը սխալ է, ժամկետանց է կամ արդեն օգտագործվել է։ Գրանցվեք նորից։',eNet:'Ստուգեք ինտերնետային կապը։',eGen:'Չհաջողվեց ակտիվացնել հաշիվը։ Փորձեք կրկին։',eTaken:'Այս էլ. փոստով հաշիվ արդեն կա։ Մուտք գործեք ձեր գաղտնաբառով։',ask:'Մուտքագրեք այն էլ. փոստը, որով գրանցվել եք՝',
+hy:{title:'Ակտիվացնել հաշիվը',sub:'Ստուգեք ձեր տվյալները և ակտիվացրեք հաշիվը՝ համակարգ մուտք գործելու համար։',load:'Հաստատումը ստուգվում է...',first:'Անուն',last:'Ազգանուն',email:'Էլեկտրոնային փոստ',role:'Դեր',cls:'Դասարան',subj:'Առարկա',clss:'Դասարաններ',kid:'Երեխա',kcls:'Երեխայի դասարան',btn:'Ակտիվացնել հաշիվը',busy:'Ակտիվացվում է...',retry:'Փորձել կրկին',okT:'Ձեր հաշիվը հաջողությամբ ակտիվացված է 🎉',okS:'Դուք հաջողությամբ գրանցվեցիք։ Այժմ կարող եք մուտք գործել համակարգ։',login:'Մուտք գործել համակարգ',errT:'Ակտիվացումը չհաջողվեց',again:'Գրանցվել նորից',eLink:'Հղումը սխալ է, ժամկետանց է կամ արդեն օգտագործվել է։ Գրանցվեք նորից։',eNet:'Ստուգեք ինտերնետային կապը։',eGen:'Չհաջողվեց ակտիվացնել հաշիվը։ Փորձեք կրկին։',eTaken:'Այս էլ. փոստով հաշիվ արդեն կա։ Մուտք գործեք ձեր գաղտնաբառով։',ask:'Մուտքագրեք այն էլ. փոստը, որով գրանցվել եք՝',
  roles:{teacher:'Ուսուցիչ',student:'Աշակերտ',parent:'Ծնող'}},
-en:{title:'Activate your account',sub:'Your e-mail is confirmed. Check your details and activate the account to sign in to the system.',load:'Verifying your confirmation...',first:'First name',last:'Last name',email:'E-mail',role:'Role',cls:'Class',subj:'Subject',clss:'Classes',kid:'Child',kcls:'Child\'s class',btn:'Activate account',busy:'Activating...',retry:'Try again',okT:'Your account has been activated 🎉',okS:'You have registered successfully. You can now sign in to the system.',login:'Sign in to the system',errT:'Activation failed',again:'Register again',eLink:'The link is invalid, expired or already used. Please register again.',eNet:'Check your internet connection.',eGen:'Could not activate the account. Please try again.',eTaken:'An account with this e-mail already exists. Sign in with your password.',ask:'Enter the e-mail you registered with:',
+en:{title:'Activate your account',sub:'Check your details and activate the account to sign in to the system.',load:'Verifying your confirmation...',first:'First name',last:'Last name',email:'E-mail',role:'Role',cls:'Class',subj:'Subject',clss:'Classes',kid:'Child',kcls:'Child\'s class',btn:'Activate account',busy:'Activating...',retry:'Try again',okT:'Your account has been activated 🎉',okS:'You have registered successfully. You can now sign in to the system.',login:'Sign in to the system',errT:'Activation failed',again:'Register again',eLink:'The link is invalid, expired or already used. Please register again.',eNet:'Check your internet connection.',eGen:'Could not activate the account. Please try again.',eTaken:'An account with this e-mail already exists. Sign in with your password.',ask:'Enter the e-mail you registered with:',
  roles:{teacher:'Teacher',student:'Student',parent:'Parent'}},
-ru:{title:'Активировать аккаунт',sub:'Ваш e-mail подтверждён. Проверьте данные и активируйте аккаунт, чтобы войти в систему.',load:'Проверяем подтверждение...',first:'Имя',last:'Фамилия',email:'Электронная почта',role:'Роль',cls:'Класс',subj:'Предмет',clss:'Классы',kid:'Ребёнок',kcls:'Класс ребёнка',btn:'Активировать аккаунт',busy:'Активация...',retry:'Повторить',okT:'Ваш аккаунт успешно активирован 🎉',okS:'Вы успешно зарегистрировались. Теперь можно войти в систему.',login:'Войти в систему',errT:'Не удалось активировать',again:'Зарегистрироваться снова',eLink:'Ссылка недействительна, устарела или уже использована. Зарегистрируйтесь снова.',eNet:'Проверьте подключение к интернету.',eGen:'Не удалось активировать аккаунт. Попробуйте ещё раз.',eTaken:'Аккаунт с этим e-mail уже существует. Войдите с вашим паролем.',ask:'Введите e-mail, с которым вы регистрировались:',
+ru:{title:'Активировать аккаунт',sub:'Проверьте свои данные и активируйте аккаунт, чтобы войти в систему.',load:'Проверяем подтверждение...',first:'Имя',last:'Фамилия',email:'Электронная почта',role:'Роль',cls:'Класс',subj:'Предмет',clss:'Классы',kid:'Ребёнок',kcls:'Класс ребёнка',btn:'Активировать аккаунт',busy:'Активация...',retry:'Повторить',okT:'Ваш аккаунт успешно активирован 🎉',okS:'Вы успешно зарегистрировались. Теперь можно войти в систему.',login:'Войти в систему',errT:'Не удалось активировать',again:'Зарегистрироваться снова',eLink:'Ссылка недействительна, устарела или уже использована. Зарегистрируйтесь снова.',eNet:'Проверьте подключение к интернету.',eGen:'Не удалось активировать аккаунт. Попробуйте ещё раз.',eTaken:'Аккаунт с этим e-mail уже существует. Войдите с вашим паролем.',ask:'Введите e-mail, с которым вы регистрировались:',
  roles:{teacher:'Учитель',student:'Ученик',parent:'Родитель'}},
-fr:{title:'Activer le compte',sub:'Votre e-mail est confirmé. Vérifiez vos données et activez le compte pour accéder au système.',load:'Vérification en cours...',first:'Prénom',last:'Nom',email:'E-mail',role:'Rôle',cls:'Classe',subj:'Matière',clss:'Classes',kid:'Enfant',kcls:'Classe de l\'enfant',btn:'Activer le compte',busy:'Activation...',retry:'Réessayer',okT:'Votre compte a été activé avec succès 🎉',okS:'Vous êtes inscrit avec succès. Vous pouvez maintenant vous connecter.',login:'Se connecter au système',errT:'Échec de l\'activation',again:'S\'inscrire à nouveau',eLink:'Le lien est invalide, expiré ou déjà utilisé. Inscrivez-vous à nouveau.',eNet:'Vérifiez votre connexion internet.',eGen:'Impossible d\'activer le compte. Réessayez.',eTaken:'Un compte avec cet e-mail existe déjà. Connectez-vous avec votre mot de passe.',ask:'Saisissez l\'e-mail avec lequel vous vous êtes inscrit :',
+fr:{title:'Activer le compte',sub:'Vérifiez vos données et activez le compte pour accéder au système.',load:'Vérification en cours...',first:'Prénom',last:'Nom',email:'E-mail',role:'Rôle',cls:'Classe',subj:'Matière',clss:'Classes',kid:'Enfant',kcls:'Classe de l\'enfant',btn:'Activer le compte',busy:'Activation...',retry:'Réessayer',okT:'Votre compte a été activé avec succès 🎉',okS:'Vous êtes inscrit avec succès. Vous pouvez maintenant vous connecter.',login:'Se connecter au système',errT:'Échec de l\'activation',again:'S\'inscrire à nouveau',eLink:'Le lien est invalide, expiré ou déjà utilisé. Inscrivez-vous à nouveau.',eNet:'Vérifiez votre connexion internet.',eGen:'Impossible d\'activer le compte. Réessayez.',eTaken:'Un compte avec cet e-mail existe déjà. Connectez-vous avec votre mot de passe.',ask:'Saisissez l\'e-mail avec lequel vous vous êtes inscrit :',
  roles:{teacher:'Enseignant',student:'Élève',parent:'Parent'}}};
 const A=()=>AX[lg()]||AX.en;
 
@@ -10064,22 +10009,9 @@ function page(k,msg){
   a.innerHTML='<div class="ac-box">'+h+b+'</div>';
 }
 window.mdActClose=function(reg){$('md-act').classList.remove('on');view=['none'];if(!CU){const aw=$('aw');if(aw)aw.classList.remove('h');}if(reg&&window.mdShowRoleQ)mdShowRoleQ(false);};
-// Opened from the e-mail link: Firebase verifies the link (real verification), then the person confirms activation.
-window.mdActivate=async function(){
-  const clean=()=>{try{history.replaceState(null,'',location.href.split(/[?#]/)[0]);}catch(e){}};
-  const href=location.href;
-  page('load');let em0='';try{em0=localStorage.getItem('md_regemail')||'';}catch(e){}
-  if(!em0)em0=(prompt(A().ask)||'').trim().toLowerCase();
-  try{
-    const c=await firebase.auth().signInWithEmailLink(em0,href);
-    const em=String((c.user&&c.user.email)||em0).toLowerCase();
-    let p=null;try{p=await bGet(pk(em));}finally{try{await firebase.auth().signOut();}catch(e){}}
-    clean();
-    if(!p||String(p.email).toLowerCase()!==em||!p.pass)throw{code:'auth/invalid-action-code'};
-    P=p;page('card');
-  }catch(e){clean();console.error(e);page('err',fe(e));}
-};
-// Creates the ACTIVE account. Only reached after Firebase confirmed the e-mail link; idempotent on double clicks.
+// Called by the registration form: shows the person's data and waits for the «Activate account» click
+window.mdStartActivation=function(p){P=p;busy=false;try{const r=$('md-reg');if(r)r.classList.remove('on');}catch(e){}page('card');};
+// Creates the ACTIVE account (idempotent on double clicks).
 window.mdDoAct=async function(){
   if(busy||!P)return;busy=true;
   const b=$('ac-go');if(b){b.disabled=true;b.innerHTML='<span class="ac-sp"></span>'+E(A().busy);}
@@ -10087,21 +10019,19 @@ window.mdDoAct=async function(){
     const s=await bGet(BS);if(s&&s.users){DB=s;PE=s.pending||{};}
     DB.users=DB.users||{};
     const k=String(P.email).toLowerCase(),ex=DB.users[k];
-    if(ex&&ex.emailVerified!==true)throw new Error('taken');   // an older account with this address: never overwrite it
+    if(ex)throw new Error('taken');   // an account with this address already exists: never overwrite it
     if(!ex){
       const name=(P.first+' '+P.last).trim();let u;
       if(P.role==='student'){DB.classes=DB.classes||{};DB.classes[P.cls]=DB.classes[P.cls]||[];if(DB.classes[P.cls].indexOf(name)===-1)DB.classes[P.cls].push(name);u={role:'student',name:name,pass:P.pass,class:P.cls};}
       else if(P.role==='teacher')u={role:'teacher',name:name,pass:P.pass,subject:P.subj,classes:(P.cls||'').split(',').map(x=>x.trim()).filter(Boolean),homeroom:null,phone:''};
       else if(P.role==='parent')u={role:'parent',name:name,pass:P.pass,children:[{name:P.kid,cls:P.cls,pin:P.pin}]};
       else throw new Error('role');
-      u.login=k;u.email=k;u.emailVerified=true;u.access={enabled:true,sections:SECT[P.role].slice()};
+      u.login=k;u.email=k;u.activated=true;u.access={enabled:true,sections:SECT[P.role].slice()};
       DB.users[k]=u;
       const reqs=DB.requests=DB.requests||{},id='rq'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
       reqs[id]={id:id,first:P.first,last:P.last,email:k,role:P.role,ts:Date.now(),status:'approved',auto:true,decidedAt:Date.now(),grant:SECT[P.role].slice()};
       await svSchool();                                    // the account is active only after this write succeeded
     }
-    try{await fsdb.collection(FS_COL).doc(pk(k)).delete();}catch(e){}
-    try{localStorage.removeItem('md_regemail');}catch(e){}
     busy=false;page('ok');
   }catch(e){busy=false;console.error(e);page('card',fe(e));}
 };
@@ -10146,14 +10076,11 @@ window.mdLandReg=function(){close();if(window.mdShowRoleQ)mdShowRoleQ(false);};
 window.mdLandLang=function(l){setLang(l);};
 const _sl=window.setLang;window.setLang=function(){const r=_sl.apply(this,arguments);try{if($('md-land').classList.contains('on'))paint();if($('md-act').classList.contains('on')&&view[0]!=='none')page(view[0],view[1]);}catch(e){}return r;};
 const _sa=window.startApp;window.startApp=function(){close();return _sa.apply(this,arguments);};
-const isLink=()=>{try{return !!(window.firebase&&firebase.auth&&firebase.auth().isSignInWithEmailLink(location.href));}catch(e){return false;}};
-const _href=location.href;
-(function w(){
-  if($('splash'))return setTimeout(w,250);
-  if(isLink()||/[?&]oobCode=/.test(_href)){window.mdActivate();return;}
-  if(typeof CU!=='undefined'&&CU)return;
-  open();
-})();
+const saved=(()=>{try{const x=JSON.parse(localStorage.getItem('md_session')||'null');return !!(x&&x.ts&&(Date.now()-x.ts)<7*24*60*60*1000);}catch(e){return false;}})();
+if(!saved){
+  const l=$('md-land');l.classList.add('hold');open();       // visible straight away, hidden behind the splash
+  (function w(){if($('splash'))return setTimeout(w,80);l.classList.remove('hold');})();
+}
 })();
 </script>
 
