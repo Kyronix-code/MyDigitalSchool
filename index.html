@@ -7217,6 +7217,7 @@ async function fresh(){
 function authErr(e){
   const c=(e&&e.code)||'';
   const M={
+    'auth/configuration-not-found':'Firebase-ում Authentication-ը դեռ չի միացված այս նախագծի համար։ Ադմինը պետք է Console → Authentication → Get started սեղմի և միացնի Phone մեթոդը։',
     'auth/invalid-phone-number':'Հեռախոսահամարը սխալ է։',
     'auth/missing-phone-number':'Մուտքագրեք հեռախոսահամարը։',
     'auth/too-many-requests':'Չափից շատ փորձեր։ Փորձեք որոշ ժամանակ անց։',
