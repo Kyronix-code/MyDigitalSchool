@@ -7142,7 +7142,7 @@ function closeReg(){const r=$('md-reg');if(r)r.classList.remove('on');}
 window.mdCloseReg=function(){closeReg();if(!CU){const aw=$('aw');if(aw)aw.classList.remove('h');}};
 function showRoleQ(fromLogin){
   const r=$('md-reg');
-  const roles=[['teacher','teach','Ուսուցիչ',GRAD[0]],['student','kid','Աշակերտ',GRAD[1]],['parent','parent','Ծնող',GRAD[2]]];
+  const roles=[['teacher','teach','Ուսուցիչ',GRAD[0]],['student','kid','Աշակերտ / Ծնող',GRAD[1]]];
   r.innerHTML='<div class="mr-box"><button class="mr-x" onclick="mdCloseReg()" aria-label="Փակել">✕</button>'
    +'<h2>Ո՞վ եք դուք</h2><p class="s">Ընտրեք ձեր դերը։ Դրանից հետո կլրացնեք տվյալները, կտեսնեք դրանք «Ակտիվացնել հաշիվը» էջում և ակտիվացումից հետո անմիջապես կկարողանաք մուտք գործել։</p>'
    +'<div class="mr-roles">'+roles.map(x=>'<button type="button" class="mr-role" onclick="mdPickRole(\''+x[0]+'\')"><span class="mp-ic" style="background:'+x[3]+'">'+svg(x[1])+'</span>'+x[2]+'</button>').join('')+'</div>'
@@ -10161,7 +10161,7 @@ function regForm(msg){
   cap={a:1+Math.floor(Math.random()*9),b:1+Math.floor(Math.random()*9)};
   const r=$('md-reg');
   r.innerHTML='<div class="mr-box"><button class="mr-x" onclick="mdCloseReg()" aria-label="Փակել">✕</button>'
-   +(regRole==='parent'?'<h2>Ծնողի գրանցում</h2><p class="s">Գրանցվելու համար բավական է էլ. փոստը և գաղտնաբառը։ Գրանցվելուց հետո կնույնականացվեք դպրոցի տրամադրած ծնողի կոդով։</p>':'<h2>Աշակերտի գրանցում</h2><p class="s">Գրանցվելու համար բավական է էլ. փոստը և գաղտնաբառը։ Դպրոցը կկապեք գրանցվելուց հետո՝ դպրոցի և ձեր անհատական կոդով։</p>')
+   +(false?'<h2>Ծնողի գրանցում</h2><p class="s">Գրանցվելու համար բավական է էլ. փոստը և գաղտնաբառը։ Գրանցվելուց հետո կնույնականացվեք դպրոցի տրամադրած ծնողի կոդով։</p>':'<h2>Աշակերտի և ծնողի գրանցում</h2><p class="s">Գրանցվելու համար բավական է էլ. փոստը և գաղտնաբառը։ Աշակերտը հետո կապակցվում է դպրոցի և անհատական կոդով, ծնողը՝ «Նույնականացվել» կոճակով։</p>')
    +'<div class="mr-fg"><label>Էլեկտրոնային փոստ</label><input id="se-em" type="email" autocomplete="email"></div>'
    +'<div class="mr-fg"><label>Գաղտնաբառ <small>(մեծատառ, փոքրատառ, թիվ, նշան, առնվազն 8 նիշ)</small></label><input id="se-p1" type="password" autocomplete="new-password"></div>'
    +'<div class="mr-fg"><label>Կրկնել գաղտնաբառը</label><input id="se-p2" type="password" autocomplete="new-password"></div>'
@@ -10172,7 +10172,7 @@ function regForm(msg){
   try{if(typeof trDOM==='function')trDOM(r);}catch(e){}
 }
 window.mdPickRole=function(role){
-  if(role==='student'||role==='parent'){regRole=role;regForm();return;}
+  if(role==='student'||role==='parent'){regRole='student';regForm();return;}
   return _pick.apply(this,arguments);
 };
 window.mdStuReg=async function(){
@@ -10277,11 +10277,11 @@ window.showPg=function(id){
 /* ---------- link page (student) ---------- */
 function drawLk(){
   const el=$('lk');if(!el)return;
-  el.innerHTML='<div class="pt">🔗 Ավելացնել դպրոց</div><div class="ps">Կապակցեք ձեր հաշիվը դպրոցի տվյալների հետ՝ օրագիրը բացելու համար</div>'
-   +'<div class="cd" style="padding:28px;text-align:center;max-width:560px"><div style="font-size:44px;margin-bottom:8px">🏫</div>'
-   +'<div style="font-weight:800;font-size:18px;margin-bottom:6px">Դուք դեռ կապակցված չեք դպրոցին</div>'
-   +'<div style="color:var(--txt2);font-size:13px;line-height:1.6;margin-bottom:18px">Պետք կլինեն՝ դպրոցի կոդը և ձեր անհատական կոդը, որոնք տրամադրում է դպրոցը։</div>'
-   +'<button class="lk-big" onclick="mdLinkOpen()">＋ Ավելացնել դպրոց</button></div>';
+  el.innerHTML='<div class="pt">🔗 Նույնականացում</div><div class="ps">Կապակցեք ձեր հաշիվը դպրոցի տվյալների հետ՝ օրագիրը բացելու համար</div>'
+   +'<div class="cd" style="padding:28px;text-align:center;max-width:560px"><div style="font-size:44px;margin-bottom:8px">🪪</div>'
+   +'<div style="font-weight:800;font-size:18px;margin-bottom:6px">Դուք դեռ նույնականացված չեք</div>'
+   +'<div style="color:var(--txt2);font-size:13px;line-height:1.6;margin-bottom:18px"><b>Աշակերտ եք՝</b> պետք կլինեն դպրոցի կոդը և ձեր անհատական կոդը։<br><b>Ծնող եք՝</b> պետք կլինի ադմինիստրացիայի տրամադրած ծնողի անհատական կոդը։</div>'
+   +'<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="lk-big" onclick="mdPkOpen()">Նույնականացվել</button><button class="lk-big" style="background:var(--surf2);color:var(--txt);box-shadow:none;border:1px solid var(--bdr);animation:none" onclick="mdLinkOpen()">＋ Ավելացնել դպրոց (աշակերտ)</button></div></div>';
 }
 
 /* ---------- link wizard ---------- */
@@ -10390,7 +10390,7 @@ function portalBanner(){
   if(!isUnl()){if(has)has.remove();return;}
   if(has)return;
   const d=document.createElement('div');d.id='lk-banner';
-  d.innerHTML='<div><b>Կապակցեք ձեր դպրոցը</b><span>Օրագիրը կբացվի դպրոցի և անհատական կոդը մուտքագրելուց հետո։</span></div><button class="lk-big" onclick="mdLinkOpen()">＋ Ավելացնել դպրոց</button>';
+  d.innerHTML='<div><b>Դուք դեռ նույնականացված չեք</b><span>Աշակերտը՝ դպրոցի և անհատական կոդով, ծնողը՝ ծնողի կոդով։</span></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="lk-big" onclick="mdPkOpen()">Նույնականացվել</button><button class="lk-big" style="background:var(--surf2);color:var(--txt);box-shadow:none;border:1px solid var(--bdr);animation:none" onclick="mdLinkOpen()">＋ Ավելացնել դպրոց</button></div>';
   const h=w.querySelector('.mp-sub');if(h)h.insertAdjacentElement('afterend',d);else w.prepend(d);
 }
 (function(){const p=$('md-portal');if(!p)return;let busy=false;new MutationObserver(()=>{if(busy)return;busy=true;setTimeout(()=>{busy=false;try{portalBanner();}catch(e){}},0);}).observe(p,{childList:true,subtree:false});})();
@@ -10556,7 +10556,7 @@ function pkDraw(){
   const logo=(document.querySelector('#aw img')||{}).src||'';
   let b;
   if(PK.done){
-    b='<div class="ac-ok"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><h2>Դուք նույնականացվեցիք</h2><p class="ac-s"><b>'+E(PK.name)+'</b><br>Այժմ կարող եք ավելացնել երեխային՝ նրա անհատական կոդով և ծննդյան ամսաթվով։</p><button class="ac-btn g" onclick="mdPkFinish()">Բացել օրագիրը</button>';
+    b='<div class="ac-ok"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><h2>Դուք նույնականացվեցիք</h2><p class="ac-s"><b>'+E(PK.name)+'</b><br>Այժմ կարող եք ավելացնել աշակերտին՝ նրա անհատական կոդով։</p><button class="ac-btn g" onclick="mdPkFinish()">Բացել օրագիրը</button>';
   }else{
     b='<h2>Մուտքագրեք ծնողի կոդը</h2><p class="ac-s">Կոդը տրամադրում է դպրոցի ադմինիստրացիան։</p>'
      +'<input id="pk-in" class="lk-in" placeholder="XXXX-XXXX" autocomplete="off" autocapitalize="characters" onkeydown="if(event.key===\'Enter\')mdPkConfirm()">'
@@ -10583,9 +10583,9 @@ window.mdPkConfirm=async function(){
     claimed=true;okReset();
     const s=await bGet(BS);if(s&&s.users){DB=s;PE=s.pending||{};}
     const u=(DB.users||{})[CU.username];if(!u)throw new Error('user');
-    u.name=name||u.name;u.unlinked=false;u.identified=true;u.parentCode=v;u.children=u.children||[];u.identifiedAt=Date.now();
+    u.role='parent';u.name=name||u.name;u.unlinked=false;u.identified=true;u.parentCode=v;u.children=u.children||[];u.identifiedAt=Date.now();
     await svSchool();
-    CU.name=u.name;CU.unlinked=false;CU.identified=true;CU.parentCode=v;CU.children=u.children;
+    CU.role='parent';CU.name=u.name;CU.unlinked=false;CU.identified=true;CU.parentCode=v;CU.children=u.children;
     try{const sb=$('sbn');if(sb)sb.textContent=CU.name;}catch(e){}
     PK.name=CU.name;PK.done=true;
   }catch(e){
@@ -10614,7 +10614,7 @@ portalBanner=function(){
   if(!isUnP()){if(has)has.remove();return;}
   if(has)return;
   const d=document.createElement('div');d.id='pk-banner';d.setAttribute('style','display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:linear-gradient(135deg,var(--acc-lt),var(--surf));border:1px solid var(--acc);border-radius:20px;padding:18px 22px;margin:0 0 22px');
-  d.innerHTML='<div><b style="display:block;font-size:16px">Դուք դեռ նույնականացված չեք</b><span style="color:var(--txt2);font-size:13px">Օրագիրը կբացվի ծնողի կոդը մուտքագրելուց հետո։</span></div><button class="lk-big" onclick="mdPkGo()">Նույնականացվել</button>';
+  d.innerHTML='<div><b style="display:block;font-size:16px">Դուք դեռ նույնականացված չեք</b><span style="color:var(--txt2);font-size:13px">Օրագիրը կբացվի նույնականացումից հետո։</span></div><button class="lk-big" onclick="mdPkGo()">Նույնականացվել</button>';
   const h=w.querySelector('.mp-sub');if(h)h.insertAdjacentElement('afterend',d);else w.prepend(d);
 };
 window.mdPkGo=function(){
@@ -10628,11 +10628,11 @@ function dobNorm(x){x=String(x||'').trim();let m=/^(\d{4})-(\d{2})-(\d{2})$/.exe
 const _bfs=window.buildFamSelect;
 window.buildFamSelect=function(){
   let h=_bfs.apply(this,arguments);
-  if(!(CU&&CU.role==='parent'&&CU.selfReg&&CU.identified))return h;
-  const btn='<div style="margin:0 0 16px"><button class="lk-big" style="padding:12px 22px;font-size:15px;animation:none" onclick="mdChOpen()">＋ Ավելացնել երեխա</button></div>';
+  if(!(CU&&CU.role==='parent'&&CU.identified))return h;
+  const btn='<div style="margin:0 0 16px"><button class="lk-big" style="padding:12px 22px;font-size:15px;animation:none" onclick="mdChOpen()">＋ Ավելացնել աշակերտ</button></div>';
   h=h.replace(/<span class="badge ba">🔒 PIN required<\/span>/g,'<span class="badge bp">✓ Հաստատված</span>');
   h=h.replace('<div class="ps">Select a child to view their school information</div>','<div class="ps">Select a child to view their school information</div>'+btn);
-  if(!(CU.children||[]).length)h=h.replace('</div></div>','<div class="cd" style="grid-column:1/-1;padding:28px;text-align:center;color:var(--txt2)"><div style="font-size:38px;margin-bottom:6px">👶</div>Դեռ ավելացված երեխա չկա։ Սեղմեք «＋ Ավելացնել երեխա»՝ երեխայի անհատական կոդով և ծննդյան ամսաթվով։</div></div></div>');
+  if(!(CU.children||[]).length)h=h.replace('</div></div>','<div class="cd" style="grid-column:1/-1;padding:28px;text-align:center;color:var(--txt2)"><div style="font-size:38px;margin-bottom:6px">👶</div>Դեռ ավելացված աշակերտ չկա։ Սեղմեք «＋ Ավելացնել աշակերտ»՝ երեխայի անհատական կոդով։</div></div></div>');
   return h;
 };
 function chDraw(){
@@ -10640,33 +10640,29 @@ function chDraw(){
   o.classList.add('on');
   const logo=(document.querySelector('#aw img')||{}).src||'';
   o.innerHTML='<div class="ac-box"><button class="lk-x" onclick="mdLinkClose()" aria-label="Փակել">✕</button><div class="ac-logo"><img alt="" src="'+E(logo)+'"><span>MyDigitalSchool</span></div>'
-   +'<h2>Ավելացնել երեխա</h2><p class="ac-s">Մուտքագրեք երեխայի անհատական կոդը (այն տալիս է դպրոցը) և նրա ծննդյան ամսաթիվը։</p>'
-   +'<input id="ch-code" class="lk-in" placeholder="XXXX-XXXX" autocomplete="off" autocapitalize="characters">'
-   +'<label style="display:block;text-align:left;font-size:12px;font-weight:700;color:var(--txt2);margin:0 0 6px">Երեխայի ծննդյան ամսաթիվ</label>'
-   +'<input id="ch-dob" type="date" class="lk-in" style="font-size:17px;letter-spacing:0" onkeydown="if(event.key===\'Enter\')mdChAdd()">'
+   +'<h2>Ավելացնել աշակերտ</h2><p class="ac-s">Մուտքագրեք երեխայի անհատական կոդը (այն տալիս է դպրոցը)։</p>'
+   +'<input id="ch-code" class="lk-in" placeholder="XXXX-XXXX" autocomplete="off" autocapitalize="characters" onkeydown="if(event.key===\'Enter\')mdChAdd()">'
    +(CH.err?'<div class="ac-err" role="alert">'+E(CH.err)+'</div>':'')
-   +'<button class="ac-btn g" onclick="mdChAdd()"'+(CH.busy?' disabled':'')+'>Գտնել և ավելացնել երեխային</button></div>';
+   +'<button class="ac-btn g" onclick="mdChAdd()"'+(CH.busy?' disabled':'')+'>Գտնել և ավելացնել</button></div>';
   const i=$('ch-code');if(i)setTimeout(()=>i.focus(),30);
 }
 window.mdChOpen=function(){CH.err='';CH.busy=false;chDraw();};
 window.mdChAdd=async function(){
   if(CH.busy)return;
   const m=locked();if(m){CH.err='Չափից շատ սխալ փորձեր։ Փորձեք '+m+' րոպե անց։';chDraw();return;}
-  const code=norm(($('ch-code')||{}).value),dob=dobNorm(($('ch-dob')||{}).value);
-  if(code.length<4||!dob){CH.err='Լրացրեք և՛ կոդը, և՛ ծննդյան ամսաթիվը։';chDraw();return;}
+  const code=norm(($('ch-code')||{}).value);
+  if(code.length<4){CH.err='Մուտքագրեք երեխայի կոդը։';chDraw();return;}
   CH.busy=true;CH.err='';
   try{
     const d=await readCodes();
     const s=await bGet(BS);if(s&&s.users){DB=s;PE=s.pending||{};}
     const e=d.students[code];
-    let rec=null;
-    if(e)rec=Object.values(DB.users||{}).find(u=>u&&u.role==='student'&&u.name===e.name&&u.class===e.cls&&dobNorm(u.dob));
-    if(e&&!rec){CH.err='Այս աշակերտի ծննդյան ամսաթիվը դպրոցում գրանցված չէ։ Դիմեք դպրոցի ադմինին։';}
-    else if(!e||dobNorm(rec.dob)!==dob){fail();CH.err='Կոդը և ծննդյան ամսաթիվը չեն համապատասխանում որևէ աշակերտի։';}
+    const u=(DB.users||{})[CU.username];
+    if(!u||u.role!=='parent'||!u.identified)throw new Error('user');
+    if(!e){fail();CH.err='Այս կոդով աշակերտ չի գտնվել։ Ստուգեք կոդը։';}
     else{
-      const u=(DB.users||{})[CU.username];if(!u)throw new Error('user');
       u.children=u.children||[];
-      if(u.children.some(c=>c.name===e.name&&(c.cls||c.class)===e.cls)){CH.err='Այս երեխան արդեն ավելացված է։';}
+      if(u.children.some(c=>c.name===e.name&&(c.cls||c.class)===e.cls)){CH.err='Այս աշակերտն արդեն ավելացված է։';}
       else{
         okReset();
         u.children.push({name:e.name,cls:e.cls,verified:true,code:code,addedAt:Date.now()});
@@ -10741,7 +10737,7 @@ window.mdPcUnlink=async function(c){
     await txCodes(d=>{const e=d.parents[c];if(e)e.linked=null;});
     const s=await bGet(BS);if(s&&s.users){DB=s;PE=s.pending||{};}
     const u=(DB.users||{})[user];
-    if(u&&u.role==='parent'&&norm(u.parentCode)===norm(c)){u.unlinked=true;u.identified=false;u.children=[];u.name=String(u.email||user).split('@')[0];delete u.parentCode;await svSchool();}
+    if(u&&u.role==='parent'&&norm(u.parentCode)===norm(c)){u.role='student';u.class='';delete u.children;u.unlinked=true;u.identified=false;u.children=[];u.name=String(u.email||user).split('@')[0];delete u.parentCode;await svSchool();}
     await pcRefresh();pmsg('Հաշիվն անջատվեց, կոդը նորից ազատ է։');
   }catch(e){console.error(e);pmsg('Չհաջողվեց։',1);}
 };
