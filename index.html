@@ -1,4 +1,3 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 
 <!DOCTYPE html>
 <html lang="hy">
@@ -8751,9 +8750,10 @@ function startAuto(){
 }
 function updBar(){const b=$('sl-pb-p');if(b&&P)b.textContent=P.paused?'▶':'⏸';const n=$('sl-pb-n');if(n&&P)n.classList.toggle('on',P.notes);const l=$('sl-pb-l');if(l&&P)l.classList.toggle('on',P.laser);}
 function paintP(dir){
-  const b=$('sl-pbox');if(!b||!P)return;const sl=P.deck.slides[P.i],tr=P.deck.trans||'fade';
+  const b=$('sl-pbox');if(!b||!P)return;const sl=P.deck.slides[P.i],tr=sl.tr||P.deck.trans||'fade';
   b.className=tr==='none'?'':'tr-'+tr;b.style.setProperty('--d',dir<0?-1:1);
   b.innerHTML=box(sl,false,{deck:P.deck,n:P.i+1});hydrate(b);
+  try{if(window.MD_ANIM)MD_ANIM.apply(b,sl);}catch(e){}
   $('sl-pc').textContent=(P.i+1)+' / '+P.deck.slides.length;
   const pg=$('sl-prog');if(pg)pg.style.width=((P.i+1)/P.deck.slides.length*100)+'%';
   const nt=$('sl-pnotes');if(nt){if(P.notes&&sl.notes){nt.className='sl-notes';nt.textContent=sl.notes;}else{nt.className='';nt.textContent='';}}
@@ -8801,8 +8801,9 @@ window.slPresentCur=async function(){histCommit();await slSave(false);openPresen
 window.slExportPdf=async function(){
   if(!S.deck)return;await slSave(false);const d=S.deck;await allImgs(d);
   const css=document.getElementById('md-slides-css').textContent;
+  const PG=({'169':[297,167],'43':[280,210],'a4':[297,210],'letter':[279,216]})[(window.MD_XO&&MD_XO.page)||'169']||[297,167];
   const pages=d.slides.map((sl,i)=>'<section class="pp"><div class="sl-box">'+slideInner(sl,false,{deck:d,n:i+1})+'</div></section>').join('');
-  const html='<!doctype html><html><head><meta charset="utf-8"><title>'+esc(d.title)+'</title><style>'+css+'@page{size:297mm 167mm;margin:0}html,body{margin:0;padding:0;background:#fff}.pp{width:297mm;height:167mm;page-break-after:always;break-after:page;overflow:hidden}.pp .sl-box{width:297mm;height:167mm;border-radius:0}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}</style></head><body>'+pages+'</body></html>';
+  const html='<!doctype html><html><head><meta charset="utf-8"><title>'+esc(d.title)+'</title><style>'+css+'@page{size:'+PG[0]+'mm '+PG[1]+'mm;margin:0}html,body{margin:0;padding:0;background:#fff}.pp{width:'+PG[0]+'mm;height:'+PG[1]+'mm;page-break-after:always;break-after:page;overflow:hidden;display:flex;align-items:center;justify-content:center}.pp .sl-box{width:'+PG[0]+'mm;height:'+(PG[0]*9/16)+'mm;border-radius:0;flex:none}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}</style></head><body>'+pages+'</body></html>';
   const fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';fr.setAttribute('data-sl-print','1');document.body.appendChild(fr);
   fr.srcdoc=html;
   fr.onload=()=>{setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print();}catch(e){alert('Տպելու պատուհանը չհաջողվեց բացել։');}setTimeout(()=>fr.remove(),60000);},400);};
@@ -9069,6 +9070,46 @@ try{
     const pg=$('slides');if(CU&&pg&&pg.classList.contains('on')&&!$('sl-ed').classList.contains('on')&&!(document.activeElement&&document.activeElement.id==='sl-q'))renderList(false);
   },e=>console.warn('slides listener',e&&e.message));
 }catch(e){console.warn(e);}
+
+/* ---------- API for the Studio sections (templates, projects, quiz, export, community...) ---------- */
+window.MD_SL={
+  uid:uid,clone:clone,THEMES:THEMES,SUBJECTS:SUBJECTS,ART:ART,ARTIDS:ARTIDS,TRANS:TRANS,FONTS:FONTS,
+  blankSlide:blankSlide,applyTheme:applyTheme,buildStarter:buildStarter,slideInner:slideInner,box:box,hydrate:hydrate,autoTc:autoTc,
+  getImg:getImg,imgs:()=>S.imgs,
+  putImg:async function(file,max){const r=await resizeImage(file,max||1400);const id=uid();await bSet(IK(id),{data:r.data,owner:me(),ts:Date.now()});S.imgs[id]=r.data;return{id:id,w:r.w,h:r.h,data:r.data};},
+  putImgData:async function(data){const id=uid();await bSet(IK(id),{data:data,owner:me(),ts:Date.now()});S.imgs[id]=data;return id;},
+  idx:()=>S.idx,loadIdx:loadIdx,visible:visibleDecks,canEdit:canEdit,canCreate:canCreate,canSee:canSee,
+  getDeck:async function(id){const d=await bGet(DK(id));if(d&&d.slides)d.slides.forEach(s=>{if(!s.els)s.els=[];});return d;},
+  saveDeck:saveDeckDoc,
+  /* open a brand-new deck (from a template / AI plan) in the editor */
+  newDeck:function(o){
+    if(!canCreate())return false;
+    const th=THEMES.find(t=>t.id===o.theme)||THEMES[0];
+    const slides=o.slides.map(x=>Object.assign(blankSlide(x.layout,x.title),{text:x.text||'',text2:x.text2||'',notes:x.notes||''}));
+    const d={slides:slides};applyTheme(d,th);
+    S.deck={id:uid(),title:o.title||'Նոր սահիկաշար',subject:o.subject||'',classes:[],owner:me(),ownerName:CU.name||'',created:Date.now(),slides:d.slides,imgs:[],theme:d.theme,trans:'fade',auto:0,loop:false,num:true,foot:''};
+    S.sel=0;S.eid=null;S.tab='slide';S.isNew=true;S.dirty=true;openEditor();slMark();return true;
+  },
+  edit:function(id){return window.slEdit(id);},
+  present:async function(d,i){await allImgs(d);openPresent(d,i||0);},
+  copy:async function(id){await window.slCopy(id);},
+  remove:async function(id){return window.slDelete(id);},
+  rename:async function(id){return window.slRename(id);},
+  remap:async function(d){await allImgs(d);const nd=clone(d),map=remapImgs(nd);nd.imgs=Object.values(map);for(const o of Object.keys(map))await bSet(IK(map[o]),{data:S.imgs[o]||'',owner:me(),ts:Date.now()});return nd;},
+  /* export a deck that is not open in the editor (re-uses the editor's own exporters) */
+  withDeck:async function(d,fn){
+    const prev=S.deck,ps=S.saving;S.deck=d;S.saving=true;
+    try{return await fn();}finally{S.saving=false;S.again=false;S.deck=prev;if(ps)S.saving=ps;}
+  },
+  exportPdf:function(d){return MD_SL.withDeck(d,()=>window.slExportPdf());},
+  exportPptx:function(d){return MD_SL.withDeck(d,()=>window.slExportPptx());},
+  exportJson:function(id){return window.slJsonOut(id);},
+  download:download,
+  css:()=>document.getElementById('md-slides-css').textContent,
+  openAssistant:function(){S.nd={starter:'lesson',theme:'classic'};try{window.slAi();}catch(e){console.error(e);}},
+  aiUrl:async function(){const d=await bGet(AICFG);return (d&&d.url)||'';},
+  allImgs:allImgs,imgIds:imgIds
+};
 })();
 </script>
 
@@ -10083,244 +10124,642 @@ if(!saved){
 }
 })();
 </script>
-<!-- ===== MyDigitalSchool: աշակերտների անհատական կոդով նույնականացում =====
-     ՏԵՂԱԴՐԵՔ այս ամբողջ բլոկը ֆայլի վերջում՝ վերջին </script>-ից հետո, </body>-ից առաջ։ -->
-<style id="ig-css">
-.ig-card{max-width:540px;margin:6vh auto 0;background:var(--surf);border:1px solid var(--bdr);border-radius:24px;padding:34px 28px;text-align:center;box-shadow:0 24px 60px rgba(20,20,70,.16);animation:cardRise .5s var(--ease-out) both}
-.ig-ic{width:84px;height:84px;margin:0 auto 18px;border-radius:26px;background:linear-gradient(135deg,#fb923c,#e11d48);display:flex;align-items:center;justify-content:center;box-shadow:0 14px 30px rgba(225,29,72,.3)}
-.ig-ic svg{width:44px;height:44px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.ig-ic.ok{background:linear-gradient(135deg,#22c55e,#15803d);box-shadow:0 14px 30px rgba(21,128,61,.3)}
-.ig-card h2{font-size:24px;font-weight:800;margin:0 0 10px;letter-spacing:-.02em}
-.ig-card p.ig-s{color:var(--txt2);font-size:14px;line-height:1.65;margin:0 0 22px}
-.ig-in{width:100%;box-sizing:border-box;padding:15px 16px;font-size:22px;letter-spacing:6px;text-align:center;text-transform:uppercase;font-family:monospace;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:14px;color:var(--txt);outline:none}
-.ig-in:focus{border-color:var(--acc);box-shadow:0 0 0 4px var(--acc-lt)}
-.ig-go{width:100%;margin-top:14px;padding:15px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--acc3),var(--acc));color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;min-height:50px;box-shadow:0 10px 24px rgba(58,53,224,.3)}
-.ig-go:disabled{opacity:.6;cursor:default}
-.ig-err{min-height:20px;margin-top:12px;color:var(--red);font-size:13px;font-weight:600}
-.ig-dl{text-align:left;background:var(--surf2);border:1px solid var(--bdr);border-radius:16px;padding:4px 16px;margin:0 0 20px}
-.ig-dl div{display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid var(--bdr);font-size:14px}
-.ig-dl div:last-child{border:none}.ig-dl span{color:var(--txt3)}.ig-dl b{text-align:right}
-.ig-cb{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 10px;flex:1;justify-content:center}
-.ig-cb input{width:130px;padding:5px 8px;font-family:monospace;text-transform:uppercase;letter-spacing:1px;background:var(--surf2);border:1px solid var(--bdr);border-radius:7px;color:var(--txt);font-size:12px;outline:none}
-.ig-cb input:focus{border-color:var(--acc)}
-.ig-tag{font-size:11px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap}
-.ig-tag.l{background:var(--grn-lt);color:#15803d}.ig-tag.f{background:var(--amb-lt);color:#9a4e1f}.ig-tag.n{background:var(--surf3);color:var(--txt3)}
-</style>
-<script id="ig-js">
+
+<script id="md-edu-js">
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
 const E=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const CODES_DOC='student_codes';
-const ref=()=>fsdb.collection(FS_COL).doc(CODES_DOC);
-const normCode=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
-const rawOk=s=>/^[A-Za-z0-9\s-]*$/.test(String(s||''));
-const SEP='\u0001';
-const errOf=e=>(e&&e.message&&e.message[0]==='!')?e.message.slice(1):'';
+const CODES='school_codes';
+const isAdm=()=>!!CU&&CU.role==='admin'&&CU.username==='admin';
+const isUnl=()=>!!CU&&CU.role==='student'&&CU.unlinked===true;
+const isUnP=()=>!!CU&&CU.role==='parent'&&CU.unlinked===true;
+const tst=m=>{try{if(window.MD_API)MD_API.toast(m);}catch(e){}};
+const ALPHA='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const norm=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+function rnd(n){const a=new Uint8Array(n);crypto.getRandomValues(a);let s='';for(let i=0;i<n;i++)s+=ALPHA[a[i]%ALPHA.length];return s;}
+const fmt=c=>c.length===8?c.slice(0,4)+'-'+c.slice(4):c;
+const ref=()=>fsdb.collection(FS_COL).doc(CODES);
 
-async function readCodes(){const s=await ref().get();return s.exists?(s.data().codes||{}):{};}
-async function freshDB(){const s=await bGet(BS);if(s&&s.users){DB=s;PE=s.pending||{};}}
-function genCode(codes){
-  const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let c;
-  do{const a=new Uint32Array(8);crypto.getRandomValues(a);c=Array.from(a,x=>A[x%A.length]).join('');}while(codes&&codes[c]);
-  return c;
-}
-/* a self-registered student (has e-mail / activated flag) must be identified; accounts created by the admin are untouched */
-function needsIdent(u){return !!(u&&u.role==='student'&&!u.ident&&(u.email||u.activated));}
-function identGated(){
-  if(!CU||CU.role!=='student')return false;
-  const u=(DB.users&&DB.users[CU.username])||CU;
-  return needsIdent(Object.assign({},u,CU.ident?{ident:CU.ident}:{}));
-}
-
-/* ======================= ADMIN: «Դասարաններ» ======================= */
-let CODES={};
-function tag(rec){
-  if(!rec)return '<span class="ig-tag n">Կոդ չկա</span>';
-  return rec.linkedTo?'<span class="ig-tag l" title="'+E(rec.linkedTo)+'">🔒 Կապակցված է</span>':'<span class="ig-tag f">Ազատ</span>';
-}
-async function injectCodes(){
-  const pg=$('acls');if(!pg||!CU||CU.role!=='admin')return;
-  try{CODES=await readCodes();}catch(e){console.error(e);CODES=null;}
-  if(CODES===null){return;}
-  const by={};Object.keys(CODES).forEach(k=>{const e=CODES[k];by[e.cls+SEP+e.name]=Object.assign({code:k},e);});
-  pg.querySelectorAll('ul[id^="sl"] li[data-st]').forEach(li=>{
-    if(li.querySelector('.ig-cb'))return;
-    const cls=li.getAttribute('data-cls'),st=li.getAttribute('data-st'),rec=by[cls+SEP+st];
-    const box=document.createElement('div');box.className='ig-cb';
-    box.innerHTML='<input type="text" maxlength="24" placeholder="Անհատական կոդ" value="'+E(rec?rec.code:'')+'" autocomplete="off">'
-      +'<button class="btn bg2" style="font-size:11px" data-a="gen">Ստեղծել</button>'
-      +'<button class="btn bp2" style="font-size:11px" data-a="save">Պահպանել</button>'+tag(rec);
-    const inp=box.querySelector('input');
-    inp.addEventListener('focus',()=>{li.draggable=false;});inp.addEventListener('blur',()=>{li.draggable=true;});
-    box.querySelector('[data-a=gen]').onclick=()=>{inp.value=genCode(CODES);};
-    box.querySelector('[data-a=save]').onclick=()=>saveCode(li,cls,st,inp.value,rec);
-    li.insertBefore(box,li.lastElementChild);
+/* ---------- Firestore helpers (transactions: two people can never take the same code) ---------- */
+async function txCodes(fn){
+  return fsdb.runTransaction(async tx=>{
+    const sn=await tx.get(ref());const d=sn.exists?sn.data():{};
+    d.school=d.school||{name:'',code:''};d.students=d.students||{};d.parents=d.parents||{};
+    const r=fn(d);tx.set(ref(),fsClean(d));return r;
   });
 }
-async function saveCode(li,cls,name,rawVal,rec){
-  if(!CU||CU.role!=='admin')return;
-  const raw=String(rawVal||'').trim();let code='';
-  if(raw){
-    code=normCode(raw);
-    if(!rawOk(raw)||code.length<4||code.length>20){alert('Կոդը պետք է լինի 4–20 նիշ՝ միայն լատինական տառեր և թվեր։');return;}
-  }else if(rec&&rec.linkedTo&&!confirm('Կոդը ջնջելու դեպքում աշակերտի նույնականացումը կչեղարկվի։ Շարունակե՞լ։'))return;
+async function readCodes(){const d=await bGet(CODES);d.school=d.school||{name:'',code:''};d.students=d.students||{};d.parents=d.parents||{};return d;}
+
+/* =====================================================================
+   1) STUDENT REGISTRATION: e-mail + password only
+===================================================================== */
+const _pick=window.mdPickRole;
+let cap={a:1,b:1};
+let regRole='student';
+function regForm(msg){
+  cap={a:1+Math.floor(Math.random()*9),b:1+Math.floor(Math.random()*9)};
+  const r=$('md-reg');
+  r.innerHTML='<div class="mr-box"><button class="mr-x" onclick="mdCloseReg()" aria-label="Փակել">✕</button>'
+   +(regRole==='parent'?'<h2>Ծնողի գրանցում</h2><p class="s">Գրանցվելու համար բավական է էլ. փոստը և գաղտնաբառը։ Գրանցվելուց հետո կնույնականացվեք դպրոցի տրամադրած ծնողի կոդով։</p>':'<h2>Աշակերտի գրանցում</h2><p class="s">Գրանցվելու համար բավական է էլ. փոստը և գաղտնաբառը։ Դպրոցը կկապեք գրանցվելուց հետո՝ դպրոցի և ձեր անհատական կոդով։</p>')
+   +'<div class="mr-fg"><label>Էլեկտրոնային փոստ</label><input id="se-em" type="email" autocomplete="email"></div>'
+   +'<div class="mr-fg"><label>Գաղտնաբառ <small>(մեծատառ, փոքրատառ, թիվ, նշան, առնվազն 8 նիշ)</small></label><input id="se-p1" type="password" autocomplete="new-password"></div>'
+   +'<div class="mr-fg"><label>Կրկնել գաղտնաբառը</label><input id="se-p2" type="password" autocomplete="new-password"></div>'
+   +'<div class="mr-fg"><label>Captcha՝ '+cap.a+' + '+cap.b+' = ?</label><input id="se-ca" inputmode="numeric" autocomplete="off"></div>'
+   +'<div class="mr-err" id="se-err">'+E(msg||'')+'</div>'
+   +'<button class="mr-main" id="se-go" onclick="mdStuReg()">Գրանցվել</button>'
+   +'<div style="margin-top:12px;text-align:center"><button class="mr-link" onclick="mdShowRoleQ(false)">← Փոխել դերը</button></div></div>';
+  try{if(typeof trDOM==='function')trDOM(r);}catch(e){}
+}
+window.mdPickRole=function(role){
+  if(role==='student'||role==='parent'){regRole=role;regForm();return;}
+  return _pick.apply(this,arguments);
+};
+window.mdStuReg=async function(){
+  const g=id=>($(id)||{}).value||'';
+  const err=m=>{$('se-err').textContent=m;};
+  const em=g('se-em').trim().toLowerCase(),p1=g('se-p1'),p2=g('se-p2');
+  if(!em||!p1){err('Լրացրեք էլ. փոստը և գաղտնաբառը։');return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)){err('Էլեկտրոնային փոստը սխալ է։');return;}
+  if(!vPass(p1)){err('Գաղտնաբառը պետք է պարունակի մեծատառ, փոքրատառ, թիվ, նշան և առնվազն 8 նիշ։');return;}
+  if(p1!==p2){err('Գաղտնաբառերը չեն համընկնում։');return;}
+  if(g('se-ca').trim()!==String(cap.a+cap.b)){regForm('Captcha-ն սխալ է։');return;}
+  const b=$('se-go');b.disabled=true;err('');
   try{
-    sLoad('Saving...');
-    const out=await fsdb.runTransaction(async tx=>{
-      const snap=await tx.get(ref());const codes=Object.assign({},snap.exists?(snap.data().codes||{}):{});
-      let oldKey=null,old=null;
-      Object.keys(codes).forEach(k=>{if(codes[k].cls===cls&&codes[k].name===name){oldKey=k;old=codes[k];}});
-      if(code&&codes[code]&&!(codes[code].cls===cls&&codes[code].name===name))
-        throw new Error('!Այս կոդն արդեն տրված է այլ աշակերտի՝ '+codes[code].name+' ('+codes[code].cls+')։');
-      if(oldKey&&oldKey!==code)delete codes[oldKey];
-      if(code)codes[code]=Object.assign({},old||{},{cls:cls,name:name,updated:Date.now()});
-      tx.set(ref(),fsClean({codes:codes}));
-      return old;
-    });
-    if(!code&&out&&out.linkedTo){await freshDB();const u=DB.users[out.linkedTo];if(u&&u.ident){delete u.ident;await svSchool();}}
-    hLoad();flash();
-    const b=li.querySelector('.ig-cb');if(b)b.remove();injectCodes();
-  }catch(e){hLoad();console.error(e);alert(errOf(e)||'Չհաջողվեց պահպանել կոդը։ Փորձեք կրկին։');}
-}
-/* keep codes in step with renames / deletions done in the existing «Դասարաններ» page */
-async function codesMutate(fn){
-  const touched=[];
-  await fsdb.runTransaction(async tx=>{
-    const snap=await tx.get(ref());if(!snap.exists)return;
-    const codes=Object.assign({},snap.data().codes||{});fn(codes,touched);tx.set(ref(),fsClean({codes:codes}));
-  });
-  return touched;
-}
-const _edSt=window.edSt;
-window.edSt=async function(cls,idx,old){
-  await _edSt.apply(this,arguments);
-  try{const nn=(DB.classes[cls]||[])[idx];if(!nn||nn===old)return;
-    const t=await codesMutate((c,t)=>{Object.keys(c).forEach(k=>{if(c[k].cls===cls&&c[k].name===old){c[k].name=nn;if(c[k].linkedTo)t.push(c[k].linkedTo);}});});
-    if(t.length){await freshDB();t.forEach(n=>{const u=DB.users[n];if(u){u.name=nn;if(u.ident)u.ident.name=nn;}});await svSchool();}
-  }catch(e){console.warn('ident rename',e);}
+    const s=await bGet(BS);if(s&&s.users){DB=s;PE=s.pending||{};}
+    DB.users=DB.users||{};
+    const taken=em==='admin'||Object.keys(DB.users).some(k=>k.replace(/_t$|_s$/,'').toLowerCase()===em||String((DB.users[k]||{}).login||'').toLowerCase()===em)||!!(DB.pending&&DB.pending[em]);
+    if(taken){err('Այս էլ. փոստով հաշիվ արդեն կա։');b.disabled=false;return;}
+    DB.users[em]=regRole==='parent'?{role:'parent',name:em.split('@')[0],pass:p1,children:[],email:em,login:em,activated:true,unlinked:true,selfReg:true,createdAt:Date.now(),access:{enabled:true,sections:['diary','polls']}}
+      :{role:'student',name:em.split('@')[0],pass:p1,class:'',email:em,login:em,activated:true,unlinked:true,selfReg:true,createdAt:Date.now(),
+      access:{enabled:true,sections:['diary','polls']}};
+    const reqs=DB.requests=DB.requests||{},id='rq'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    reqs[id]={id:id,first:em.split('@')[0],last:'',email:em,role:regRole,ts:Date.now(),status:'approved',auto:true,decidedAt:Date.now(),grant:['diary','polls']};
+    await svSchool();
+    try{markSeenSafe();}catch(e){}
+    $('md-reg').classList.remove('on');
+    const a=$('md-act');a.classList.add('on');
+    const logo=(document.querySelector('#aw img')||{}).src||'';
+    a.innerHTML='<div class="ac-box"><div class="ac-logo"><img alt="" src="'+E(logo)+'"><span>MyDigitalSchool</span></div>'
+      +'<div class="ac-ok"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><h2>Դուք հաջողությամբ գրանցվեցիք</h2>'
+      +'<p class="ac-s">Մուտք գործեք ձեր էլ. փոստով և գաղտնաբառով, ապա սեղմեք «'+(regRole==='parent'?'Նույնականացվել':'Ավելացնել դպրոց')+'»։</p>'
+      +'<button class="ac-btn g" id="se-in">Մուտք գործել</button></div>';
+    $('se-in').onclick=function(){
+      a.classList.remove('on');try{if(CU)window.logout();}catch(e){}
+      const aw=$('aw');if(aw)aw.classList.remove('h');
+      const u=$('lu'),p=$('lp');if(u&&p){u.value=em;p.value=p1;window.login();}
+    };
+  }catch(e){console.error(e);err('Չհաջողվեց գրանցվել։ Փորձեք կրկին։');b.disabled=false;}
 };
-const _rnCls=window.rnCls;
-window.rnCls=async function(old){
-  const nw=(($('rni'+old)||{}).value||'').trim();
-  await _rnCls.apply(this,arguments);
-  try{if(!nw||nw===old||!DB.classes[nw]||DB.classes[old])return;
-    const t=await codesMutate((c,t)=>{Object.keys(c).forEach(k=>{if(c[k].cls===old){c[k].cls=nw;if(c[k].linkedTo)t.push(c[k].linkedTo);}});});
-    if(t.length){await freshDB();t.forEach(n=>{const u=DB.users[n];if(u){u.class=nw;if(u.ident)u.ident.cls=nw;}});await svSchool();}
-  }catch(e){console.warn('ident class rename',e);}
-};
-async function dropCodes(match){
-  try{const t=await codesMutate((c,t)=>{Object.keys(c).forEach(k=>{if(match(c[k])){if(c[k].linkedTo)t.push(c[k].linkedTo);delete c[k];}});});
-    if(t.length){await freshDB();t.forEach(n=>{const u=DB.users[n];if(u)delete u.ident;});await svSchool();}
-  }catch(e){console.warn('ident drop',e);}
-}
-const _delSt=window.delSt;
-window.delSt=async function(cls,st){await _delSt.apply(this,arguments);dropCodes(e=>e.cls===cls&&e.name===st);};
-const _delCls=window.delCls;
-window.delCls=async function(cls){const had=!!DB.classes[cls];await _delCls.apply(this,arguments);if(had&&!DB.classes[cls])dropCodes(e=>e.cls===cls);};
+function markSeenSafe(){try{localStorage.setItem('md_seen','1');}catch(e){}}
 
-/* ======================= STUDENT: gate + identification ======================= */
-const SHIELD='<svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><rect x="9" y="10.5" width="6" height="5" rx="1"/><path d="M10.2 10.5V9a1.8 1.8 0 0 1 3.6 0v1.5"/></svg>';
-function formHtml(){
-  return '<div class="ig-ic">'+SHIELD+'</div><h2>Դուք դեռ նույնականացված չեք</h2>'
-   +'<p class="ig-s">Ձեր դպրոցական հաշիվն ակտիվացնելու և ձեր անձնական տվյալներին հասանելիություն ստանալու համար անհրաժեշտ է մուտքագրել դպրոցի կողմից ձեզ տրամադրված անհատական կոդը։</p>'
-   +'<input class="ig-in" id="ig-code" maxlength="24" placeholder="••••••••" autocomplete="off" onkeydown="if(event.key===\'Enter\')mdIdentGo()">'
-   +'<button class="ig-go" id="ig-btn" onclick="mdIdentGo()">Նույնականացվել</button><div class="ig-err" id="ig-err" role="alert"></div>';
-}
-function addHomeBtn(){
-  if($('md-homebtn'))return;const b=document.querySelector('.bout');if(!b||!b.parentNode)return;
-  const h=document.createElement('button');h.id='md-homebtn';h.className='md-homebtn';h.type='button';h.textContent='⌂ Գլխավոր էջ';
-  h.onclick=function(){if(window.mdBackPortal)window.mdBackPortal();};b.parentNode.insertBefore(h,b);
-}
-function buildGate(){
-  const nav=$('nav'),mn=$('mn');
-  nav.innerHTML='<div class="sbs">Նույնականացում</div><div class="ni on" data-p="identgate" onclick="showPg(\'identgate\')">🔒 Նույնականացում</div>';
-  mn.innerHTML='<div class="pg" id="identgate"><div class="ig-card" id="ig-card">'+formHtml()+'</div></div>';
-  addHomeBtn();
-  showPg('identgate');
-  resolveLinked();
-}
-const _buildNav=window.buildNav;
+/* =====================================================================
+   2) NAV GATE + LINK PAGE + SUMMARY DIARY
+===================================================================== */
+const _bn=window.buildNav;
 window.buildNav=function(){
-  if(identGated()){buildGate();return;}
-  return _buildNav.apply(this,arguments);
+  if(isUnP()){
+    const nav=$('nav'),mn=$('mn');
+    nav.innerHTML='<div class="sbs">Ծնող</div>'
+      +'<div class="ni on" onclick="showPg(\'pk\')" data-p="pk">🪪 Նույնականացում</div>'
+      +'<div class="sbs">'+t('nav_account')+'</div>'
+      +'<div class="ni" onclick="showPg(\'prof\')" data-p="prof">👤 '+t('my_profile')+'</div>';
+    mn.innerHTML='<div class="pg" id="pk"></div>'+(typeof buildProf==='function'?buildProf():'');
+    showPg('pk');
+    const bout=document.querySelector('.bout');if(bout)bout.textContent='< '+t('sign_out');
+    return;
+  }
+  if(isUnl()){
+    const nav=$('nav'),mn=$('mn');
+    nav.innerHTML='<div class="sbs">Աշակերտ</div>'
+      +'<div class="ni on" onclick="showPg(\'lk\')" data-p="lk">🔗 Ավելացնել դպրոց</div>'
+      +'<div class="sbs">'+t('nav_account')+'</div>'
+      +'<div class="ni" onclick="showPg(\'prof\')" data-p="prof">👤 '+t('my_profile')+'</div>';
+    mn.innerHTML='<div class="pg" id="lk"></div>'+(typeof buildProf==='function'?buildProf():'');
+    showPg('lk');
+    const bout=document.querySelector('.bout');if(bout)bout.textContent='< '+t('sign_out');
+    return;
+  }
+  const r=_bn.apply(this,arguments);
+  try{
+    if(CU&&CU.role==='student'){
+      const nav=$('nav'),mn=$('mn');
+      if(nav&&mn&&!nav.querySelector('[data-p="dsum"]')){
+        const it=document.createElement('div');it.className='ni';it.setAttribute('data-p','dsum');it.setAttribute('onclick',"showPg('dsum')");it.textContent='📋 Իմ օրագրի ամփոփում';
+        const before=nav.querySelector('[data-p="sem"]')||nav.querySelector('[data-p="prof"]');
+        if(before)before.parentNode.insertBefore(it,before);else nav.appendChild(it);
+        if(!$('dsum'))mn.insertAdjacentHTML('beforeend','<div class="pg" id="dsum"></div>');
+      }
+    }
+    if(isAdm()){
+      const nav=$('nav'),mn=$('mn'),ap=nav.querySelector('[data-p="apend"]');
+      if(!nav.querySelector('[data-p="acodes"]')){
+        const it=document.createElement('div');it.className='ni';it.setAttribute('data-p','acodes');it.setAttribute('onclick',"showPg('acodes')");it.textContent='🔑 Դպրոցի և աշակերտների կոդեր';
+        if(ap)ap.parentNode.insertBefore(it,ap);else nav.appendChild(it);
+        if(!$('acodes'))mn.insertAdjacentHTML('beforeend','<div class="pg" id="acodes"></div>');
+      }
+    }
+  }catch(e){console.error(e);}
+  return r;
 };
-const _showPg=window.showPg;
+const _sp=window.showPg;
 window.showPg=function(id){
-  if(identGated()&&id!=='identgate'&&$('identgate'))id='identgate';
-  const r=_showPg.call(this,id);
-  if(id==='acls')injectCodes();
+  const r=_sp.apply(this,arguments);
+  try{
+    if(id==='lk')drawLk();
+    if(id==='pk')drawPk();
+    if(id==='dsum')drawSum();
+    if(id==='acodes')drawCodes();
+  }catch(e){console.error(e);}
   return r;
 };
 
-/* writes the identified student's real record onto the logged-in account and persists it */
-async function applyIdent(e,code){
-  await freshDB();
-  const u=DB.users[CU.username];if(!u)throw new Error('!user');
-  const at=Date.now();
-  u.name=e.name;u.class=e.cls;u.ident={cls:e.cls,name:e.name,code:code,at:at};
-  await svSchool();
-  CU.name=e.name;CU.class=e.cls;CU.ident=u.ident;
-  try{if(typeof mdUbarRender==='function')mdUbarRender();}catch(x){}
+/* ---------- link page (student) ---------- */
+function drawLk(){
+  const el=$('lk');if(!el)return;
+  el.innerHTML='<div class="pt">🔗 Ավելացնել դպրոց</div><div class="ps">Կապակցեք ձեր հաշիվը դպրոցի տվյալների հետ՝ օրագիրը բացելու համար</div>'
+   +'<div class="cd" style="padding:28px;text-align:center;max-width:560px"><div style="font-size:44px;margin-bottom:8px">🏫</div>'
+   +'<div style="font-weight:800;font-size:18px;margin-bottom:6px">Դուք դեռ կապակցված չեք դպրոցին</div>'
+   +'<div style="color:var(--txt2);font-size:13px;line-height:1.6;margin-bottom:18px">Պետք կլինեն՝ դպրոցի կոդը և ձեր անհատական կոդը, որոնք տրամադրում է դպրոցը։</div>'
+   +'<button class="lk-big" onclick="mdLinkOpen()">＋ Ավելացնել դպրոց</button></div>';
 }
-/* heal: if the link was written to the codes document but the user record did not save */
-async function resolveLinked(){
-  try{
-    const codes=await readCodes();
-    const k=Object.keys(codes).find(c=>codes[c].linkedTo===CU.username);
-    if(!k||!identGated())return;
-    await freshDB();
-    if(!((DB.classes||{})[codes[k].cls]||[]).includes(codes[k].name))return;
-    await applyIdent(codes[k],k);buildNav();
-  }catch(e){console.warn('ident resolve',e);}
-}
-let fails=0,lockUntil=0;
-window.mdIdentGo=async function(){
-  const inp=$('ig-code'),err=$('ig-err'),btn=$('ig-btn');if(!inp||!CU||CU.role!=='student')return;
-  const show=m=>{err.textContent=m;};show('');
-  if(Date.now()<lockUntil){show('Չափազանց շատ սխալ փորձեր։ Սպասեք '+Math.ceil((lockUntil-Date.now())/1000)+' վրկ։');return;}
-  const raw=inp.value,code=normCode(raw);
-  const bad=()=>{fails++;if(fails>=5){lockUntil=Date.now()+30000;fails=0;}};
-  if(!code||!rawOk(raw)||code.length<4){show('Կոդը սխալ է։ Ստուգեք այն և փորձեք կրկին։');bad();return;}
-  btn.disabled=true;btn.textContent='Ստուգվում է...';
-  try{
-    await freshDB();
-    const e=await fsdb.runTransaction(async tx=>{
-      const snap=await tx.get(ref());const codes=Object.assign({},snap.exists?(snap.data().codes||{}):{});
-      const ent=codes[code];
-      if(!ent)throw new Error('!nf');
-      if(ent.linkedTo&&ent.linkedTo!==CU.username)throw new Error('!used');
-      if(Object.keys(codes).some(k=>k!==code&&codes[k].linkedTo===CU.username))throw new Error('!mine');
-      if(!((DB.classes||{})[ent.cls]||[]).includes(ent.name))throw new Error('!gone');
-      if(!ent.linkedTo){codes[code]=Object.assign({},ent,{linkedTo:CU.username,linkedAt:Date.now()});tx.set(ref(),fsClean({codes:codes}));}
-      return ent;
-    });
-    await applyIdent(e,code);fails=0;
-    let school='—';try{const s=await bGet('certsettings');if(s&&s.school)school=s.school;}catch(x){}
-    const sp=(typeof mdSplitName==='function')?mdSplitName(e.name):{first:e.name.split(' ')[0],last:e.name.split(' ').slice(1).join(' ')};
-    $('ig-card').innerHTML='<div class="ig-ic ok"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><h2>Նույնականացումը հաջողվեց</h2>'
-      +'<p class="ig-s">Ձեր հաշիվը կապակցվեց դպրոցական գրառման հետ։ Այժմ հասանելի են ձեր օրագիրը, գնահատականները, դասացուցակը և մյուս բաժինները։</p>'
-      +'<div class="ig-dl"><div><span>Անուն</span><b>'+E(sp.first)+'</b></div><div><span>Ազգանուն</span><b>'+E(sp.last||'—')+'</b></div><div><span>Դասարան</span><b>'+E(e.cls)+'</b></div><div><span>Դպրոց</span><b>'+E(school)+'</b></div></div>'
-      +'<button class="ig-go" onclick="mdIdentContinue()">Շարունակել</button>';
-  }catch(x){
-    console.error(x);btn.disabled=false;btn.textContent='Նույնականացվել';
-    const m=errOf(x);
-    if(m==='nf'){show('Կոդը սխալ է։ Ստուգեք այն և փորձեք կրկին։');bad();}
-    else if(m==='used'){show('Այս կոդն արդեն կապակցված է այլ հաշվի հետ։ Այն հնարավոր չէ օգտագործել կրկին։');bad();}
-    else if(m==='mine')show('Ձեր հաշիվն արդեն նույնականացված է այլ կոդով։');
-    else if(m==='gone')show('Այս կոդին համապատասխանող աշակերտը դասարանում չի գտնվել։ Դիմեք դպրոցին։');
-    else show('Չհաջողվեց ստուգել կոդը։ Ստուգեք կապը և փորձեք կրկին։');
-  }
-};
-window.mdIdentContinue=function(){buildNav();};
-try{
-  Object.assign(FR_MAP,{'Դուք դեռ նույնականացված չեք':'Vous n\'êtes pas encore identifié','Նույնականացվել':'S\'identifier','Նույնականացումը հաջողվեց':'Identification réussie','Շարունակել':'Continuer','Անհատական կոդ':'Code personnel'});
-  TR_LANGS.fr=trBuild(FR_MAP);
-}catch(e){}
-})();
-</script>
 
+/* ---------- link wizard ---------- */
+const LS={step:1,school:null,pc:'',info:null,err:'',busy:false,done:null};
+function failState(){try{return JSON.parse(localStorage.getItem('md_lk_fail')||'{"n":0,"until":0}');}catch(e){return{n:0,until:0};}}
+function failSave(s){try{localStorage.setItem('md_lk_fail',JSON.stringify(s));}catch(e){}}
+function locked(){const s=failState();return s.until>Date.now()?Math.ceil((s.until-Date.now())/60000):0;}
+function fail(){const s=failState();s.n=(s.n||0)+1;if(s.n>=5){s.until=Date.now()+5*60*1000;s.n=0;}failSave(s);}
+function okReset(){failSave({n:0,until:0});}
+function lkDraw(){
+  let o=$('md-lk');if(!o){o=document.createElement('div');o.id='md-lk';document.body.appendChild(o);}
+  o.classList.add('on');
+  const logo=(document.querySelector('#aw img')||{}).src||'';
+  const st=['Դպրոցի կոդ','Անհատական կոդ','Տվյալների ստուգում'];
+  const bar='<div class="lk-st">'+st.map((s,i)=>'<span class="'+(LS.step>i+1||LS.done?'d':LS.step===i+1?'a':'')+'">'+(i+1)+'<em>'+s+'</em></span>').join('<i></i>')+'</div>';
+  let b='';
+  if(LS.done){
+    b='<div class="ac-ok"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><h2>Դուք հաջողությամբ կապակցվեցիք</h2>'
+     +'<p class="ac-s"><b>'+E(LS.done.name)+'</b> · '+E(LS.done.cls)+' դասարան<br>'+E(LS.done.school||'')+'</p><button class="ac-btn g" onclick="mdLinkFinish()">Բացել իմ օրագիրը</button>';
+  }else if(LS.step===1){
+    b=bar+'<h2>Մուտքագրեք դպրոցի կոդը</h2><p class="ac-s">Դպրոցի կոդը տրամադրում է դպրոցի ադմինիստրացիան։</p>'
+     +'<input id="lk-in" class="lk-in" placeholder="XXXX-XXXX" autocomplete="off" autocapitalize="characters" onkeydown="if(event.key===\'Enter\')mdLinkNext()">'
+     +(LS.err?'<div class="ac-err" role="alert">'+E(LS.err)+'</div>':'')+'<button class="ac-btn" onclick="mdLinkNext()"'+(LS.busy?' disabled':'')+'>Շարունակել</button>';
+  }else if(LS.step===2){
+    b=bar+'<h2>Մուտքագրեք ձեր անհատական կոդը</h2><p class="ac-s">Դպրոց՝ <b>'+E(LS.school.name||'—')+'</b>։ Անհատական կոդը ձեզ տվել է դպրոցը։</p>'
+     +'<input id="lk-in" class="lk-in" placeholder="XXXX-XXXX" autocomplete="off" autocapitalize="characters" onkeydown="if(event.key===\'Enter\')mdLinkNext()">'
+     +(LS.err?'<div class="ac-err" role="alert">'+E(LS.err)+'</div>':'')+'<button class="ac-btn" onclick="mdLinkNext()"'+(LS.busy?' disabled':'')+'>Ստուգել</button>'
+     +'<button class="lk-back" onclick="mdLinkBack()">← Հետ</button>';
+  }else{
+    b=bar+'<h2>Ստուգեք ձեր տվյալները</h2><p class="ac-s">Կոդը պատկանում է հետևյալ աշակերտին։ Եթե սա դուք եք, հաստատեք։</p>'
+     +'<div class="ac-card"><div class="ac-r"><span>Աշակերտ</span><b>'+E(LS.info.name)+'</b></div><div class="ac-r"><span>Դասարան</span><b>'+E(LS.info.cls)+'</b></div><div class="ac-r"><span>Դպրոց</span><b>'+E(LS.school.name||'—')+'</b></div></div>'
+     +(LS.err?'<div class="ac-err" role="alert">'+E(LS.err)+'</div>':'')
+     +'<button class="ac-btn g" onclick="mdLinkConfirm()"'+(LS.busy?' disabled':'')+'>Այո, սա ես եմ՝ կապակցել</button><button class="lk-back" onclick="mdLinkBack()">← Սա ես չեմ</button>';
+  }
+  o.innerHTML='<div class="ac-box"><button class="lk-x" onclick="mdLinkClose()" aria-label="Փակել">✕</button><div class="ac-logo"><img alt="" src="'+E(logo)+'"><span>MyDigitalSchool</span></div>'+b+'</div>';
+  const i=$('lk-in');if(i)setTimeout(()=>i.focus(),30);
+}
+window.mdLinkOpen=function(){LS.step=1;LS.school=null;LS.pc='';LS.info=null;LS.err='';LS.busy=false;LS.done=null;lkDraw();};
+window.mdLinkClose=function(){const o=$('md-lk');if(o)o.classList.remove('on');};
+window.mdLinkBack=function(){LS.err='';LS.step=LS.step===3?2:1;lkDraw();};
+window.mdLinkNext=async function(){
+  if(LS.busy)return;
+  const m=locked();if(m){LS.err='Չափից շատ սխալ փորձեր։ Փորձեք '+m+' րոպե անց։';lkDraw();return;}
+  const v=norm(($('lk-in')||{}).value);
+  if(v.length<4){LS.err='Մուտքագրեք կոդը։';lkDraw();return;}
+  LS.busy=true;LS.err='';
+  try{
+    const d=await readCodes();
+    if(LS.step===1){
+      if(!d.school.code){LS.err='Այս դպրոցը դեռ չի կարգավորել կոդերը։ Դիմեք դպրոցի ադմինին։';}
+      else if(norm(d.school.code)!==v){fail();LS.err='Դպրոցի կոդը սխալ է։';}
+      else{okReset();LS.school={name:d.school.name||''};LS.sc=v;LS.step=2;}
+    }else{
+      const e=d.students[v];
+      if(!e){fail();LS.err='Այս կոդով աշակերտ չի գտնվել։ Ստուգեք կոդը։';}
+      else if(e.linked&&e.linked.user!==CU.username){LS.err='Այս կոդը արդեն կապակցված է մեկ այլ հաշվի հետ։';}
+      else{okReset();LS.pc=v;LS.info={name:e.name,cls:e.cls};LS.step=3;}
+    }
+  }catch(e){console.error(e);LS.err='Չհաջողվեց ստուգել։ Ստուգեք ինտերնետը և փորձեք կրկին։';}
+  LS.busy=false;lkDraw();
+};
+window.mdLinkConfirm=async function(){
+  if(LS.busy)return;LS.busy=true;LS.err='';lkDraw();
+  let claimed=false;
+  try{
+    // 1) atomically claim the code (re-checks school code, code existence and that it is still free)
+    await txCodes(d=>{
+      if(norm(d.school.code)!==LS.sc)throw new Error('school');
+      const e=d.students[LS.pc];if(!e)throw new Error('nocode');
+      if(e.linked&&e.linked.user!==CU.username)throw new Error('used');
+      e.linked={user:CU.username,ts:Date.now()};
+    });
+    claimed=true;
+    // 2) link the account to the student's data
+    const s=await bGet(BS);if(s&&s.users){DB=s;PE=s.pending||{};}
+    const u=(DB.users||{})[CU.username];if(!u)throw new Error('user');
+    const cls=LS.info.cls,name=LS.info.name;
+    DB.classes=DB.classes||{};DB.classes[cls]=DB.classes[cls]||[];if(DB.classes[cls].indexOf(name)===-1)DB.classes[cls].push(name);
+    u.name=name;u.class=cls;u.unlinked=false;u.schoolName=LS.school.name||'';u.linked={code:LS.pc,ts:Date.now()};
+    await svSchool();
+    CU.name=name;CU.class=cls;CU.unlinked=false;CU.schoolName=u.schoolName;CU.linked=u.linked;
+    try{const sb=$('sbn');if(sb)sb.textContent=name;}catch(e){}
+    LS.done={name:name,cls:cls,school:LS.school.name};
+  }catch(e){
+    console.error(e);
+    if(claimed){try{await txCodes(d=>{const x=d.students[LS.pc];if(x&&x.linked&&x.linked.user===CU.username)x.linked=null;});}catch(_){}}
+    const M={school:'Դպրոցի կոդը փոխվել է։ Սկսեք նորից։',nocode:'Այս կոդը այլևս գոյություն չունի։',used:'Այս կոդը հենց նոր կապակցվեց մեկ այլ հաշվի հետ։',user:'Հաշիվը չի գտնվել։'};
+    LS.err=M[e&&e.message]||'Չհաջողվեց կապակցել։ Փորձեք կրկին։';
+    if(e&&(e.message==='used'||e.message==='school'||e.message==='nocode'))LS.step=1;
+  }
+  LS.busy=false;lkDraw();
+};
+window.mdLinkFinish=function(){
+  mdLinkClose();
+  try{if(typeof mdSessionSave==='function')mdSessionSave();}catch(e){}
+  try{window.buildNav();}catch(e){console.error(e);}
+  const p=$('md-portal');
+  if(p&&!p.classList.contains('h')&&typeof window.mdCard==='function'){try{window.mdCard('diary');}catch(e){}}
+};
+
+/* portal: big «Ավելացնել դպրոց» banner for students who are not linked */
+function portalBanner(){
+  const p=$('md-portal');if(!p||p.classList.contains('h'))return;
+  const w=p.querySelector('.mp-wrap');if(!w)return;
+  const has=w.querySelector('#lk-banner');
+  if(!isUnl()){if(has)has.remove();return;}
+  if(has)return;
+  const d=document.createElement('div');d.id='lk-banner';
+  d.innerHTML='<div><b>Կապակցեք ձեր դպրոցը</b><span>Օրագիրը կբացվի դպրոցի և անհատական կոդը մուտքագրելուց հետո։</span></div><button class="lk-big" onclick="mdLinkOpen()">＋ Ավելացնել դպրոց</button>';
+  const h=w.querySelector('.mp-sub');if(h)h.insertAdjacentElement('afterend',d);else w.prepend(d);
+}
+(function(){const p=$('md-portal');if(!p)return;let busy=false;new MutationObserver(()=>{if(busy)return;busy=true;setTimeout(()=>{busy=false;try{portalBanner();}catch(e){}},0);}).observe(p,{childList:true,subtree:false});})();
+
+/* ---------- student: diary summary ---------- */
+const MON=['Հունվար','Փետրվար','Մարտ','Ապրիլ','Մայիս','Հունիս','Հուլիս','Օգոստոս','Սեպտեմբեր','Հոկտեմբեր','Նոյեմբեր','Դեկտեմբեր'];
+function isDate(k){return /^\d{4}-\d{2}-\d{2}(-L2)?$/.test(k);}
+function seenKey(){return 'md_seen_gr_'+(CU?CU.username:'');}
+function drawSum(){
+  const el=$('dsum');if(!el||!CU)return;
+  const cls=CU.class||CU.studentClass||'',nm=CU.name||'';
+  const all=(GR[cls]&&GR[cls][nm])||{};
+  const ents=[];Object.entries(all).forEach(([sj,ds])=>Object.entries(ds||{}).forEach(([d,v])=>{if(isDate(d)&&v!==''&&v!=null)ents.push({sj:sj,d:d.slice(0,10),v:v,k:sj+'|'+d});}));
+  ents.sort((a,b)=>b.d<a.d?-1:b.d>a.d?1:0);
+  let seen=null;try{seen=JSON.parse(localStorage.getItem(seenKey())||'null');}catch(e){}
+  const seenSet=new Set(seen||[]);
+  const grades=ents.filter(x=>x.v!=='բ'),abs=ents.filter(x=>x.v==='բ');
+  const subjSet=new Set(Object.keys(all));
+  try{const wk=window.wkStart?wkStart(new Date()):null;const ws=SC[cls]&&wk&&SC[cls][d2s(wk)];}catch(e){}
+  const teachers=Object.values(DB.users||{}).filter(u=>u&&u.role==='teacher'&&(u.classes||[]).indexOf(cls)!==-1);
+  const tFor=sj=>teachers.filter(t=>String(t.subject||'').split('&').some(s=>matchSubj(s.trim(),sj))).map(t=>t.name);
+  // schedule (current week)
+  let sched='';
+  try{
+    const mon=wkStart(new Date()),ws=d2s(mon),wsch=SC[cls]&&SC[cls][ws];
+    const DKS=['Mon','Tue','Wed','Thu','Fri'],DN=['Երկուշաբթի','Երեքշաբթի','Չորեքշաբթի','Հինգշաբթի','Ուրբաթ'];
+    const day=k=>(wsch&&wsch[k])||(Array.isArray(SC[cls]&&SC[cls][k])?SC[cls][k]:[])||[];
+    const max=Math.max(0,...DKS.map(k=>day(k).length));
+    DKS.forEach(k=>day(k).forEach(l=>{if(l&&l.sub)subjSet.add(l.sub);}));
+    if(max)sched='<div class="cd" style="margin-bottom:14px;overflow:auto"><div class="ddh"><span>📅 Դասացուցակ (ընթացիկ շաբաթ)</span></div><table><thead><tr><th>#</th>'+DN.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'
+      +Array.from({length:max},(_,i)=>'<tr><td>'+(i+1)+'</td>'+DKS.map(k=>'<td>'+E((day(k)[i]||{}).sub||'')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+  }catch(e){}
+  const subjects=[...subjSet].sort((a,b)=>a.localeCompare(b,'hy'));
+  const avg=sj=>{const n=Object.entries(all[sj]||{}).filter(([d,v])=>isDate(d)&&typeof v==='number').map(([,v])=>v);return n.length?Math.round(n.reduce((a,b)=>a+b,0)/n.length*100)/100:null;};
+  const subjRows=subjects.map(sj=>'<tr><td><b>'+E(sj)+'</b></td><td>'+E(tFor(sj).join(', ')||'—')+'</td><td style="text-align:center">'+(avg(sj)==null?'—':avg(sj))+'</td></tr>').join('');
+  // teacher notes = lesson topics / homework for the class in the last 21 days
+  const notes=[];const cut=new Date(Date.now()-21*864e5).toISOString().slice(0,10);
+  Object.entries(LI[cls]||{}).forEach(([sj,ds])=>Object.entries(ds||{}).forEach(([d,inf])=>{if(isDate(d)&&d>=cut&&inf&&(inf.topic||inf.homework))notes.push({sj:sj,d:d,topic:inf.topic,hw:inf.homework});}));
+  notes.sort((a,b)=>b.d<a.d?-1:b.d>a.d?1:0);
+  const badge=v=>v==='բ'?'<span class="badge ba">բ</span>':'<span class="badge b'+v+'">'+E(v)+'</span>';
+  const newCnt=seen?grades.concat(abs).filter(x=>!seenSet.has(x.k)).length:0;
+  const gr=grades.slice(0,40).map(x=>'<tr><td>'+E(x.d)+'</td><td>'+E(x.sj)+'</td><td style="text-align:center">'+badge(x.v)+'</td><td>'+(seen&&!seenSet.has(x.k)?'<span class="badge bp">Նոր</span>':'')+'</td></tr>').join('');
+  el.innerHTML='<div class="pt">📋 Իմ օրագրի ամփոփում</div><div class="ps">Տվյալները ավտոմատ թարմանում են, երբ ուսուցիչը պահպանում է մատյանը</div>'
+   +'<div class="cd" style="padding:18px;margin-bottom:14px"><div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center"><div class="av avp" style="width:56px;height:56px;font-size:18px">'+E((nm||'?').split(/\s+/).map(x=>x[0]).slice(0,2).join(''))+'</div>'
+   +'<div><div style="font-weight:800;font-size:18px">'+E(nm)+'</div><div style="color:var(--txt2);font-size:13px">'+(cls?E(cls)+' դասարան':'Դասարանը նշված չէ')+(CU.schoolName?' · '+E(CU.schoolName):'')+'</div></div>'
+   +(newCnt?'<span class="badge bp" style="margin-left:auto">'+newCnt+' նոր գրառում</span>':'')+'</div></div>'
+   +sched
+   +'<div class="cd" style="margin-bottom:14px;overflow:auto"><div class="ddh"><span>📚 Առարկաներ և ուսուցիչներ</span></div>'+(subjRows?'<table><thead><tr><th>Առարկա</th><th>Ուսուցիչ</th><th style="text-align:center">Միջին</th></tr></thead><tbody>'+subjRows+'</tbody></table>':'<div style="padding:14px;color:var(--txt3)">Առարկաներ դեռ չկան։</div>')+'</div>'
+   +'<div class="cd" style="margin-bottom:14px;overflow:auto"><div class="ddh"><span>⭐ Գնահատականներ (վերջին 40)</span></div>'+(gr?'<table><thead><tr><th>Ամսաթիվ</th><th>Առարկա</th><th style="text-align:center">Գնահատական</th><th></th></tr></thead><tbody>'+gr+'</tbody></table>':'<div style="padding:14px;color:var(--txt3)">Գնահատականներ դեռ չկան։</div>')+'</div>'
+   +'<div class="cd" style="margin-bottom:14px;overflow:auto"><div class="ddh"><span>🚫 Բացակայություններ ('+abs.length+')</span></div>'+(abs.length?'<table><thead><tr><th>Ամսաթիվ</th><th>Առարկա</th></tr></thead><tbody>'+abs.slice(0,40).map(x=>'<tr><td>'+E(x.d)+'</td><td>'+E(x.sj)+'</td></tr>').join('')+'</tbody></table>':'<div style="padding:14px;color:var(--txt3)">Բացակայություններ չկան։</div>')+'</div>'
+   +'<div class="cd" style="margin-bottom:14px;overflow:auto"><div class="ddh"><span>📝 Ուսուցիչների նշումներ՝ թեմաներ և տնային առաջադրանքներ (վերջին 3 շաբաթ)</span></div>'+(notes.length?'<table><thead><tr><th>Ամսաթիվ</th><th>Առարկա</th><th>Թեմա</th><th>Տնային</th></tr></thead><tbody>'+notes.slice(0,40).map(n=>'<tr><td>'+E(n.d)+'</td><td>'+E(n.sj)+'</td><td>'+E(n.topic||'')+'</td><td>'+E(n.hw||'')+'</td></tr>').join('')+'</tbody></table>':'<div style="padding:14px;color:var(--txt3)">Նշումներ դեռ չկան։</div>')+'</div>'
+   +'<div style="font-size:12px;color:var(--txt3)">Դուք տեսնում եք միայն ձեր տվյալները։ Գնահատականները փոխել չի կարելի։</div>';
+  try{localStorage.setItem(seenKey(),JSON.stringify(grades.concat(abs).map(x=>x.k)));}catch(e){}
+}
+
+/* =====================================================================
+   3) ADMIN: school code + personal student codes
+===================================================================== */
+const CS={d:null,cls:'',q:'',busy:false};
+async function drawCodes(force){
+  const el=$('acodes');if(!el||!isAdm())return;
+  if(!CS.d||force){el.innerHTML='<div class="pt">🔑 Դպրոցի և աշակերտների կոդեր</div><div class="ps">Բեռնվում է...</div>';try{CS.d=await readCodes();}catch(e){el.innerHTML='<div class="pt">🔑 Կոդեր</div><div class="ac-err">Չհաջողվեց բեռնել։</div>';return;}}
+  const d=CS.d,classes=Object.keys(DB.classes||{}).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  if(!CS.cls||classes.indexOf(CS.cls)===-1)CS.cls=classes[0]||'';
+  const byKey={};Object.entries(d.students).forEach(([c,e])=>{byKey[e.cls+'|'+e.name]=[c,e];});
+  const names=(DB.classes[CS.cls]||[]);
+  const q=CS.q.trim().toLowerCase();
+  const total=Object.keys(d.students).length,linked=Object.values(d.students).filter(e=>e.linked).length;
+  const rows=names.filter(n=>!q||n.toLowerCase().includes(q)).map(n=>{
+    const f=byKey[CS.cls+'|'+n];
+    if(!f)return '<tr><td><b>'+E(n)+'</b></td><td style="color:var(--txt3)">կոդ չկա</td><td><span class="rq-st p">—</span></td><td><button class="btn bp2" onclick="mdCdGen(\''+E(CS.cls).replace(/'/g,"\\'")+'\',\''+E(n).replace(/'/g,"\\'")+'\')">Ստեղծել կոդ</button></td></tr>';
+    const [c,e]=f;
+    return '<tr><td><b>'+E(n)+'</b></td><td><code class="cd-code">'+E(fmt(c))+'</code></td><td>'+(e.linked?'<span class="rq-st a">Կապակցված</span> <small>'+E(e.linked.user)+'</small>':'<span class="rq-st p">Ազատ</span>')+'</td><td style="white-space:nowrap">'
+      +(e.linked?'<button class="btn bd2" onclick="mdCdUnlink(\''+c+'\')">Անջատել հաշիվը</button>':'<button class="btn bg2" onclick="mdCdRegen(\''+c+'\')">Նոր կոդ</button>')+'</td></tr>';
+  }).join('');
+  const orphan=Object.entries(d.students).filter(([c,e])=>!(DB.classes[e.cls]||[]).includes(e.name));
+  el.innerHTML='<div class="pt">🔑 Դպրոցի և աշակերտների կոդեր</div><div class="ps">Աշակերտները գրանցվում են էլ. փոստով, ապա դպրոցի և իրենց անհատական կոդով կապակցվում են իրենց տվյալներին</div>'
+   +'<div class="cd" style="padding:16px;margin-bottom:14px"><div style="font-weight:800;margin-bottom:10px">🏫 Դպրոց</div><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">'
+   +'<div class="fg" style="flex:1;min-width:220px;margin:0"><label>Դպրոցի անվանումը</label><input id="cd-name" value="'+E(d.school.name||'')+'" placeholder="օր․ Երևանի N 1 դպրոց"></div>'
+   +'<div class="fg" style="min-width:200px;margin:0"><label>Դպրոցի կոդը</label><div class="cd-code big">'+(d.school.code?E(fmt(d.school.code)):'—')+'</div></div>'
+   +'<button class="btn bp2" onclick="mdCdSaveSchool(false)">Պահպանել անունը</button><button class="btn bg2" onclick="mdCdSaveSchool(true)">'+(d.school.code?'Փոխել կոդը':'Ստեղծել կոդ')+'</button></div>'
+   +'<div style="font-size:12px;color:var(--txt3);margin-top:8px">Դպրոցի կոդը փոխելուց հետո արդեն կապակցված աշակերտները մնում են կապակցված։</div></div>'
+   +'<div class="cd" style="padding:16px"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px"><div style="font-weight:800">👥 Աշակերտների անհատական կոդեր</div><span style="color:var(--txt2);font-size:12px">'+total+' կոդ, '+linked+' կապակցված</span>'
+   +'<span style="flex:1"></span><button class="btn bp2" onclick="mdCdGenAll()">Ստեղծել բոլոր բացակայող կոդերը</button><button class="btn bg2" onclick="mdCdPrint()">🖨 Տպել</button><button class="btn bg2" onclick="mdCdCsv()">⬇ CSV</button></div>'
+   +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px"><select onchange="mdCdCls(this.value)" style="padding:8px 10px;border-radius:8px">'+classes.map(c=>'<option value="'+E(c)+'"'+(c===CS.cls?' selected':'')+'>'+E(c)+'</option>').join('')+'</select>'
+   +'<input placeholder="Որոնել աշակերտ..." value="'+E(CS.q)+'" oninput="mdCdQ(this.value)" style="padding:8px 10px;border-radius:8px;min-width:200px"></div>'
+   +'<div id="cd-msg" style="min-height:18px;font-size:13px;margin-bottom:6px"></div>'
+   +(names.length?'<div style="overflow:auto"><table><thead><tr><th>Աշակերտ</th><th>Անհատական կոդ</th><th>Կարգավիճակ</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div style="padding:14px;color:var(--txt3)">Այս դասարանում աշակերտներ չկան։</div>')
+   +(orphan.length?'<div style="margin-top:12px;font-size:12px;color:var(--txt3)">Կան '+orphan.length+' կոդ աշակերտների համար, որոնք այլևս այս դասարանում չկան։ <button class="btn bd2" onclick="mdCdClean()">Հեռացնել չկապակցվածները</button></div>':'')
+   +'</div>';
+  try{drawParentsCard(el,d);}catch(e){console.error(e);}
+}
+const cmsg=(m,bad)=>{const e=$('cd-msg');if(e){e.style.color=bad?'var(--red)':'var(--grn)';e.textContent=m;}};
+window.mdCdCls=v=>{CS.cls=v;drawCodes();};
+window.mdCdQ=v=>{CS.q=v;const sel=document.activeElement;drawCodes().then(()=>{const i=document.querySelector('#acodes input[oninput]');if(i){i.focus();i.setSelectionRange(v.length,v.length);}});};
+function newCode(d){let c;do{c=rnd(8);}while(d.students[c]);return c;}
+window.mdCdSaveSchool=async function(regen){
+  const name=(($('cd-name')||{}).value||'').trim();
+  if(regen&&CS.d.school.code&&!confirm('Փոխե՞լ դպրոցի կոդը։ Նոր աշակերտները պետք է օգտագործեն նորը։'))return;
+  try{await txCodes(d=>{d.school.name=name;if(regen||!d.school.code)d.school.code=rnd(8);});CS.d=await readCodes();await drawCodes();cmsg('Պահպանվեց։');}catch(e){console.error(e);cmsg('Չհաջողվեց պահպանել։',1);}
+};
+window.mdCdGen=async function(cls,name){
+  try{await txCodes(d=>{const ex=Object.values(d.students).find(e=>e.cls===cls&&e.name===name);if(ex)return;d.students[newCode(d)]={name:name,cls:cls,linked:null};});CS.d=await readCodes();await drawCodes();}catch(e){console.error(e);cmsg('Չհաջողվեց։',1);}
+};
+window.mdCdGenAll=async function(){
+  let n=0;
+  try{await txCodes(d=>{const have=new Set(Object.values(d.students).map(e=>e.cls+'|'+e.name));
+    Object.entries(DB.classes||{}).forEach(([cls,list])=>(list||[]).forEach(name=>{if(!have.has(cls+'|'+name)){d.students[newCode(d)]={name:name,cls:cls,linked:null};have.add(cls+'|'+name);n++;}}));});
+    CS.d=await readCodes();await drawCodes();cmsg(n?('Ստեղծվեց '+n+' նոր կոդ։'):'Բոլոր աշակերտներն արդեն ունեն կոդ։');}catch(e){console.error(e);cmsg('Չհաջողվեց։',1);}
+};
+window.mdCdRegen=async function(c){
+  if(!confirm('Ստեղծե՞լ նոր կոդ։ Հինը կդադարի աշխատել։'))return;
+  try{await txCodes(d=>{const e=d.students[c];if(!e||e.linked)throw new Error('linked');delete d.students[c];d.students[newCode(d)]=e;});CS.d=await readCodes();await drawCodes();}catch(e){console.error(e);cmsg('Չհաջողվեց (կոդը գուցե հենց նոր կապակցվել է)։',1);await drawCodes(true);}
+};
+window.mdCdUnlink=async function(c){
+  const e0=CS.d.students[c];if(!e0)return;
+  if(!confirm('Անջատե՞լ «'+e0.name+'» աշակերտի կապակցված հաշիվը (' + (e0.linked&&e0.linked.user) + ')։ Աշակերտը կկորցնի օրագրի հասանելիությունը մինչև նորից կապակցվի։'))return;
+  try{
+    const user=e0.linked&&e0.linked.user;
+    await txCodes(d=>{const e=d.students[c];if(e)e.linked=null;});
+    const s=await bGet(BS);if(s&&s.users){DB=s;PE=s.pending||{};}
+    const u=(DB.users||{})[user];
+    if(u&&u.linked&&norm(u.linked.code)===norm(c)){u.unlinked=true;u.class='';u.name=String(u.email||user).split('@')[0];delete u.linked;delete u.schoolName;await svSchool();}
+    CS.d=await readCodes();await drawCodes();cmsg('Հաշիվն անջատվեց, կոդը նորից ազատ է։');
+  }catch(e){console.error(e);cmsg('Չհաջողվեց։',1);}
+};
+window.mdCdClean=async function(){
+  try{await txCodes(d=>{Object.entries(d.students).forEach(([c,e])=>{if(!(DB.classes[e.cls]||[]).includes(e.name)&&!e.linked)delete d.students[c];});});CS.d=await readCodes();await drawCodes();}catch(e){cmsg('Չհաջողվեց։',1);}
+};
+function listFor(){return Object.entries(CS.d.students).map(([c,e])=>({c:fmt(c),name:e.name,cls:e.cls,st:e.linked?'Կապակցված':'Ազատ'})).sort((a,b)=>a.cls.localeCompare(b.cls,undefined,{numeric:true})||a.name.localeCompare(b.name,'hy'));}
+window.mdCdCsv=function(){
+  if(!CS.d)return;const rows=[['Դասարան','Աշակերտ','Անհատական կոդ','Կարգավիճակ']].concat(listFor().map(x=>[x.cls,x.name,x.c,x.st]));
+  const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='student-codes.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+};
+window.mdCdPrint=function(){
+  if(!CS.d)return;const w=window.open('','_blank');if(!w){cmsg('Թույլատրեք pop-up-ը տպելու համար։',1);return;}
+  const L=listFor(),by={};L.forEach(x=>{(by[x.cls]=by[x.cls]||[]).push(x);});
+  w.document.write('<!doctype html><meta charset="utf-8"><title>Աշակերտների կոդեր</title><style>body{font-family:Arial,sans-serif;padding:20px}h2{margin:18px 0 6px;page-break-after:avoid}table{border-collapse:collapse;width:100%}td,th{border:1px solid #999;padding:6px 10px;text-align:left}code{font-size:15px;letter-spacing:1px}.c{page-break-inside:avoid}</style>'
+   +'<h1>'+E(CS.d.school.name||'Դպրոց')+'</h1><p>Դպրոցի կոդ՝ <b><code>'+E(fmt(CS.d.school.code||''))+'</code></b></p>'
+   +Object.keys(by).map(c=>'<div class="c"><h2>'+E(c)+' դասարան</h2><table><tr><th>Աշակերտ</th><th>Անհատական կոդ</th></tr>'+by[c].map(x=>'<tr><td>'+E(x.name)+'</td><td><code>'+E(x.c)+'</code></td></tr>').join('')+'</table></div>').join('')
+   +'<script>setTimeout(function(){print()},300)<\/script>');w.document.close();
+};
+
+
+/* =====================================================================
+   3) PARENT ACCOUNT LINKING
+   admin code -> parent registers (e-mail + password) -> logs in -> identifies with the code
+   -> adds children by personal code + date of birth -> existing diary shows the child
+===================================================================== */
+const PK={err:'',busy:false,done:false,name:''};
+function drawPk(){
+  const el=$('pk');if(!el)return;
+  el.innerHTML='<div class="pt">🪪 Նույնականացում</div><div class="ps">Հաստատեք, որ դուք դպրոցի ծնողն եք՝ օրագիրը բացելու համար</div>'
+   +'<div class="cd" style="padding:30px;text-align:center;max-width:560px"><div style="font-size:48px;margin-bottom:8px">🔐</div>'
+   +'<div style="font-weight:800;font-size:19px;margin-bottom:6px">Դուք դեռ նույնականացված չեք</div>'
+   +'<div style="color:var(--txt2);font-size:13px;line-height:1.6;margin-bottom:20px">Նույնականացվելու համար պետք է ծնողի անհատական կոդը, որը տրամադրում է դպրոցի ադմինիստրացիան։</div>'
+   +'<button class="lk-big" onclick="mdPkOpen()">Նույնականացվել</button></div>';
+}
+function pkDraw(){
+  let o=$('md-lk');if(!o){o=document.createElement('div');o.id='md-lk';document.body.appendChild(o);}
+  o.classList.add('on');
+  const logo=(document.querySelector('#aw img')||{}).src||'';
+  let b;
+  if(PK.done){
+    b='<div class="ac-ok"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><h2>Դուք նույնականացվեցիք</h2><p class="ac-s"><b>'+E(PK.name)+'</b><br>Այժմ կարող եք ավելացնել երեխային՝ նրա անհատական կոդով և ծննդյան ամսաթվով։</p><button class="ac-btn g" onclick="mdPkFinish()">Բացել օրագիրը</button>';
+  }else{
+    b='<h2>Մուտքագրեք ծնողի կոդը</h2><p class="ac-s">Կոդը տրամադրում է դպրոցի ադմինիստրացիան։</p>'
+     +'<input id="pk-in" class="lk-in" placeholder="XXXX-XXXX" autocomplete="off" autocapitalize="characters" onkeydown="if(event.key===\'Enter\')mdPkConfirm()">'
+     +(PK.err?'<div class="ac-err" role="alert">'+E(PK.err)+'</div>':'')+'<button class="ac-btn g" onclick="mdPkConfirm()"'+(PK.busy?' disabled':'')+'>Հաստատել</button>';
+  }
+  o.innerHTML='<div class="ac-box"><button class="lk-x" onclick="mdLinkClose()" aria-label="Փակել">✕</button><div class="ac-logo"><img alt="" src="'+E(logo)+'"><span>MyDigitalSchool</span></div>'+b+'</div>';
+  const i=$('pk-in');if(i)setTimeout(()=>i.focus(),30);
+}
+window.mdPkOpen=function(){PK.err='';PK.busy=false;PK.done=false;pkDraw();};
+window.mdPkConfirm=async function(){
+  if(PK.busy)return;
+  const m=locked();if(m){PK.err='Չափից շատ սխալ փորձեր։ Փորձեք '+m+' րոպե անց։';pkDraw();return;}
+  const v=norm(($('pk-in')||{}).value);
+  if(v.length<4){PK.err='Մուտքագրեք կոդը։';pkDraw();return;}
+  PK.busy=true;PK.err='';pkDraw();
+  let claimed=false,name='';
+  try{
+    await txCodes(d=>{
+      const e=d.parents[v];if(!e)throw new Error('nocode');
+      if(e.linked&&e.linked.user!==CU.username)throw new Error('used');
+      if(Object.keys(d.parents).some(c=>c!==v&&d.parents[c].linked&&d.parents[c].linked.user===CU.username))throw new Error('already');
+      e.linked={user:CU.username,ts:Date.now()};name=e.name||'';
+    });
+    claimed=true;okReset();
+    const s=await bGet(BS);if(s&&s.users){DB=s;PE=s.pending||{};}
+    const u=(DB.users||{})[CU.username];if(!u)throw new Error('user');
+    u.name=name||u.name;u.unlinked=false;u.identified=true;u.parentCode=v;u.children=u.children||[];u.identifiedAt=Date.now();
+    await svSchool();
+    CU.name=u.name;CU.unlinked=false;CU.identified=true;CU.parentCode=v;CU.children=u.children;
+    try{const sb=$('sbn');if(sb)sb.textContent=CU.name;}catch(e){}
+    PK.name=CU.name;PK.done=true;
+  }catch(e){
+    console.error(e);
+    if(claimed){try{await txCodes(d=>{const x=d.parents[v];if(x&&x.linked&&x.linked.user===CU.username)x.linked=null;});}catch(_){}}
+    const M={nocode:'Այս կոդը չի գտնվել։ Ստուգեք կոդը։',used:'Այս կոդը արդեն կապակցված է մեկ այլ հաշվի հետ։',already:'Ձեր հաշիվն արդեն կապակցված է ծնողի կոդի հետ։',user:'Հաշիվը չի գտնվել։'};
+    if(e&&e.message==='nocode')fail();
+    PK.err=M[e&&e.message]||'Չհաջողվեց հաստատել։ Ստուգեք ինտերնետը և փորձեք կրկին։';
+  }
+  PK.busy=false;pkDraw();
+};
+window.mdPkFinish=function(){
+  mdLinkClose();
+  try{if(typeof mdSessionSave==='function')mdSessionSave();}catch(e){}
+  try{window.buildNav();}catch(e){console.error(e);}
+  const p=$('md-portal');
+  if(p&&!p.classList.contains('h')&&typeof window.mdCard==='function'){try{window.mdCard('diary');}catch(e){}}
+};
+/* portal banner for unidentified parents (extends the student one) */
+const _pb=portalBanner;
+portalBanner=function(){
+  _pb();
+  const p=$('md-portal');if(!p||p.classList.contains('h'))return;
+  const w=p.querySelector('.mp-wrap');if(!w)return;
+  const has=w.querySelector('#pk-banner');
+  if(!isUnP()){if(has)has.remove();return;}
+  if(has)return;
+  const d=document.createElement('div');d.id='pk-banner';d.setAttribute('style','display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:linear-gradient(135deg,var(--acc-lt),var(--surf));border:1px solid var(--acc);border-radius:20px;padding:18px 22px;margin:0 0 22px');
+  d.innerHTML='<div><b style="display:block;font-size:16px">Դուք դեռ նույնականացված չեք</b><span style="color:var(--txt2);font-size:13px">Օրագիրը կբացվի ծնողի կոդը մուտքագրելուց հետո։</span></div><button class="lk-big" onclick="mdPkGo()">Նույնականացվել</button>';
+  const h=w.querySelector('.mp-sub');if(h)h.insertAdjacentElement('afterend',d);else w.prepend(d);
+};
+window.mdPkGo=function(){
+  // open the identification window directly (works from the portal and from inside the app)
+  PK.err='';PK.busy=false;PK.done=false;pkDraw();
+};
+
+/* ---------- add a child (inside the existing diary) ---------- */
+const CH={err:'',busy:false};
+function dobNorm(x){x=String(x||'').trim();let m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(x);if(m)return m[1]+'-'+m[2]+'-'+m[3];m=/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/.exec(x);if(m)return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');return '';}
+const _bfs=window.buildFamSelect;
+window.buildFamSelect=function(){
+  let h=_bfs.apply(this,arguments);
+  if(!(CU&&CU.role==='parent'&&CU.selfReg&&CU.identified))return h;
+  const btn='<div style="margin:0 0 16px"><button class="lk-big" style="padding:12px 22px;font-size:15px;animation:none" onclick="mdChOpen()">＋ Ավելացնել երեխա</button></div>';
+  h=h.replace(/<span class="badge ba">🔒 PIN required<\/span>/g,'<span class="badge bp">✓ Հաստատված</span>');
+  h=h.replace('<div class="ps">Select a child to view their school information</div>','<div class="ps">Select a child to view their school information</div>'+btn);
+  if(!(CU.children||[]).length)h=h.replace('</div></div>','<div class="cd" style="grid-column:1/-1;padding:28px;text-align:center;color:var(--txt2)"><div style="font-size:38px;margin-bottom:6px">👶</div>Դեռ ավելացված երեխա չկա։ Սեղմեք «＋ Ավելացնել երեխա»՝ երեխայի անհատական կոդով և ծննդյան ամսաթվով։</div></div></div>');
+  return h;
+};
+function chDraw(){
+  let o=$('md-lk');if(!o){o=document.createElement('div');o.id='md-lk';document.body.appendChild(o);}
+  o.classList.add('on');
+  const logo=(document.querySelector('#aw img')||{}).src||'';
+  o.innerHTML='<div class="ac-box"><button class="lk-x" onclick="mdLinkClose()" aria-label="Փակել">✕</button><div class="ac-logo"><img alt="" src="'+E(logo)+'"><span>MyDigitalSchool</span></div>'
+   +'<h2>Ավելացնել երեխա</h2><p class="ac-s">Մուտքագրեք երեխայի անհատական կոդը (այն տալիս է դպրոցը) և նրա ծննդյան ամսաթիվը։</p>'
+   +'<input id="ch-code" class="lk-in" placeholder="XXXX-XXXX" autocomplete="off" autocapitalize="characters">'
+   +'<label style="display:block;text-align:left;font-size:12px;font-weight:700;color:var(--txt2);margin:0 0 6px">Երեխայի ծննդյան ամսաթիվ</label>'
+   +'<input id="ch-dob" type="date" class="lk-in" style="font-size:17px;letter-spacing:0" onkeydown="if(event.key===\'Enter\')mdChAdd()">'
+   +(CH.err?'<div class="ac-err" role="alert">'+E(CH.err)+'</div>':'')
+   +'<button class="ac-btn g" onclick="mdChAdd()"'+(CH.busy?' disabled':'')+'>Գտնել և ավելացնել երեխային</button></div>';
+  const i=$('ch-code');if(i)setTimeout(()=>i.focus(),30);
+}
+window.mdChOpen=function(){CH.err='';CH.busy=false;chDraw();};
+window.mdChAdd=async function(){
+  if(CH.busy)return;
+  const m=locked();if(m){CH.err='Չափից շատ սխալ փորձեր։ Փորձեք '+m+' րոպե անց։';chDraw();return;}
+  const code=norm(($('ch-code')||{}).value),dob=dobNorm(($('ch-dob')||{}).value);
+  if(code.length<4||!dob){CH.err='Լրացրեք և՛ կոդը, և՛ ծննդյան ամսաթիվը։';chDraw();return;}
+  CH.busy=true;CH.err='';
+  try{
+    const d=await readCodes();
+    const s=await bGet(BS);if(s&&s.users){DB=s;PE=s.pending||{};}
+    const e=d.students[code];
+    let rec=null;
+    if(e)rec=Object.values(DB.users||{}).find(u=>u&&u.role==='student'&&u.name===e.name&&u.class===e.cls&&dobNorm(u.dob));
+    if(e&&!rec){CH.err='Այս աշակերտի ծննդյան ամսաթիվը դպրոցում գրանցված չէ։ Դիմեք դպրոցի ադմինին։';}
+    else if(!e||dobNorm(rec.dob)!==dob){fail();CH.err='Կոդը և ծննդյան ամսաթիվը չեն համապատասխանում որևէ աշակերտի։';}
+    else{
+      const u=(DB.users||{})[CU.username];if(!u)throw new Error('user');
+      u.children=u.children||[];
+      if(u.children.some(c=>c.name===e.name&&(c.cls||c.class)===e.cls)){CH.err='Այս երեխան արդեն ավելացված է։';}
+      else{
+        okReset();
+        u.children.push({name:e.name,cls:e.cls,verified:true,code:code,addedAt:Date.now()});
+        await svSchool();
+        CU.children=u.children;
+        CH.busy=false;mdLinkClose();
+        try{buildFamilyNav();}catch(er){console.error(er);}
+        return;
+      }
+    }
+  }catch(er){console.error(er);CH.err='Չհաջողվեց ստուգել։ Ստուգեք ինտերնետը և փորձեք կրկին։';}
+  CH.busy=false;chDraw();
+};
+/* a child added with its personal code + date of birth is already verified: no PIN needed */
+const _sfc=window.selectFamChild;
+window.selectFamChild=function(idx){
+  const ch=(CU.children||[])[idx];
+  if(ch&&ch.verified){window._famUnlocked=window._famUnlocked||{};window._famUnlocked[idx]=true;showFamilyChild(idx);return;}
+  return _sfc.apply(this,arguments);
+};
+
+/* ---------- admin: parent codes (inside the existing «Դպրոցի և աշակերտների կոդեր» page) ---------- */
+function validCode(v){return /^[A-Z0-9]{6,16}$/.test(v);}
+function drawParentsCard(el,d){
+  const ps=Object.entries(d.parents||{}).sort((a,b)=>String(a[1].name).localeCompare(String(b[1].name),'hy'));
+  const rows=ps.map(([c,e])=>'<tr><td><b>'+E(e.name)+'</b></td><td><input class="cd-code" style="border:1px solid var(--bdr);width:150px" id="pc-'+E(c)+'" value="'+E(c)+'" '+(e.linked?'readonly':'')+' autocapitalize="characters"></td><td>'+(e.linked?'<span class="rq-st a">Կապակցված</span> <small>'+E(e.linked.user)+'</small>':'<span class="rq-st p">Ազատ</span>')+'</td><td style="white-space:nowrap">'
+    +(e.linked?'<button class="btn bd2" onclick="mdPcUnlink(\''+E(c)+'\')">Անջատել հաշիվը</button>':'<button class="btn bp2" onclick="mdPcSave(\''+E(c)+'\')">Պահպանել կոդը</button> <button class="btn bg2" onclick="mdPcRegen(\''+E(c)+'\')">Նոր կոդ</button> <button class="btn bd2" onclick="mdPcDel(\''+E(c)+'\')">Ջնջել</button>')+'</td></tr>').join('');
+  const card=document.createElement('div');card.className='cd';card.id='pc-card';card.style.cssText='padding:16px;margin-top:14px';
+  card.innerHTML='<div style="font-weight:800;margin-bottom:6px">👪 Ծնողների անհատական կոդեր</div><div style="font-size:12px;color:var(--txt3);margin-bottom:12px">Ավելացրեք ծնողի գրառում և նրա կոդը։ Ծնողը գրանցվում է էլ. փոստով, ապա «Նույնականացվել» կոճակով մուտքագրում է այս կոդը։ Մեկ կոդը կարող է կապակցվել միայն մեկ հաշվի։</div>'
+   +'<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:12px"><div class="fg" style="flex:1;min-width:200px;margin:0"><label>Ծնողի անուն, ազգանուն</label><input id="pc-name" placeholder="օր․ Աննա Ավետիսյան"></div><div class="fg" style="min-width:180px;margin:0"><label>Կոդ (դատարկ՝ ավտոմատ)</label><input id="pc-code" placeholder="6–16 նիշ՝ A–Z, 0–9" autocapitalize="characters"></div><button class="btn bp2" onclick="mdPcAdd()">＋ Ավելացնել</button></div>'
+   +'<div id="pc-msg" style="min-height:18px;font-size:13px;margin-bottom:6px"></div>'
+   +(ps.length?'<div style="overflow:auto"><table><thead><tr><th>Ծնող</th><th>Անհատական կոդ</th><th>Կարգավիճակ</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div style="padding:10px;color:var(--txt3)">Ծնողների գրառումներ դեռ չկան։</div>');
+  const old=$('pc-card');if(old)old.remove();
+  el.appendChild(card);
+}
+const pmsg=(m,bad)=>{const e=$('pc-msg');if(e){e.style.color=bad?'var(--red)':'var(--grn)';e.textContent=m;}};
+async function pcRefresh(){CS.d=await readCodes();await drawCodes();}
+window.mdPcAdd=async function(){
+  const name=(($('pc-name')||{}).value||'').trim();let code=norm(($('pc-code')||{}).value);
+  if(!name){pmsg('Գրեք ծնողի անունը։',1);return;}
+  if(code&&!validCode(code)){pmsg('Կոդը պետք է լինի 6–16 նիշ՝ միայն լատինական տառեր և թվեր։',1);return;}
+  try{
+    let used=code;
+    await txCodes(d=>{
+      if(code){if(d.parents[code])throw new Error('dup');}
+      else{do{used=rnd(8);}while(d.parents[used]);}
+      d.parents[used]={name:name,linked:null,created:Date.now()};
+    });
+    await pcRefresh();pmsg('Ավելացվեց։ Կոդը՝ '+fmt(used));
+  }catch(e){console.error(e);pmsg(e&&e.message==='dup'?'Այս կոդն արդեն կա։':'Չհաջողվեց պահպանել։',1);}
+};
+window.mdPcSave=async function(c){
+  const nv=norm(($('pc-'+c)||{}).value);
+  if(nv===c){pmsg('Կոդը չի փոխվել։');return;}
+  if(!validCode(nv)){pmsg('Կոդը պետք է լինի 6–16 նիշ՝ միայն լատինական տառեր և թվեր։',1);return;}
+  try{await txCodes(d=>{const e=d.parents[c];if(!e||e.linked)throw new Error('linked');if(d.parents[nv])throw new Error('dup');delete d.parents[c];d.parents[nv]=e;});await pcRefresh();pmsg('Կոդը պահպանվեց։');}
+  catch(e){console.error(e);pmsg(e&&e.message==='dup'?'Այս կոդն արդեն կա։':'Չհաջողվեց (կոդը գուցե հենց նոր կապակցվեց)։',1);}
+};
+window.mdPcRegen=async function(c){
+  if(!confirm('Ստեղծե՞լ նոր կոդ։ Հինը կդադարի աշխատել։'))return;
+  try{await txCodes(d=>{const e=d.parents[c];if(!e||e.linked)throw new Error('linked');let n;do{n=rnd(8);}while(d.parents[n]);delete d.parents[c];d.parents[n]=e;});await pcRefresh();}catch(e){console.error(e);pmsg('Չհաջողվեց։',1);}
+};
+window.mdPcDel=async function(c){
+  if(!confirm('Ջնջե՞լ ծնողի գրառումը։'))return;
+  try{await txCodes(d=>{const e=d.parents[c];if(e&&e.linked)throw new Error('linked');delete d.parents[c];});await pcRefresh();}catch(e){console.error(e);pmsg('Չհաջողվեց։',1);}
+};
+window.mdPcUnlink=async function(c){
+  const e0=(CS.d.parents||{})[c];if(!e0||!e0.linked)return;
+  if(!confirm('Անջատե՞լ «'+e0.name+'» ծնողի հաշիվը ('+e0.linked.user+')։ Նա կկորցնի երեխաների հասանելիությունը մինչև նորից նույնականացվի։'))return;
+  try{
+    const user=e0.linked.user;
+    await txCodes(d=>{const e=d.parents[c];if(e)e.linked=null;});
+    const s=await bGet(BS);if(s&&s.users){DB=s;PE=s.pending||{};}
+    const u=(DB.users||{})[user];
+    if(u&&u.role==='parent'&&norm(u.parentCode)===norm(c)){u.unlinked=true;u.identified=false;u.children=[];u.name=String(u.email||user).split('@')[0];delete u.parentCode;await svSchool();}
+    await pcRefresh();pmsg('Հաշիվն անջատվեց, կոդը նորից ազատ է։');
+  }catch(e){console.error(e);pmsg('Չհաջողվեց։',1);}
+};
+
+/* ---------- styles ---------- */
+const st=document.createElement('style');st.id='md-edu-css';
+st.textContent='#md-lk{position:fixed;inset:0;z-index:6600;display:none;align-items:center;justify-content:center;overflow:auto;padding:20px;background:rgba(15,18,40,.55);backdrop-filter:blur(6px);font-family:Inter,"Noto Sans Armenian",system-ui,sans-serif;color:var(--txt)}#md-lk.on{display:flex}'
+ +'#md-lk .ac-box{position:relative}.lk-x{position:absolute;top:14px;right:14px;border:none;background:var(--surf2);color:var(--txt2);width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:14px}'
+ +'.lk-in{width:100%;box-sizing:border-box;padding:16px;font-size:22px;letter-spacing:4px;text-align:center;border:2px solid var(--bdr2);border-radius:14px;background:var(--surf2);color:var(--txt);margin-bottom:14px;font-family:ui-monospace,Menlo,Consolas,monospace;text-transform:uppercase}.lk-in:focus{outline:none;border-color:var(--acc)}'
+ +'.lk-back{display:block;margin:12px auto 0;background:none;border:none;color:var(--acc);font-weight:700;cursor:pointer;font-family:inherit}'
+ +'.lk-st{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px}.lk-st span{display:flex;flex-direction:column;align-items:center;font-size:12px;font-weight:800;width:30px;height:30px;border-radius:50%;background:var(--surf3);color:var(--txt3);justify-content:center;position:relative}.lk-st span em{position:absolute;top:34px;font-style:normal;font-size:10px;font-weight:600;white-space:nowrap}.lk-st span.a{background:var(--acc);color:#fff}.lk-st span.d{background:#22c55e;color:#fff}.lk-st i{width:36px;height:2px;background:var(--bdr2)}#md-lk h2{margin-top:30px}'
+ +'.lk-big{border:none;border-radius:16px;padding:16px 30px;font-size:17px;font-weight:800;color:#fff;cursor:pointer;font-family:inherit;background:linear-gradient(135deg,var(--acc3),var(--acc));box-shadow:0 12px 30px rgba(58,94,203,.4);animation:lkPulse 2.4s ease-in-out infinite}@keyframes lkPulse{50%{transform:translateY(-2px);box-shadow:0 16px 36px rgba(58,94,203,.5)}}@media(prefers-reduced-motion:reduce){.lk-big{animation:none}}'
+ +'#lk-banner{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:linear-gradient(135deg,var(--acc-lt),var(--surf));border:1px solid var(--acc);border-radius:20px;padding:18px 22px;margin:0 0 22px}#lk-banner b{display:block;font-size:16px}#lk-banner span{font-size:13px;color:var(--txt2)}'
+ +'.cd-code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;font-weight:700;letter-spacing:1.5px;background:var(--surf2);padding:4px 8px;border-radius:8px}.cd-code.big{font-size:20px;padding:8px 14px;display:inline-block}';
+document.head.appendChild(st);
+})();
+
+</script>
 </body>
 </html>
 
-</body></html>
