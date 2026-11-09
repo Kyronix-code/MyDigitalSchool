@@ -7255,7 +7255,7 @@ function renderReq(){
     const cnt=s=>rs.filter(r=>s==='all'||r.status===s).length;
     h+='<div class="rq-chips">'+[['all','Բոլորը'],['pending','Սպասում է'],['approved','Հաստատված'],['rejected','Մերժված']].map(x=>'<button class="'+(filt===x[0]?'on':'')+'" onclick="mdReqFilter(\''+x[0]+'\')"><span>'+x[1]+'</span> ('+cnt(x[0])+')</button>').join('')+'</div>';
     const list=rs.filter(r=>filt==='all'||r.status===filt);
-    h+=list.length?'<div class="rq-tw"><table><thead><tr><th>Անուն Ազգանուն</th><th>Էլ. փոստ</th><th>Դեր</th><th>Ուղարկման ամսաթիվ</th><th>Կարգավիճակ</th><th></th></tr></thead><tbody>'
+    h+=list.length?'<div class="rq-tw"><table><thead><tr><th>Անուն Ազգանուն</th><th>Էլ. փոստ</th><th>Դեր</th><th>Ուղարկման ամսաթիվ</th><th>Կարգավիճակ</th><th>Կցված երեխաներ</th><th></th></tr></thead><tbody>'
       +list.map(r=>'<tr><td><b>'+E(r.first+' '+r.last)+'</b></td><td>'+E(r.email)+'</td><td>'+(ROLE_LBL[r.role]||E(r.role))+'</td><td>'+fmtDate(r.ts)+'</td><td>'+stBadge(r.status)+'</td><td><button class="btn bp2" onclick="mdOpenReq(\''+r.id+'\')">Բացել</button></td></tr>').join('')+'</tbody></table></div>'
       :'<div class="mp-empty">Հայտեր չկան։</div>';
   }else{
@@ -10572,18 +10572,18 @@ window.mdPkConfirm=async function(){
   const v=norm(($('pk-in')||{}).value);
   if(v.length<4){PK.err='Մուտքագրեք կոդը։';pkDraw();return;}
   PK.busy=true;PK.err='';pkDraw();
-  let claimed=false,name='';
+  let claimed=false,name='',kids=[];
   try{
     await txCodes(d=>{
       const e=d.parents[v];if(!e)throw new Error('nocode');
       if(e.linked&&e.linked.user!==CU.username)throw new Error('used');
       if(Object.keys(d.parents).some(c=>c!==v&&d.parents[c].linked&&d.parents[c].linked.user===CU.username))throw new Error('already');
-      e.linked={user:CU.username,ts:Date.now()};name=e.name||'';
+      e.linked={user:CU.username,ts:Date.now()};name=e.name||'';kids=(e.kids||[]).slice();
     });
     claimed=true;okReset();
     const s=await bGet(BS);if(s&&s.users){DB=s;PE=s.pending||{};}
     const u=(DB.users||{})[CU.username];if(!u)throw new Error('user');
-    u.role='parent';u.name=name||u.name;u.unlinked=false;u.identified=true;u.parentCode=v;u.children=u.children||[];u.identifiedAt=Date.now();
+    u.role='parent';u.name=name||u.name;u.unlinked=false;u.identified=true;u.parentCode=v;u.children=kids.map(k=>({name:k.name,cls:k.cls,verified:true,addedAt:Date.now(),byAdmin:true}));u.identifiedAt=Date.now();
     await svSchool();
     CU.role='parent';CU.name=u.name;CU.unlinked=false;CU.identified=true;CU.parentCode=v;CU.children=u.children;
     try{const sb=$('sbn');if(sb)sb.textContent=CU.name;}catch(e){}
@@ -10688,7 +10688,10 @@ window.selectFamChild=function(idx){
 function validCode(v){return /^[A-Z0-9]{6,16}$/.test(v);}
 function drawParentsCard(el,d){
   const ps=Object.entries(d.parents||{}).sort((a,b)=>String(a[1].name).localeCompare(String(b[1].name),'hy'));
-  const rows=ps.map(([c,e])=>'<tr><td><b>'+E(e.name)+'</b></td><td><input class="cd-code" style="border:1px solid var(--bdr);width:150px" id="pc-'+E(c)+'" value="'+E(c)+'" '+(e.linked?'readonly':'')+' autocapitalize="characters"></td><td>'+(e.linked?'<span class="rq-st a">Կապակցված</span> <small>'+E(e.linked.user)+'</small>':'<span class="rq-st p">Ազատ</span>')+'</td><td style="white-space:nowrap">'
+  const stuOpts=Object.entries(d.students||{}).sort((a,b)=>(a[1].cls+a[1].name).localeCompare(b[1].cls+b[1].name,'hy',{numeric:true})).map(([c,x])=>'<option value="'+E(c)+'">'+E(x.cls)+' · '+E(x.name)+'</option>').join('');
+  const kidsHtml=(c,e)=>(e.kids||[]).map((k,i)=>'<span class="rq-st a" style="display:inline-block;margin:0 4px 4px 0">'+E(k.name)+' ('+E(k.cls)+') <a href="#" style="color:inherit;text-decoration:none" onclick="mdPcDetach(\''+E(c)+'\','+i+');return false">✕</a></span>').join('')
+    +'<div style="display:flex;gap:6px;margin-top:4px"><select id="pcs-'+E(c)+'" style="max-width:190px"><option value="">Ընտրեք աշակերտ...</option>'+stuOpts+'</select><button class="btn bp2" onclick="mdPcAttach(\''+E(c)+'\')">Կցել</button></div>';
+  const rows=ps.map(([c,e])=>'<tr><td><b>'+E(e.name)+'</b></td><td><input class="cd-code" style="border:1px solid var(--bdr);width:150px" id="pc-'+E(c)+'" value="'+E(c)+'" '+(e.linked?'readonly':'')+' autocapitalize="characters"></td><td>'+(e.linked?'<span class="rq-st a">Կապակցված</span> <small>'+E(e.linked.user)+'</small>':'<span class="rq-st p">Ազատ</span>')+'</td><td>'+kidsHtml(c,e)+'</td><td style="white-space:nowrap">'
     +(e.linked?'<button class="btn bd2" onclick="mdPcUnlink(\''+E(c)+'\')">Անջատել հաշիվը</button>':'<button class="btn bp2" onclick="mdPcSave(\''+E(c)+'\')">Պահպանել կոդը</button> <button class="btn bg2" onclick="mdPcRegen(\''+E(c)+'\')">Նոր կոդ</button> <button class="btn bd2" onclick="mdPcDel(\''+E(c)+'\')">Ջնջել</button>')+'</td></tr>').join('');
   const card=document.createElement('div');card.className='cd';card.id='pc-card';card.style.cssText='padding:16px;margin-top:14px';
   card.innerHTML='<div style="font-weight:800;margin-bottom:6px">👪 Ծնողների անհատական կոդեր</div><div style="font-size:12px;color:var(--txt3);margin-bottom:12px">Ավելացրեք ծնողի գրառում և նրա կոդը։ Ծնողը գրանցվում է էլ. փոստով, ապա «Նույնականացվել» կոճակով մուտքագրում է այս կոդը։ Մեկ կոդը կարող է կապակցվել միայն մեկ հաշվի։</div>'
@@ -10729,6 +10732,32 @@ window.mdPcDel=async function(c){
   if(!confirm('Ջնջե՞լ ծնողի գրառումը։'))return;
   try{await txCodes(d=>{const e=d.parents[c];if(e&&e.linked)throw new Error('linked');delete d.parents[c];});await pcRefresh();}catch(e){console.error(e);pmsg('Չհաջողվեց։',1);}
 };
+window.mdPcAttach=async function(c){
+  const sc=($('pcs-'+c)||{}).value;if(!sc){pmsg('Ընտրեք աշակերտին։',1);return;}
+  try{
+    let kid=null,user=null;
+    await txCodes(d=>{const e=d.parents[c],st=d.students[sc];if(!e||!st)throw new Error('gone');e.kids=e.kids||[];if(e.kids.some(k=>k.name===st.name&&k.cls===st.cls))throw new Error('dup');kid={name:st.name,cls:st.cls};e.kids.push(kid);user=e.linked&&e.linked.user;});
+    if(user){
+      const s=await bGet(BS);if(s&&s.users){DB=s;PE=s.pending||{};}
+      const u=(DB.users||{})[user];
+      if(u&&u.role==='parent'){u.children=u.children||[];if(!u.children.some(k=>k.name===kid.name&&(k.cls||k.class)===kid.cls)){u.children.push({name:kid.name,cls:kid.cls,verified:true,addedAt:Date.now(),byAdmin:true});await svSchool();}}
+    }
+    await pcRefresh();pmsg('Երեխան կցվեց։');
+  }catch(e){console.error(e);pmsg(e&&e.message==='dup'?'Այս երեխան արդեն կցված է։':'Չհաջողվեց կցել։',1);}
+};
+window.mdPcDetach=async function(c,i){
+  if(!confirm('Հանե՞լ երեխային ծնողից։'))return;
+  try{
+    let kid=null,user=null;
+    await txCodes(d=>{const e=d.parents[c];if(!e||!e.kids||!e.kids[i])throw new Error('gone');kid=e.kids.splice(i,1)[0];user=e.linked&&e.linked.user;});
+    if(user&&kid){
+      const s=await bGet(BS);if(s&&s.users){DB=s;PE=s.pending||{};}
+      const u=(DB.users||{})[user];
+      if(u&&u.children){u.children=u.children.filter(k=>!(k.name===kid.name&&(k.cls||k.class)===kid.cls));await svSchool();}
+    }
+    await pcRefresh();pmsg('Երեխան հանվեց։');
+  }catch(e){console.error(e);pmsg('Չհաջողվեց։',1);}
+};
 window.mdPcUnlink=async function(c){
   const e0=(CS.d.parents||{})[c];if(!e0||!e0.linked)return;
   if(!confirm('Անջատե՞լ «'+e0.name+'» ծնողի հաշիվը ('+e0.linked.user+')։ Նա կկորցնի երեխաների հասանելիությունը մինչև նորից նույնականացվի։'))return;
@@ -10756,6 +10785,225 @@ document.head.appendChild(st);
 })();
 
 </script>
+<script id="md-ctl-js">
+/* ===== Account blocking + journal control (admin) ===== */
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const E=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const BLK='user_blocks',JCT='journal_ctl',DAY=86400000;
+const isAdm=()=>!!CU&&CU.role==='admin'&&CU.username==='admin';
+const dref=n=>fsdb.collection(FS_COL).doc(n);
+async function txDoc(n,fn){return fsdb.runTransaction(async tx=>{const sn=await tx.get(dref(n));const d=sn.exists?sn.data():{};const r=fn(d);tx.set(dref(n),fsClean(d));return r;});}
+const rd=async n=>{const d=await bGet(n);return d||{};};
+const dt=ts=>{if(!ts)return '—';const d=new Date(ts);return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear();};
+const ago=ts=>{if(!ts)return 'երբեք';const n=Math.floor((Date.now()-ts)/DAY);return n<=0?'այսօր':n+' օր առաջ';};
+
+/* ---------- 1) blocked screen ---------- */
+let shown=null,poll=null,keep=null;
+const css=document.createElement('style');css.id='md-ctl-css';css.textContent=`
+#md-blocked{position:fixed;inset:0;z-index:2147483000;display:none;overflow:auto;background:radial-gradient(1200px 700px at 20% 10%,#4a0d17 0%,#1a0509 55%,#0b0204 100%);color:#fff;font-family:inherit}
+#md-blocked.on{display:block}
+#md-blocked .bk-wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:28px 16px}
+#md-blocked .bk-card{width:100%;max-width:640px;text-align:center;animation:bkIn .7s cubic-bezier(.2,.9,.3,1.2) both}
+#md-blocked .bk-ring{width:132px;height:132px;margin:0 auto 22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:60px;background:rgba(255,70,90,.14);border:2px solid rgba(255,90,110,.6);box-shadow:0 0 0 0 rgba(255,70,90,.5);animation:bkPulse 2.2s ease-out infinite}
+#md-blocked .bk-ring span{display:block;animation:bkShake 3.5s ease-in-out infinite}
+#md-blocked h1{font-size:clamp(34px,7vw,58px);line-height:1.08;margin:0 0 10px;font-weight:900;letter-spacing:-.5px;background:linear-gradient(90deg,#fff,#ffb3bd);-webkit-background-clip:text;background-clip:text;color:transparent}
+#md-blocked .bk-sub{color:rgba(255,255,255,.7);font-size:15px;margin-bottom:26px}
+#md-blocked .bk-box{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:18px 20px;text-align:left;margin-bottom:14px;backdrop-filter:blur(8px);animation:bkIn .7s .15s both}
+#md-blocked .bk-box small{display:block;color:#ff9aa8;font-weight:800;font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+#md-blocked .bk-box div{font-size:17px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+#md-blocked .bk-meta{color:rgba(255,255,255,.55);font-size:12.5px;margin:14px 0 24px}
+#md-blocked .bk-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+#md-blocked button{font:inherit;font-weight:800;font-size:14px;padding:13px 24px;border-radius:14px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;cursor:pointer}
+#md-blocked button.pr{background:#ff4d63;border-color:#ff4d63}
+#md-blocked button:hover{filter:brightness(1.15)}
+@keyframes bkIn{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes bkPulse{0%{box-shadow:0 0 0 0 rgba(255,70,90,.5)}70%{box-shadow:0 0 0 38px rgba(255,70,90,0)}100%{box-shadow:0 0 0 0 rgba(255,70,90,0)}}
+@keyframes bkShake{0%,88%,100%{transform:rotate(0)}90%{transform:rotate(-10deg)}93%{transform:rotate(9deg)}96%{transform:rotate(-6deg)}}
+@media (prefers-reduced-motion:reduce){#md-blocked *{animation:none!important}}
+.jc-dot{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle;margin-right:6px}
+.jc-g{background:#22c55e}.jc-y{background:#eab308}.jc-o{background:#f97316}.jc-r{background:#ef4444}
+.jc-pick button{border:2px solid transparent;border-radius:50%;width:22px;height:22px;padding:0;cursor:pointer;margin-right:4px}
+.jc-pick button.on{border-color:var(--txt)}
+#md-bm{position:fixed;inset:0;z-index:2147482000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);padding:16px}
+#md-bm.on{display:flex}
+#md-bm .bx{background:var(--surf);color:var(--txt);border-radius:18px;padding:22px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+#md-bm textarea,#md-bm input[type=text]{width:100%;box-sizing:border-box}
+`;document.head.appendChild(css);
+function ensureOverlay(){let o=$('md-blocked');if(!o){o=document.createElement('div');o.id='md-blocked';o.setAttribute('role','alertdialog');o.setAttribute('aria-modal','true');o.setAttribute('aria-labelledby','bk-h');document.body.appendChild(o);}return o;}
+function lockPage(on){
+  [...document.body.children].forEach(el=>{
+    if(el.id==='md-blocked'||el.tagName==='SCRIPT'||el.tagName==='STYLE')return;
+    if(on){if(!el.hasAttribute('data-bk')){el.setAttribute('data-bk',el.hasAttribute('inert')?'1':'0');el.setAttribute('inert','');el.setAttribute('aria-hidden','true');}}
+    else if(el.hasAttribute('data-bk')){if(el.getAttribute('data-bk')==='0'){el.removeAttribute('inert');}el.removeAttribute('aria-hidden');el.removeAttribute('data-bk');}
+  });
+}
+function showBlock(b){
+  shown=b;const o=ensureOverlay();
+  o.innerHTML='<div class="bk-wrap"><div class="bk-card"><div class="bk-ring"><span>🚫</span></div>'
+   +'<h1 id="bk-h">Ձեր հաշիվն արգելափակված է</h1><div class="bk-sub">Այս հաշվի հասանելիությունը ժամանակավորապես կասեցված է։</div>'
+   +'<div class="bk-box"><small>Պատճառ</small><div>'+E(b.reason||'Նշված չէ')+'</div></div>'
+   +(b.note?'<div class="bk-box"><small>Ադմինիստրատորի բացատրություն</small><div>'+E(b.note)+'</div></div>':'')
+   +'<div class="bk-meta">'+(b.auto?'Արգելափակվել է ավտոմատ՝ ':'Արգելափակել է ադմինիստրատորը՝ ')+dt(b.ts)+'<br>Վերականգնման համար դիմեք դպրոցի ադմինիստրացիային։ Արգելքը հանելուց հետո կարող եք շարունակել աշխատանքը։</div>'
+   +'<div class="bk-btns"><button class="pr" onclick="mdBlkRecheck()">Ստուգել կրկին</button><button onclick="mdBlkOut()">Դուրս գալ</button></div></div></div>';
+  o.classList.add('on');lockPage(true);
+  if(!keep){keep=new MutationObserver(()=>{if(shown){const x=$('md-blocked');if(!x||!x.classList.contains('on')){showBlock(shown);}lockPage(true);}});keep.observe(document.body,{childList:true,attributes:true,subtree:false,attributeFilter:['class','style']});const o2=ensureOverlay();keep.observe(o2,{attributes:true,attributeFilter:['class','style','hidden']});}
+}
+function hideBlock(){shown=null;const o=$('md-blocked');if(o){o.classList.remove('on');o.innerHTML='';}lockPage(false);}
+window.mdBlkOut=function(){hideBlock();try{logout();}catch(e){location.reload();}};
+window.mdBlkRecheck=async function(){await gate(true);};
+async function gate(force){
+  if(!CU||!CU.username||CU.username==='admin'){hideBlock();return;}
+  try{
+    if(CU.role==='teacher'&&!force)await selfScan();
+    const d=await rd(BLK);const b=(d.u||{})[CU.username];
+    if(b)showBlock(b);else if(shown){hideBlock();}
+  }catch(e){console.error(e);}
+}
+if(!poll)poll=setInterval(()=>{if(CU&&CU.username&&CU.username!=='admin')gate();},30000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&CU&&CU.username!=='admin')gate();});
+const _sa=window.startApp;
+window.startApp=function(){
+  _sa.apply(this,arguments);
+  try{
+    if(CU&&CU.username&&CU.username!=='admin'){
+      const o=ensureOverlay();o.innerHTML='<div class="bk-wrap"><div class="bk-card"><div class="bk-sub">Ստուգվում է հաշվի կարգավիճակը...</div></div></div>';o.classList.add('on');lockPage(true);
+      gate().finally(()=>{if(!shown){o.classList.remove('on');o.innerHTML='';lockPage(false);}});
+    }else if(isAdm()){adminScan().catch(()=>{});}
+  }catch(e){console.error(e);}
+};
+
+/* ---------- 2) journal fill tracking + auto control ---------- */
+function rec(){
+  if(!CU||CU.role!=='teacher')return;
+  txDoc(JCT,d=>{d.j=d.j||{};const x=d.j[CU.username]=d.j[CU.username]||{};x.lastFill=Date.now();x.name=CU.name||'';}).catch(e=>console.error(e));
+}
+['svGrades','svAtt'].forEach(n=>{const o=window[n];if(typeof o!=='function')return;window[n]=async function(){const r=await o.apply(this,arguments);try{rec();}catch(e){}return r;};});
+function base(j,cfg){return Math.max(j.lastFill||0,cfg.startedAt||0,j.unblockedAt||0);}
+function overdue(j,cfg){return !!cfg.auto&&(Date.now()-base(j||{},cfg))>=(cfg.days||30)*DAY;}
+async function blockAuto(keys,days){
+  if(!keys.length)return;
+  await txDoc(BLK,d=>{d.u=d.u||{};keys.forEach(k=>{if(!d.u[k])d.u[k]={reason:'Մատյանը '+days+' օր շարունակ չի լրացվել',note:'Ավտոմատ արգելափակում՝ մատյանի լրացման վերահսկման կանոնով։ Լրացրեք մատյանը և դիմեք ադմինիստրատորին։',auto:true,by:'auto',ts:Date.now()};});});
+}
+async function selfScan(){
+  const c=await rd(JCT),cfg=c.cfg||{};if(!cfg.auto)return;
+  if(overdue((c.j||{})[CU.username],cfg))await blockAuto([CU.username],cfg.days||30);
+}
+async function adminScan(){
+  const c=await rd(JCT),cfg=c.cfg||{};if(!cfg.auto)return 0;
+  const bl=((await rd(BLK)).u)||{};
+  const keys=Object.entries(DB.users||{}).filter(([k,u])=>u&&u.role==='teacher'&&!bl[k]&&overdue((c.j||{})[k],cfg)).map(([k])=>k);
+  await blockAuto(keys,cfg.days||30);return keys.length;
+}
+setInterval(()=>{if(isAdm())adminScan().catch(()=>{});},10*60*1000);
+
+/* ---------- 3) admin pages ---------- */
+const _bn=window.buildNav;
+window.buildNav=function(){
+  const r=_bn.apply(this,arguments);
+  try{
+    if(isAdm()){
+      const nav=$('nav'),mn=$('mn');
+      [['blk','🚫 Արգելափակումներ'],['jc','📒 Մատյանի վերահսկում']].forEach(([id,txt])=>{
+        if(!nav.querySelector('[data-p="'+id+'"]')){
+          const it=document.createElement('div');it.className='ni';it.setAttribute('data-p',id);it.setAttribute('onclick',"showPg('"+id+"')");it.textContent=txt;
+          const ap=nav.querySelector('[data-p="acodes"]')||nav.querySelector('[data-p="apend"]');
+          if(ap)ap.parentNode.insertBefore(it,ap);else nav.appendChild(it);
+        }
+        if(!$(id))mn.insertAdjacentHTML('beforeend','<div class="pg" id="'+id+'"></div>');
+      });
+    }
+  }catch(e){console.error(e);}
+  return r;
+};
+const _sp=window.showPg;
+window.showPg=function(id){const r=_sp.apply(this,arguments);try{if(id==='blk')drawBlk();if(id==='jc')drawJc();}catch(e){console.error(e);}return r;};
+
+const BS2={q:'',role:'',b:null};
+async function drawBlk(){
+  const el=$('blk');if(!el||!isAdm())return;
+  try{BS2.b=((await rd(BLK)).u)||{};}catch(e){el.innerHTML='<div class="pt">🚫 Արգելափակումներ</div><div class="ps">Չհաջողվեց բեռնել։</div>';return;}
+  const bl=BS2.b,q=BS2.q.toLowerCase();
+  const RL={student:'Աշակերտ',teacher:'Ուսուցիչ',parent:'Ծնող'};
+  const us=Object.entries(DB.users||{}).filter(([k,u])=>u&&u.role!=='admin'&&(!BS2.role||u.role===BS2.role)&&(!q||(k+' '+(u.name||'')+' '+(u.email||'')+' '+(u.class||'')).toLowerCase().includes(q)))
+    .sort((a,b)=>(bl[b[0]]?1:0)-(bl[a[0]]?1:0)||String(a[1].name).localeCompare(String(b[1].name),'hy')).slice(0,300);
+  const n=Object.keys(bl).length;
+  el.innerHTML='<div class="pt">🚫 Արգելափակումներ</div><div class="ps">Արգելափակված հաշիվները՝ '+n+'։ Արգելափակված օգտատերը մուտք գործելիս տեսնում է ամբողջ էկրանով էջ։</div>'
+   +'<div class="cd" style="padding:14px;margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap"><input id="blk-q" placeholder="Որոնել՝ անուն, էլ. փոստ, դասարան..." value="'+E(BS2.q)+'" oninput="mdBkQ(this.value)" style="flex:1;min-width:200px"><select onchange="mdBkR(this.value)"><option value="">Բոլոր դերերը</option>'+Object.entries(RL).map(([k,v])=>'<option value="'+k+'"'+(BS2.role===k?' selected':'')+'>'+v+'</option>').join('')+'</select></div>'
+   +'<div class="cd" style="padding:0;overflow:auto"><table><thead><tr><th>Օգտատեր</th><th>Դեր</th><th>Կարգավիճակ</th><th></th></tr></thead><tbody>'
+   +(us.length?us.map(([k,u])=>{const b=bl[k];return '<tr><td><b>'+E(u.name||k)+'</b><div style="font-size:11px;color:var(--txt3)">'+E(u.email||u.login||k)+(u.class?' · '+E(u.class):'')+'</div></td><td>'+(RL[u.role]||E(u.role))+'</td><td>'
+     +(b?'<span class="rq-st d" style="color:#ef4444;font-weight:800">Արգելափակված'+(b.auto?' (ավտո)':'')+'</span><div style="font-size:11px;color:var(--txt2);max-width:260px">'+E(b.reason)+'</div>':'<span class="rq-st a">Ակտիվ</span>')
+     +'</td><td style="white-space:nowrap">'+(b?'<button class="btn bg2" onclick="mdBkEdit(\''+E(k)+'\')">Փոխել պատճառը</button> <button class="btn bp2" onclick="mdBkUn(\''+E(k)+'\')">Հանել արգելափակումը</button>':'<button class="btn bd2" onclick="mdBkEdit(\''+E(k)+'\')">🚫 Արգելափակել</button>')+'</td></tr>';}).join(''):'<tr><td colspan="4" style="padding:16px;color:var(--txt3)">Օգտատեր չի գտնվել։</td></tr>')
+   +'</tbody></table></div>';
+  const i=$('blk-q');if(i&&document.activeElement===document.body){}
+}
+window.mdBkQ=v=>{BS2.q=v;clearTimeout(BS2.t);BS2.t=setTimeout(async()=>{await drawBlk();const i=$('blk-q');if(i){i.focus();i.setSelectionRange(v.length,v.length);}},250);};
+window.mdBkR=v=>{BS2.role=v;drawBlk();};
+function modal(h){let m=$('md-bm');if(!m){m=document.createElement('div');m.id='md-bm';document.body.appendChild(m);}m.innerHTML='<div class="bx">'+h+'</div>';m.classList.add('on');}
+window.mdBkClose=()=>{const m=$('md-bm');if(m)m.classList.remove('on');};
+window.mdBkEdit=function(k){
+  const u=(DB.users||{})[k]||{},b=(BS2.b||{})[k]||{};
+  const pre=['Կանոնների խախտում','Մատյանը չի լրացվել','Անվտանգության նկատառումներ','Հաշվի ապօրինի օգտագործում'];
+  modal('<h3 style="margin:0 0 4px">'+(b.reason?'Փոխել արգելափակման պատճառը':'Արգելափակել հաշիվը')+'</h3><div style="color:var(--txt2);font-size:13px;margin-bottom:12px">'+E(u.name||k)+'</div>'
+   +'<label style="font-size:12px;font-weight:700">Պատճառ (պարտադիր)</label><input type="text" id="bk-r" value="'+E(b.reason||'')+'" maxlength="200" placeholder="Գրեք արգելափակման պատճառը">'
+   +'<div style="margin:6px 0 10px;display:flex;gap:6px;flex-wrap:wrap">'+pre.map(p=>'<button class="btn bg2" style="font-size:11px;padding:4px 8px" onclick="document.getElementById(\'bk-r\').value=this.textContent">'+p+'</button>').join('')+'</div>'
+   +'<label style="font-size:12px;font-weight:700">Բացատրություն օգտատիրոջը (ըստ ցանկության)</label><textarea id="bk-n" rows="4" maxlength="600" placeholder="Ի՞նչ պետք է անի օգտատերը, ում դիմի...">'+E(b.note||'')+'</textarea>'
+   +'<div class="er" id="bk-e" style="min-height:16px;color:var(--red);font-size:12px;margin-top:4px"></div>'
+   +'<div style="display:flex;gap:8px;margin-top:10px"><button class="btn bg2" style="flex:1" onclick="mdBkClose()">Չեղարկել</button><button class="btn bd2" style="flex:1" onclick="mdBkSave(\''+E(k)+'\')">Պահպանել</button></div>');
+  setTimeout(()=>{const i=$('bk-r');if(i)i.focus();},50);
+};
+window.mdBkSave=async function(k){
+  const r=($('bk-r')||{}).value.trim(),n=($('bk-n')||{}).value.trim();
+  if(!r){$('bk-e').textContent='Գրեք արգելափակման պատճառը։';return;}
+  if(k==='admin')return;
+  try{await txDoc(BLK,d=>{d.u=d.u||{};const o=d.u[k]||{};d.u[k]={reason:r,note:n,auto:false,by:'admin',ts:o.ts&&!o.auto?o.ts:Date.now(),updated:Date.now()};});mdBkClose();await drawBlk();}
+  catch(e){console.error(e);$('bk-e').textContent='Չհաջողվեց պահպանել։';}
+};
+window.mdBkUn=async function(k){
+  if(!confirm('Հանե՞լ արգելափակումը և վերականգնել հաշիվը։'))return;
+  try{
+    await txDoc(BLK,d=>{if(d.u)delete d.u[k];});
+    await txDoc(JCT,d=>{d.j=d.j||{};const x=d.j[k]=d.j[k]||{};x.unblockedAt=Date.now();});
+    await drawBlk();
+  }catch(e){console.error(e);alert('Չհաջողվեց։');}
+};
+
+/* ----- journal control ----- */
+const COL={green:'g',yellow:'y',orange:'o',red:'r'},CN={green:'Կանաչ',yellow:'Դեղին',orange:'Նարնջագույն',red:'Կարմիր'};
+function autoColor(j,cfg){
+  const D=cfg.days||30,b0=base(j||{},{startedAt:cfg.startedAt||0});if(!b0)return 'yellow';const age=(Date.now()-b0)/DAY;
+  if(j&&j.deadline){const dl=new Date(j.deadline+'T23:59:59').getTime();if(Date.now()>dl&&(j.lastFill||0)<dl)return 'red';}
+  return age<D*.25?'green':age<D*.5?'yellow':age<D*.8?'orange':'red';
+}
+async function drawJc(){
+  const el=$('jc');if(!el||!isAdm())return;
+  let c,bl;try{c=await rd(JCT);bl=((await rd(BLK)).u)||{};}catch(e){el.innerHTML='<div class="pt">📒 Մատյանի վերահսկում</div><div class="ps">Չհաջողվեց բեռնել։</div>';return;}
+  const cfg=c.cfg||{auto:false,days:30},J=c.j||{};
+  const ts=Object.entries(DB.users||{}).filter(([k,u])=>u&&u.role==='teacher').sort((a,b)=>String(a[1].name).localeCompare(String(b[1].name),'hy'));
+  el.innerHTML='<div class="pt">📒 Մատյանի վերահսկում</div><div class="ps">Յուրաքանչյուր ուսուցչի մատյանի լրացման վիճակը։ Վերջին լրացումը գրանցվում է գնահատականներ կամ բացակայություններ պահպանելիս։</div>'
+   +'<div class="cd" style="padding:16px;margin-bottom:12px"><label style="display:flex;gap:10px;align-items:center;font-weight:800;cursor:pointer"><input type="checkbox" id="jc-auto" '+(cfg.auto?'checked':'')+' onchange="mdJcCfg()"> Ավտոմատ վերահսկում և արգելափակում</label>'
+   +'<div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap;font-size:13px">Արգելափակել, եթե մատյանը չի լրացվել <input type="number" id="jc-days" min="1" max="365" value="'+(cfg.days||30)+'" style="width:70px" onchange="mdJcCfg()"> օր շարունակ</div>'
+   +'<div style="font-size:12px;color:var(--txt3);margin-top:8px">Գործում է միայն մատյան լրացնող օգտատերերի՝ ուսուցիչների նկատմամբ։ Աշակերտները և ծնողները չեն ազդվում։ Արգելքը ադմինը կարող է հանել «🚫 Արգելափակումներ» էջից։'+(cfg.auto&&cfg.startedAt?' Հաշվարկը սկսվել է՝ '+dt(cfg.startedAt)+'։':'')+'</div></div>'
+   +'<div class="cd" style="padding:0;overflow:auto"><table><thead><tr><th>Ուսուցիչ</th><th>Վերջին լրացում</th><th>Վիճակ</th><th>Գույնը ձեռքով</th><th>Վերահսկման ժամկետ</th><th></th></tr></thead><tbody>'
+   +ts.map(([k,u])=>{const j=J[k]||{},ac=autoColor(j,cfg),col=j.color||ac;
+     return '<tr><td><b>'+E(u.name||k)+'</b><div style="font-size:11px;color:var(--txt3)">'+E((u.subject||'')+' '+((u.classes||[]).join(', ')))+'</div></td><td>'+dt(j.lastFill)+'<div style="font-size:11px;color:var(--txt3)">'+ago(j.lastFill)+'</div></td>'
+     +'<td><span class="jc-dot jc-'+COL[col]+'"></span>'+CN[col]+(j.color?' <small>(ձեռքով)</small>':'')+(bl[k]?'<div style="color:#ef4444;font-size:11px;font-weight:700">Արգելափակված</div>':'')+'</td>'
+     +'<td class="jc-pick">'+Object.keys(COL).map(c2=>'<button class="jc-'+COL[c2]+(j.color===c2?' on':'')+'" title="'+CN[c2]+'" onclick="mdJcColor(\''+E(k)+'\',\''+c2+'\')"></button>').join('')+'<button title="Ավտոմատ" style="background:var(--surf2);font-size:10px;width:auto;border-radius:11px;padding:0 6px;border:1px solid var(--bdr)" onclick="mdJcColor(\''+E(k)+'\',\'\')">Ավտո</button></td>'
+     +'<td><input type="date" value="'+E(j.deadline||'')+'" onchange="mdJcDl(\''+E(k)+'\',this.value)"></td><td>'+(bl[k]?'':'')+'</td></tr>';}).join('')
+   +(ts.length?'':'<tr><td colspan="6" style="padding:16px;color:var(--txt3)">Ուսուցիչներ չկան։</td></tr>')+'</tbody></table></div>'
+   +'<div style="margin-top:10px;font-size:12px;color:var(--txt3)"><span class="jc-dot jc-g"></span>նոր լրացված &nbsp;<span class="jc-dot jc-y"></span>ուշանում է &nbsp;<span class="jc-dot jc-o"></span>երկար չի լրացվել &nbsp;<span class="jc-dot jc-r"></span>վտանգավոր / ժամկետը լրացել է</div>';
+}
+window.mdJcCfg=async function(){
+  const on=$('jc-auto').checked,days=Math.max(1,Math.min(365,parseInt($('jc-days').value)||30));
+  try{await txDoc(JCT,d=>{const o=d.cfg||{};if(on&&!o.auto)o.startedAt=Date.now();o.auto=on;o.days=days;d.cfg=o;});if(on)await adminScan();await drawJc();}catch(e){console.error(e);alert('Չհաջողվեց։');}
+};
+window.mdJcColor=async function(k,c){try{await txDoc(JCT,d=>{d.j=d.j||{};const x=d.j[k]=d.j[k]||{};if(c)x.color=c;else delete x.color;});await drawJc();}catch(e){console.error(e);}};
+window.mdJcDl=async function(k,v){try{await txDoc(JCT,d=>{d.j=d.j||{};const x=d.j[k]=d.j[k]||{};if(v)x.deadline=v;else delete x.deadline;});await drawJc();}catch(e){console.error(e);}};
+window.mdCtl={gate,adminScan,selfScan};
+})();
+</script>
+
 </body>
 </html>
 
