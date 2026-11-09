@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="hy">
 <head>
@@ -8044,7 +8045,7 @@ syncFR();
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const IDX='slides_index',DK=id=>'deck_'+id,IK=id=>'simg_'+id,AICFG='slides_ai_config';
-const FONTS={sans:'"Segoe UI","Noto Sans Armenian",system-ui,-apple-system,sans-serif',serif:'Georgia,"Noto Serif Armenian","Times New Roman",serif',round:'"Trebuchet MS","Noto Sans Armenian",Verdana,sans-serif',mono:'"Courier New",ui-monospace,monospace',display:'"Arial Black","Noto Sans Armenian",Impact,sans-serif',hand:'"Comic Sans MS","Segoe Print","Noto Sans Armenian",cursive',narrow:'"Arial Narrow","Noto Sans Armenian",sans-serif'};
+const FONTS={sans:'\'Segoe UI\',\'Noto Sans Armenian\',system-ui,-apple-system,sans-serif',serif:'Georgia,\'Noto Serif Armenian\',\'Times New Roman\',serif',round:'\'Trebuchet MS\',\'Noto Sans Armenian\',Verdana,sans-serif',mono:'\'Courier New\',ui-monospace,monospace',display:'\'Arial Black\',\'Noto Sans Armenian\',Impact,sans-serif',hand:'\'Comic Sans MS\',\'Segoe Print\',\'Noto Sans Armenian\',cursive',narrow:'\'Arial Narrow\',\'Noto Sans Armenian\',sans-serif'};
 const FONT_LBL={sans:'Ժամանակակից',serif:'Դասական',round:'Կլոր',mono:'Մեքենագիր',display:'Լայն վերնագրային',hand:'Ձեռագիր',narrow:'Նեղ'};
 const PPT_FONT={sans:'Arial',serif:'Georgia',round:'Trebuchet MS',mono:'Courier New',display:'Arial Black',hand:'Comic Sans MS',narrow:'Arial Narrow'};
 const SIZES={s:.8,m:1,l:1.25,xl:1.55};const SIZE_LBL={s:'Փոքր',m:'Միջին',l:'Մեծ',xl:'Շատ մեծ'};
@@ -10784,6 +10785,1161 @@ document.head.appendChild(st);
 })();
 
 </script>
+<script id="md-studio-js">
+(function(){
+'use strict';
+const SL=window.MD_SL;if(!SL)return;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const clone=o=>JSON.parse(JSON.stringify(o));
+const me=()=>CU.username;
+const isAdm=()=>CU&&CU.role==='admin';
+const canMake=()=>CU&&CU.role!=='parent';
+const fmtD=ts=>{if(!ts)return'—';const d=new Date(ts),p=n=>String(n).padStart(2,'0');return p(d.getDate())+'.'+p(d.getMonth()+1)+'.'+d.getFullYear();};
+const fmtDT=ts=>{if(!ts)return'—';const d=new Date(ts),p=n=>String(n).padStart(2,'0');return fmtD(ts)+' '+p(d.getHours())+':'+p(d.getMinutes());};
+const DAY=864e5;
+const tst=m=>{try{toast(m);}catch(e){alert(m);}};
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:v;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}}};
+
+/* ================= per-user data (favourites, activity, media list, chats) ================= */
+const uKey=()=>'studio_u_'+String(me()).replace(/[^A-Za-z0-9]/g,c=>'_'+c.charCodeAt(0).toString(16));
+let UD=null;
+async function loadUD(){
+  if(UD&&UD._for===me())return UD;
+  let d={};try{d=await bGet(uKey())||{};}catch(e){console.warn(e);}
+  UD=Object.assign({fav:{},log:[],tplUse:{},media:[],videos:[],chats:[],saved:{}},d);
+  UD.fav=Object.assign({tpl:{},media:{},post:{}},UD.fav);UD._for=me();return UD;
+}
+let udT=null;
+function saveUD(){
+  clearTimeout(udT);
+  udT=setTimeout(async()=>{try{const o=Object.assign({},UD);delete o._for;await bSet(uKey(),o);}catch(e){console.warn('studio save',e);}},350);
+}
+function flushUD(){clearTimeout(udT);if(!UD)return Promise.resolve();const o=Object.assign({},UD);delete o._for;return bSet(uKey(),o).catch(e=>console.warn(e));}
+async function logAct(k,title,ref){
+  try{await loadUD();UD.log.unshift({k:k,t:String(title||'').slice(0,80),r:ref||'',ts:Date.now()});if(UD.log.length>150)UD.log.length=150;saveUD();}catch(e){}
+}
+const ACT={open:'Բացել է',present:'Ցուցադրել է',copy:'Պատճենել է',tpl:'Օգտագործել է կաղապար',quiz:'Ստեղծել է թեստ',attempt:'Անցել է թեստ',publish:'Հրապարակել է',media:'Ավելացրել է նյութ',ai:'Օգտագործել է ԱԲ',export:'Արտահանել է',anim:'Կարգավորել է անիմացիա'};
+
+/* ================= styles ================= */
+const css=document.createElement('style');css.id='md-studio-css';
+css.textContent=`
+#studio .st-hero{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:0 0 14px}
+#studio .st-hero p{margin:0;color:var(--txt2);font-size:14px}
+.st-tabs{display:flex;gap:6px;overflow-x:auto;padding:4px 2px 10px;margin:0 0 14px;border-bottom:1px solid var(--bdr);scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.st-tabs button{flex:0 0 auto;border:1px solid transparent;background:transparent;color:var(--txt2);border-radius:999px;padding:8px 14px;font-weight:700;font-size:13px;font-family:inherit;cursor:pointer;white-space:nowrap;min-height:38px;transition:background .15s,color .15s}
+.st-tabs button:hover{background:var(--surf2);color:var(--txt)}
+.st-tabs button.on{background:var(--acc);color:#fff}
+.st-box{background:var(--surf);border:1px solid var(--bdr);border-radius:16px;padding:18px;box-shadow:0 6px 24px rgba(20,24,60,.06);animation:stIn .25s both}
+@keyframes stIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.st-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.st-g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.st-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.st-stat{background:var(--surf);border:1px solid var(--bdr);border-radius:14px;padding:14px 16px}
+.st-stat b{display:block;font-size:26px;line-height:1.1;color:var(--acc)}.st-stat span{font-size:12px;color:var(--txt2)}
+.st-h{font-size:15px;font-weight:800;margin:0 0 10px;color:var(--txt)}
+.st-sub{font-size:12px;color:var(--txt2)}
+.st-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.st-row.sp{justify-content:space-between}
+.st-in{border:1px solid var(--bdr);background:var(--surf2);color:var(--txt);border-radius:11px;padding:9px 12px;font-size:13px;font-family:inherit;min-height:40px;max-width:100%}
+textarea.st-in{width:100%;min-height:90px;resize:vertical;box-sizing:border-box}
+.st-fg{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}.st-fg>label{font-size:12px;font-weight:700;color:var(--txt2)}
+.st-chip{display:inline-block;border:1px solid var(--bdr);border-radius:999px;padding:5px 11px;font-size:12px;font-weight:700;cursor:pointer;background:var(--surf2);color:var(--txt);font-family:inherit}
+.st-chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.st-card{background:var(--surf);border:1px solid var(--bdr);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s}
+.st-card:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(20,24,60,.12)}
+.st-card .st-pv{position:relative;background:var(--surf3)}
+.st-card .st-pv .sl-box{border-radius:0;pointer-events:none}
+.st-card .st-pv .st-cv{aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;font-weight:800;padding:10px;text-align:center;overflow:hidden}
+.st-card .st-pv .st-cv img{width:100%;height:100%;object-fit:cover}
+.st-card .st-in2{padding:12px 14px;display:flex;flex-direction:column;gap:6px;flex:1}
+.st-card h3{margin:0;font-size:14px;line-height:1.3}
+.st-card p{margin:0;font-size:12px;color:var(--txt2);line-height:1.45}
+.st-card .st-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:8px}
+.st-star{position:absolute;top:8px;right:8px;width:34px;height:34px;border-radius:50%;border:none;background:rgba(255,255,255,.92);color:#b45309;font-size:17px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.st-list{display:flex;flex-direction:column;gap:8px}
+.st-li{display:flex;gap:12px;align-items:center;background:var(--surf);border:1px solid var(--bdr);border-radius:12px;padding:10px 14px;flex-wrap:wrap}
+.st-li .t{flex:1;min-width:160px;font-weight:700;font-size:14px}.st-li .m{font-size:12px;color:var(--txt2)}
+.st-empty{text-align:center;padding:36px 14px;color:var(--txt2)}.st-empty h3{color:var(--txt);margin:0 0 6px}
+.st-err{color:var(--red,#dc2626);font-size:13px;min-height:18px;margin:6px 0}
+.st-ok{color:#16a34a;font-size:13px}
+.st-bar{display:flex;align-items:flex-end;gap:3px;height:120px}
+.st-bar i{flex:1;background:linear-gradient(180deg,var(--acc),#7c3aed);border-radius:4px 4px 0 0;min-height:2px;position:relative}
+.st-bar i:hover::after{content:attr(data-t);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#111;color:#fff;font-size:11px;padding:3px 6px;border-radius:6px;white-space:nowrap;font-style:normal}
+.st-axis{display:flex;justify-content:space-between;font-size:11px;color:var(--txt2);margin-top:4px}
+.st-hb{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px}.st-hb span.l{width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-hb span.b{flex:1;background:var(--surf3);border-radius:6px;height:14px;overflow:hidden}.st-hb span.b i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),#7c3aed)}
+.st-modal{position:fixed;inset:0;background:rgba(10,12,30,.55);z-index:5200;display:flex;align-items:center;justify-content:center;padding:16px}
+.st-md{background:var(--surf);color:var(--txt);border-radius:18px;max-width:640px;width:100%;max-height:90vh;overflow:auto;padding:22px;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+.st-md h2{margin:0 0 12px;font-size:18px}
+.st-tip{background:var(--acc-lt2);border:1px solid var(--acc-lt);border-radius:14px;padding:14px 16px;font-size:13px;line-height:1.55}
+.st-anim-prev{max-width:560px;margin:0 auto 12px}
+.st-q{border:1px solid var(--bdr);border-radius:14px;padding:14px;margin-bottom:12px;background:var(--surf2)}
+.st-opt{display:flex;gap:8px;align-items:center;margin:5px 0}
+.st-opt input.st-in{flex:1}
+.st-take label.st-o{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--bdr);border-radius:11px;margin:6px 0;cursor:pointer;background:var(--surf2)}
+.st-take label.st-o.ok{border-color:#16a34a;background:rgba(22,163,74,.12)}.st-take label.st-o.bad{border-color:#dc2626;background:rgba(220,38,38,.1)}
+.st-mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.st-mi{position:relative;border:1px solid var(--bdr);border-radius:12px;overflow:hidden;background:var(--surf2);display:flex;flex-direction:column}
+.st-mi img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--surf3)}
+.st-mi .n{font-size:11px;padding:6px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-mi .a{display:flex;gap:4px;padding:0 6px 6px;flex-wrap:wrap}
+.st-emo{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:6px}
+.st-emo button{font-size:24px;border:1px solid var(--bdr);background:var(--surf2);border-radius:10px;min-height:46px;cursor:pointer}
+.st-emo button:hover{border-color:var(--acc);transform:scale(1.08)}
+.st-chat{display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow:auto;padding:4px}
+.st-m{max-width:88%;padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.st-m.u{align-self:flex-end;background:var(--acc);color:#fff;border-bottom-right-radius:4px}.st-m.a{align-self:flex-start;background:var(--surf3);color:var(--txt);border-bottom-left-radius:4px}
+.st-out{white-space:pre-wrap;background:var(--surf2);border:1px solid var(--bdr);border-radius:12px;padding:14px;font-size:13.5px;line-height:1.6;max-height:50vh;overflow:auto}
+.st-note{font-size:12px;color:var(--txt2);background:var(--surf2);border:1px dashed var(--bdr2);border-radius:10px;padding:10px 12px;line-height:1.5}
+@media(max-width:640px){.st-box{padding:14px}.st-stat b{font-size:22px}.st-md{padding:16px}}
+@media(prefers-reduced-motion:reduce){.st-box{animation:none}.st-card{transition:none}}
+`;
+document.head.appendChild(css);
+
+/* ================= shell ================= */
+const TABS=[['home','🏠','Գլխավոր'],['ai','✨','ԱԲ լաբորատորիա'],['tpl','🧩','Կաղապարներ'],['media','🖼️','Նկարներ և նյութեր'],['quiz','📝','Թեստեր'],['anim','🎬','Անիմացիաներ'],['proj','📁','Իմ նախագծերը'],['exp','📤','Արտահանում և կիսում'],['stat','📊','Վիճակագրություն'],['comm','🌐','Համայնք']];
+const ST={tab:LS.get('md_st_tab','home'),busy:0,view:LS.get('md_st_view','grid')};
+const R={}; // tab renderers: R.home=async(el)=>...
+function body(){return $('st-body');}
+function modal(html,wide){
+  closeModal();
+  const m=document.createElement('div');m.className='st-modal';m.id='st-modal';m.innerHTML='<div class="st-md" role="dialog" aria-modal="true"'+(wide?' style="max-width:860px"':'')+'>'+html+'</div>';
+  m.addEventListener('mousedown',e=>{if(e.target===m)closeModal();});document.body.appendChild(m);return m;
+}
+function closeModal(){const m=$('st-modal');if(m)m.remove();}
+window.stClose=closeModal;
+async function paint(){
+  const el=$('studio');if(!el||!CU)return;
+  const mk=canMake();
+  el.innerHTML='<div class="pt">🎨 Ստուդիա</div><div class="st-hero"><p>Սահիկաշարեր, թեստեր, նյութեր, կաղապարներ և համայնք՝ մեկ տեղում։</p></div>'
+    +'<div class="st-tabs" role="tablist">'+TABS.map(t=>'<button role="tab" class="'+(ST.tab===t[0]?'on':'')+'" onclick="stGo(\''+t[0]+'\')">'+t[1]+' '+t[2]+'</button>').join('')+'</div><div id="st-body"></div>';
+  await draw();
+}
+async function draw(){
+  const b=body();if(!b)return;
+  const tab=ST.tab,token=++ST.busy;
+  b.innerHTML='<div class="st-box st-empty">Բեռնվում է...</div>';
+  try{
+    await loadUD();
+    const out=document.createElement('div');
+    await R[tab](out);
+    if(token!==ST.busy||!$('st-body'))return;
+    b.innerHTML='';while(out.firstChild)b.appendChild(out.firstChild);
+    SL.hydrate&&SL.hydrate(b);
+    try{if(typeof trDOM==='function')trDOM(b);}catch(e){}
+  }catch(e){console.error(e);if(token===ST.busy&&$('st-body'))$('st-body').innerHTML='<div class="st-box st-empty"><h3>Չհաջողվեց բեռնել</h3><p>Ստուգեք կապը և փորձեք կրկին։</p><button class="sl-btn pri" onclick="stGo(ST_TAB())">Կրկին փորձել</button></div>';}
+}
+window.ST_TAB=()=>ST.tab;
+window.stGo=function(t){if(!R[t])return;ST.tab=t;LS.set('md_st_tab',t);paint();};
+window.stRedraw=draw;
+function ensureUI(){
+  if(!CU)return;
+  const nav=$('nav'),mn=$('mn');if(!nav||!mn)return;
+  if(!mn.querySelector('#studio'))mn.insertAdjacentHTML('beforeend','<div class="pg" id="studio"></div>');
+  if(!nav.querySelector('[data-p="studio"]')){
+    const it=document.createElement('div');it.className='ni';it.setAttribute('data-p','studio');it.setAttribute('onclick',"showPg('studio')");it.textContent='🎨 Ստուդիա';
+    const before=nav.querySelector('[data-p="slides"]');
+    if(before&&before.nextSibling)before.parentNode.insertBefore(it,before.nextSibling);
+    else{const b2=nav.querySelector('[data-p="prof"]')||nav.querySelector('[data-p="apend"]');if(b2)b2.parentNode.insertBefore(it,b2);else nav.appendChild(it);}
+    try{if(window._mdEmojiNav)window._mdEmojiNav(it);}catch(e){}
+  }
+}
+let obs=false;
+['nav','mn'].forEach(id=>{const e=$(id);if(e)new MutationObserver(()=>{if(obs)return;obs=true;setTimeout(()=>{obs=false;try{ensureUI();hashOpen();}catch(e){}},0);}).observe(e,{childList:true});});
+const _showPg=window.showPg;
+window.showPg=function(id){
+  const r=_showPg.apply(this,arguments);
+  if(id==='studio'){ensureUI();const pg=$('studio');if(pg){document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));pg.classList.add('on');document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('on',n.getAttribute('data-p')==='studio'));paint();}}
+  return r;
+};
+
+/* log opening / presenting of slideshows made in the editor */
+['slEdit','slPresent'].forEach(fn=>{
+  const o=window[fn];if(typeof o!=='function')return;
+  window[fn]=function(id){
+    try{const m=(SL.idx()||{})[id];if(m)logAct(fn==='slEdit'?'open':'present',m.title,id);}catch(e){}
+    return o.apply(this,arguments);
+  };
+});
+
+/* ================= shared helpers ================= */
+async function decksAll(){await SL.loadIdx();return Object.values(SL.idx()||{}).filter(d=>d&&d.id&&SL.canSee(d));}
+async function myDecks(){return (await decksAll()).filter(d=>d.owner===me()||isAdm());}
+function deckCover(d){
+  const bg=d.bg||'#6366f1',tc=d.tc||'#fff';
+  return '<div class="st-cv" style="background:'+esc(bg)+';color:'+esc(tc)+'">'+(d.cover?'<img src="'+esc(d.cover)+'" alt="">':esc(d.title||''))+'</div>';
+}
+function pickDeck(list,title,cb,extra){
+  if(!list.length){tst('Նախագծեր չկան։ Նախ ստեղծեք սահիկաշար։');return;}
+  window._stPick=cb;
+  modal('<h2>'+esc(title)+'</h2>'+(extra||'')+'<div class="st-list">'+list.map(d=>'<div class="st-li"><div class="t">'+esc(d.title)+'<div class="m">'+(d.count||0)+' սահիկ · '+fmtD(d.updated)+'</div></div><button class="sl-btn sm pri" onclick="stPicked(\''+d.id+'\')">Ընտրել</button></div>').join('')+'</div><div class="st-row" style="margin-top:12px"><button class="sl-btn" onclick="stClose()">Փակել</button></div>');
+}
+window.stPicked=function(id){const cb=window._stPick;closeModal();if(cb)cb(id);};
+function tipOfDay(){
+  const T=['Սահիկի վրա ավելի քիչ տեքստ դրեք․ 4–6 կարճ տող ավելի լավ է ընկալվում, քան ամբողջ պարբերությունը։','Օգտագործեք կոնտրաստային գույներ՝ մուգ տեքստ բաց ֆոնի վրա և հակառակը։','Ամեն սահիկում մեկ հիմնական միտք․ մնացածը թողեք խոսքի համար (նշումներում)։','Նկարները փոխարինում են երկար բացատրությանը։ Օգտագործեք «Նկարներ և նյութեր» բաժինը։','Թեստը կազմելիս խառնեք հարցերի և պատասխանների հերթականությունը՝ կրկնօրինակումից խուսափելու համար։','Սահիկաշարը կիսեք դասարանի հետ «Կիսվել» կոճակով, և աշակերտները կտեսնեն այն իրենց էջում։','Անիմացիաները չարաշահելը շեղում է․ ընտրեք մեկ-երկու էֆեկտ և օգտագործեք հետևողականորեն։','Ներկայացնելուց առաջ միացրեք սահիկների համարակալումը և փորձեք ցուցադրությունը մեկ անգամ։'];
+  return T[Math.floor(Date.now()/DAY)%T.length];
+}
+function greeting(){const h=new Date().getHours();return h<5?'Բարի գիշեր':h<12?'Բարի լույս':h<18?'Բարի օր':'Բարի երեկո';}
+async function quizzesAll(){const d=await bGet('quiz_index');return Object.values((d&&d.quizzes)||{}).filter(q=>q&&q.id&&quizVisible(q));}
+function quizVisible(q){
+  if(isAdm()||q.owner===me())return true;
+  const u=(DB.users||{})[CU.username]||CU;
+  let mc=[];if(CU.role==='student')mc=[u.class||CU.class].filter(Boolean);else if(CU.role==='parent')mc=((u.children||[]).map(c=>c.cls||c.class)).filter(Boolean);
+  return (q.classes||[]).some(c=>mc.indexOf(c)!==-1);
+}
+function dayBuckets(events,days){
+  const end=new Date();end.setHours(23,59,59,999);const arr=[];
+  for(let i=days-1;i>=0;i--){const s=end.getTime()-(i+1)*DAY+1,e=end.getTime()-i*DAY;arr.push({s:s,e:e,n:0,label:fmtD(e).slice(0,5)});}
+  events.forEach(ts=>{for(const b of arr){if(ts>=b.s&&ts<=b.e){b.n++;break;}}});return arr;
+}
+function barChart(bk){
+  const mx=Math.max(1,...bk.map(b=>b.n));
+  return '<div class="st-bar">'+bk.map(b=>'<i style="height:'+Math.max(2,Math.round(b.n/mx*100))+'%" data-t="'+esc(b.label+' · '+b.n)+'"></i>').join('')+'</div><div class="st-axis"><span>'+esc(bk[0].label)+'</span><span>'+esc(bk[bk.length-1].label)+'</span></div>';
+}
+/* every real event with a timestamp that belongs to this person */
+async function myEvents(){
+  const ev=[];
+  (UD.log||[]).forEach(l=>ev.push({ts:l.ts,k:l.k,t:l.t}));
+  (await myDecks()).filter(d=>d.owner===me()).forEach(d=>{ev.push({ts:d.created,k:'create',t:d.title});if(d.updated&&d.updated>d.created+60000)ev.push({ts:d.updated,k:'edit',t:d.title});});
+  return ev.filter(e=>e.ts);
+}
+const EVL=Object.assign({create:'Ստեղծել է սահիկաշար',edit:'Խմբագրել է'},ACT);
+
+/* ================= HOME (dashboard) ================= */
+R.home=async function(el){
+  const decks=await myDecks(),mine=decks.filter(d=>d.owner===me());
+  let qs=[];try{qs=(await quizzesAll()).filter(q=>q.owner===me());}catch(e){}
+  const slides=mine.reduce((a,d)=>a+(d.count||0),0);
+  const ev=(await myEvents()).sort((a,b)=>b.ts-a.ts);
+  const opened=[];const seen={};
+  (UD.log||[]).filter(l=>l.k==='open'||l.k==='present').forEach(l=>{if(l.r&&!seen[l.r]&&SL.idx()[l.r]){seen[l.r]=1;opened.push(SL.idx()[l.r]);}});
+  const recent=opened.concat(decks.slice().sort((a,b)=>(b.updated||0)-(a.updated||0)).filter(d=>!seen[d.id])).slice(0,4);
+  const mk=canMake();
+  let h='<div class="st-box" style="margin-bottom:16px;background:linear-gradient(135deg,var(--acc),#7c3aed);color:#fff;border:none"><div style="font-size:13px;opacity:.85">'+fmtD(Date.now())+'</div><div style="font-size:24px;font-weight:800;margin:2px 0 4px">'+greeting()+', '+esc((CU.name||CU.username||'').split(' ')[0])+'։</div><div style="opacity:.9;font-size:14px">'+(mk?'Ի՞նչ կստեղծենք այսօր։':'Այստեղ կարող եք դիտել ձեզ հասանելի նյութերը և անցնել թեստեր։')+'</div></div>';
+  h+='<div class="st-stats"><div class="st-stat"><b>'+mine.length+'</b><span>Սահիկաշար</span></div><div class="st-stat"><b>'+slides+'</b><span>Ընդհանուր սահիկներ</span></div><div class="st-stat"><b>'+qs.length+'</b><span>Ստեղծված թեստ</span></div><div class="st-stat"><b>'+ev.filter(e=>e.ts>Date.now()-7*DAY).length+'</b><span>Գործողություն՝ 7 օրում</span></div></div>';
+  if(mk)h+='<div class="st-box" style="margin-bottom:16px"><div class="st-h">Արագ գործողություններ</div><div class="st-row"><button class="sl-btn pri" onclick="stQuickNew()">＋ Նոր սահիկաշար</button><button class="sl-btn" onclick="MD_SL.openAssistant()">✨ ԱԲ օգնական սահիկների համար</button><button class="sl-btn" onclick="stGo(\'tpl\')">🧩 Կաղապարներ</button><button class="sl-btn" onclick="stGo(\'quiz\');setTimeout(()=>stQuizNew(),50)">📝 Նոր թեստ</button><button class="sl-btn" onclick="stGo(\'media\')">🖼️ Նյութեր</button><button class="sl-btn" onclick="stGo(\'comm\')">🌐 Համայնք</button></div></div>';
+  h+='<div class="st-g2"><div class="st-box"><div class="st-h">Վերջին նախագծեր</div>'+(recent.length?'<div class="st-list">'+recent.map(d=>'<div class="st-li"><div class="t">'+esc(d.title)+'<div class="m">'+(d.count||0)+' սահիկ · '+fmtD(d.updated)+'</div></div><button class="sl-btn sm pri" onclick="slPresent(\''+d.id+'\')">▶</button>'+(SL.canEdit(d)?'<button class="sl-btn sm" onclick="slEdit(\''+d.id+'\')">✎</button>':'')+'</div>').join('')+'</div>':'<div class="st-empty">Դեռ նախագծեր չկան։</div>')+'</div>'
+   +'<div class="st-box"><div class="st-h">Ակտիվություն (վերջին 14 օր)</div>'+barChart(dayBuckets(ev.map(e=>e.ts),14))+'</div></div>';
+  h+='<div class="st-g2" style="margin-top:16px"><div class="st-box"><div class="st-h">Վերջին գործողություններ</div>'+(ev.length?'<div class="st-list">'+ev.slice(0,8).map(e=>'<div class="st-li"><div class="t" style="font-weight:600">'+esc(EVL[e.k]||e.k)+(e.t?'՝ <span style="color:var(--acc)">'+esc(e.t)+'</span>':'')+'</div><div class="m">'+fmtDT(e.ts)+'</div></div>').join('')+'</div>':'<div class="st-empty">Գործողություններ դեռ չկան։</div>')+'</div>'
+   +'<div class="st-box"><div class="st-h">💡 Խորհուրդ</div><div class="st-tip">'+esc(tipOfDay())+'</div></div></div>';
+  el.innerHTML=h;
+};
+window.stQuickNew=function(){if(!canMake())return;showPg('slides');setTimeout(()=>window.slNew&&slNew(),150);};
+
+/* ================= PROJECTS ================= */
+const PS={q:'',sort:'upd',subj:''};
+R.proj=async function(el){
+  let decks=await decksAll();
+  const subs=[...new Set(decks.map(d=>d.subject).filter(Boolean))].sort();
+  const q=PS.q.trim().toLowerCase();
+  decks=decks.filter(d=>(!PS.subj||d.subject===PS.subj)&&(!q||((d.title||'')+' '+(d.subject||'')).toLowerCase().indexOf(q)!==-1));
+  const S={upd:(a,b)=>(b.updated||0)-(a.updated||0),new:(a,b)=>(b.created||0)-(a.created||0),az:(a,b)=>String(a.title).localeCompare(String(b.title),'hy'),cnt:(a,b)=>(b.count||0)-(a.count||0)};
+  decks.sort(S[PS.sort]||S.upd);
+  const grid=ST.view==='grid';
+  let h='<div class="st-box"><div class="st-row sp" style="margin-bottom:12px"><div class="st-h" style="margin:0">Իմ նախագծերը ('+decks.length+')</div><div class="st-row">'+(canMake()?'<button class="sl-btn pri" onclick="stQuickNew()">＋ Նոր սահիկաշար</button>':'')+'<button class="sl-btn '+(grid?'on':'')+'" onclick="stView(\'grid\')" title="Ցանց">▦</button><button class="sl-btn '+(!grid?'on':'')+'" onclick="stView(\'list\')" title="Ցուցակ">☰</button></div></div>'
+   +'<div class="st-row" style="margin-bottom:14px"><input class="st-in" style="flex:1;min-width:160px" type="search" placeholder="Որոնել..." value="'+esc(PS.q)+'" oninput="stPS(\'q\',this.value,true)"><select class="st-in" onchange="stPS(\'subj\',this.value)"><option value="">Բոլոր առարկաները</option>'+subs.map(s=>'<option'+(PS.subj===s?' selected':'')+'>'+esc(s)+'</option>').join('')+'</select><select class="st-in" onchange="stPS(\'sort\',this.value)"><option value="upd"'+(PS.sort==='upd'?' selected':'')+'>Վերջին փոփոխված</option><option value="new"'+(PS.sort==='new'?' selected':'')+'>Նորագույն</option><option value="az"'+(PS.sort==='az'?' selected':'')+'>Անվանմամբ</option><option value="cnt"'+(PS.sort==='cnt'?' selected':'')+'>Սահիկների քանակով</option></select></div><div id="st-pj">'+projList(decks,grid)+'</div></div>';
+  el.innerHTML=h;
+};
+function projList(decks,grid){
+  if(!decks.length)return '<div class="st-empty"><h3>Նախագծեր չկան</h3><p>'+(PS.q||PS.subj?'Փոխեք որոնումը։':'Ստեղծեք առաջին սահիկաշարը կամ օգտագործեք կաղապար։')+'</p></div>';
+  const act=d=>{const ed=SL.canEdit(d);return '<button class="sl-btn sm pri" onclick="slPresent(\''+d.id+'\')">▶ Դիտել</button>'+(ed?'<button class="sl-btn sm" onclick="slEdit(\''+d.id+'\')">✎ Բացել</button>':'')+(canMake()?'<button class="sl-btn sm" onclick="stProjCopy(\''+d.id+'\')">⧉</button>':'')+(ed?'<button class="sl-btn sm" onclick="stProjRename(\''+d.id+'\')" title="Վերանվանել">Aa</button><button class="sl-btn sm dng" onclick="stProjDel(\''+d.id+'\')" title="Ջնջել">🗑</button>':'')+'<button class="sl-btn sm" onclick="stExpFor(\''+d.id+'\')" title="Արտահանում">📤</button>';};
+  if(grid)return '<div class="st-grid">'+decks.map(d=>'<div class="st-card"><div class="st-pv" onclick="slPresent(\''+d.id+'\')" style="cursor:pointer">'+deckCover(d)+'</div><div class="st-in2"><h3>'+esc(d.title||'Անվանում չկա')+'</h3><p>'+(d.subject?esc(d.subject)+' · ':'')+(d.count||0)+' սահիկ</p><p>Ստեղծված՝ '+fmtD(d.created)+' · Փոփոխված՝ '+fmtD(d.updated)+(d.owner!==me()?'<br>Հեղինակ՝ '+esc(d.ownerName||''):'')+'</p><div class="st-acts">'+act(d)+'</div></div></div>').join('')+'</div>';
+  return '<div class="st-list">'+decks.map(d=>'<div class="st-li"><div style="width:96px;border-radius:8px;overflow:hidden;flex:0 0 auto">'+deckCover(d)+'</div><div class="t">'+esc(d.title||'Անվանում չկա')+'<div class="m">'+(d.subject?esc(d.subject)+' · ':'')+(d.count||0)+' սահիկ · ստեղծված՝ '+fmtD(d.created)+' · փոփոխված՝ '+fmtD(d.updated)+(d.owner!==me()?' · '+esc(d.ownerName||''):'')+'</div></div><div class="st-row">'+act(d)+'</div></div>').join('')+'</div>';
+}
+window.stView=function(v){ST.view=v;LS.set('md_st_view',v);draw();};
+window.stPS=function(k,v,live){PS[k]=v;if(live){decksAll().then(async d=>{const q=PS.q.trim().toLowerCase();let l=d.filter(x=>(!PS.subj||x.subject===PS.subj)&&(!q||((x.title||'')+' '+(x.subject||'')).toLowerCase().indexOf(q)!==-1));const S={upd:(a,b)=>(b.updated||0)-(a.updated||0),new:(a,b)=>(b.created||0)-(a.created||0),az:(a,b)=>String(a.title).localeCompare(String(b.title),'hy'),cnt:(a,b)=>(b.count||0)-(a.count||0)};l.sort(S[PS.sort]||S.upd);const e=$('st-pj');if(e)e.innerHTML=projList(l,ST.view==='grid');});}else draw();};
+window.stProjCopy=async function(id){try{await SL.copy(id);logAct('copy',(SL.idx()[id]||{}).title,id);draw();}catch(e){console.error(e);tst('Չհաջողվեց պատճենել։');}};
+window.stProjRename=async function(id){try{await SL.rename(id);draw();}catch(e){console.error(e);}};
+window.stProjDel=async function(id){try{await SL.remove(id);draw();}catch(e){console.error(e);}};
+
+/* ================= TEMPLATES ================= */
+const T=(id,subj,title,desc,theme,tags,sl)=>({id:id,subj:subj,title:title,desc:desc,theme:theme,tags:tags,slides:sl.map(s=>({layout:s[0],title:s[1],text:s[2]||'',text2:s[3]||'',notes:s[4]||''}))});
+const THANKS=['title','Շնորհակալություն','Հարցե՞ր և քննարկում'];
+const TPLS=[
+ T('lesson','Ընդհանուր','Դասի պլան','Դասի ստանդարտ կառուցվածք՝ նպատակներից մինչև տնային առաջադրանք։','classic',['դաս','պլան'],[['title','Դասի թեման','Առարկա · Դասարան · Ամսաթիվ'],['text','Դասի նպատակները','- Սովորել …\n- Հասկանալ …\n- Կիրառել …'],['imgtext','Նոր նյութ','- Հիմնական գաղափարը\n- Սահմանում\n- Օրինակ'],['text','Օրինակներ','- Օրինակ 1\n- Օրինակ 2'],['text','Վարժություն','- Առաջադրանք 1\n- Առաջադրանք 2'],['text','Ամփոփում','- Ի՞նչ սովորեցինք\n- Ի՞նչ մնաց պարզ չէ'],['text','Տնային առաջադրանք','- …'],THANKS]),
+ T('project','Ընդհանուր','Նախագծի պաշտպանություն','Հետազոտական կամ ստեղծագործական նախագծի ներկայացում։','ocean',['նախագիծ','պաշտպանություն'],[['title','Նախագծի վերնագիր','Հեղինակ · Դասարան · Ղեկավար'],['section','Խնդիրը','Ինչո՞ւ է այս թեման կարևոր'],['text','Նպատակ և խնդիրներ','- Նպատակը\n- Խնդիր 1\n- Խնդիր 2'],['text','Մեթոդներ','- Ինչպես աշխատեցինք\n- Ինչ աղբյուրներ օգտագործեցինք'],['twocol','Արդյունքներ','- Ինչ արեցինք','- Ինչ ստացանք'],['quote','Եզրակացություն','Հիմնական միտքը մեկ նախադասությամբ'],['text','Աղբյուրներ','- …'],THANKS]),
+ T('classhour','Ընդհանուր','Դասղեկական ժամ','Թեմատիկ զրույց դասարանի հետ։','sun',['դասղեկ'],[['title','Թեման','Դասղեկական ժամ · Դասարան'],['text','Այսօր կխոսենք','- Հարց 1\n- Հարց 2'],['twocol','Քննարկում','- Կարծիք «կողմ»','- Կարծիք «դեմ»'],['quote','Միտք','Հայտնի միտք կամ ձեր եզրակացությունը'],['text','Համաձայնենք','- Կանոն 1\n- Կանոն 2'],THANKS]),
+ T('parents','Ընդհանուր','Ծնողական ժողով','Ծնողների հետ հանդիպման ընթացակարգ։','rose',['ծնող','ժողով'],[['title','Ծնողական ժողով','Դասարան · Ամսաթիվ'],['text','Օրակարգ','- Առաջադիմություն\n- Կարգապահություն\n- Կազմակերպչական հարցեր'],['text','Արդյունքներ','- Դասարանի միջին արդյունք\n- Հաջողություններ'],['text','Առաջարկություններ','- Ինչպես օգնել տանը'],['text','Հարցեր','- Հարցեր և պատասխաններ'],THANKS]),
+ T('revision','Ընդհանուր','Կրկնության դաս','Անցած նյութի ամրապնդում։','forest',['կրկնություն'],[['title','Կրկնություն','Թեմա'],['text','Հիշենք','- Հիմնական հասկացություն 1\n- Հիմնական հասկացություն 2'],['twocol','Համեմատենք','- Առաջինը','- Երկրորդը'],['text','Ստուգենք','- Հարց 1\n- Հարց 2\n- Հարց 3'],['text','Ինչն է դժվար','- Թեմաներ, որոնք պետք է կրկնել'],THANKS]),
+ T('hist-event','Հայոց պատմություն','Պատմական իրադարձություն','Իրադարձության վերլուծության կառուցվածք։','paper',['պատմություն','իրադարձություն'],[['title','Իրադարձության անվանումը','Տարեթիվ · Վայր'],['text','Նախապատմություն','- Ինչ էր նախորդում\n- Պատճառները'],['text','Ընթացքը','- Փուլ 1\n- Փուլ 2\n- Փուլ 3'],['twocol','Մասնակիցները','- Մի կողմ','- Մյուս կողմ'],['text','Արդյունքներն ու նշանակությունը','- Անմիջական հետևանքներ\n- Երկարաժամկետ նշանակություն'],['text','Աղբյուրներ','- Փաստաթուղթ / գիրք'],THANKS]),
+ T('hist-person','Հայոց պատմություն','Պատմական անձնավորություն','Անձի կենսագրություն և ավանդ։','paper',['պատմություն','անձ'],[['title','Անուն Ազգանուն','Ծնվել և մահացել է՝ …'],['imgtext','Կենսագրություն','- Ծագում\n- Կրթություն\n- Կյանքի կարևոր փուլեր'],['text','Գործունեություն','- Ինչ արեց\n- Ում հետ աշխատեց'],['quote','Հայտնի միտք','Մեջբերում՝ աղբյուրը նշելով'],['text','Ավանդ և հիշատակ','- Ինչով է հայտնի այսօր'],THANKS]),
+ T('world-era','Համաշխարհային պատմություն','Դարաշրջանի ակնարկ','Դարաշրջանի ընդհանուր նկարագիր։','paper',['պատմություն','դարաշրջան'],[['title','Դարաշրջանը','Ժամանակագրական շրջանակ'],['text','Ժամանակագրություն','- Տարեթիվ — իրադարձություն\n- Տարեթիվ — իրադարձություն'],['text','Հասարակություն և տնտեսություն','- Սոցիալական խմբեր\n- Տնտեսության հիմքերը'],['text','Մշակույթ','- Գիտություն\n- Արվեստ'],['text','Եզրակացություն','- Հիմնական հետևանքներ'],THANKS]),
+ T('lit-work','Գրականություն','Ստեղծագործության վերլուծություն','Գրական ստեղծագործության ուսումնասիրություն։','paper',['գրականություն','վերլուծություն'],[['title','Ստեղծագործության վերնագիր','Հեղինակ · Ժանր'],['text','Հեղինակի մասին','- Կյանքի հիմնական փուլերը\n- Գրական ուղղությունը'],['text','Սյուժե','- Սկիզբ\n- Զարգացում\n- Գագաթնակետ\n- Վախճան'],['text','Հերոսներ','- Գլխավոր հերոս\n- Երկրորդական հերոսներ'],['text','Թեմա և գաղափար','- Ինչի մասին է\n- Հեղինակի միտքը'],['quote','Ընտրված հատված','Մեկ հատված՝ ձեր մեկնաբանությամբ'],THANKS]),
+ T('lit-author','Գրականություն','Հեղինակի կենսագրություն','Գրողի կյանքն ու գործերը։','paper',['գրականություն','հեղինակ'],[['title','Գրողի անունը','Տարիներ · Երկիր'],['imgtext','Կյանքը','- Մանկություն\n- Կրթություն\n- Ստեղծագործական ուղի'],['text','Հիմնական գործերը','- Գործ 1\n- Գործ 2\n- Գործ 3'],['quote','Մեջբերում','Հատված՝ աղբյուրով'],THANKS]),
+ T('lit-poem','Գրականություն','Բանաստեղծության վերլուծություն','Բանաստեղծության կառուցվածք և արտահայտչամիջոցներ։','rose',['գրականություն','բանաստեղծություն'],[['title','Բանաստեղծության վերնագիր','Հեղինակ'],['text','Թեմա և տրամադրություն','- Ինչի մասին է\n- Ինչ զգացողություն է առաջացնում'],['text','Արտահայտչամիջոցներ','- Փոխաբերություն\n- Համեմատություն\n- Էպիտետ'],['text','Հանգ և ռիթմ','- Հանգավորման ձև\n- Տողերի կառուցվածք'],['text','Իմ մեկնաբանությունը','- Ինչ հասկացա'],THANKS]),
+ T('chem-element','Քիմիա','Քիմիական տարր','Տարրի բնութագիր։','ocean',['քիմիա','տարր'],[['title','Տարրի անվանումը','Նշանը · Կարգաթիվը'],['text','Դիրքը պարբերական համակարգում','- Պարբերություն\n- Խումբ\n- Ատոմի կառուցվածք'],['twocol','Հատկություններ','- Ֆիզիկական հատկություններ','- Քիմիական հատկություններ'],['text','Կիրառություն','- Արդյունաբերություն\n- Առօրյա կյանք'],['text','Անվտանգություն','- Ինչ պետք է հիշել'],THANKS]),
+ T('chem-react','Քիմիա','Քիմիական ռեակցիա','Ռեակցիայի նկարագրություն։','ocean',['քիմիա','ռեակցիա'],[['title','Ռեակցիայի անվանումը','Տեսակը'],['text','Ռեակցիայի հավասարումը','- Ելանյութեր\n- Արգասիքներ\n- Գործակիցներ'],['text','Պայմաններ','- Ջերմաստիճան\n- Կատալիզատոր'],['text','Դիտարկում','- Ինչ փոփոխություններ նկատվեցին'],['text','Եզրակացություն','- Ռեակցիայի տեսակը և նշանակությունը'],THANKS]),
+ T('chem-lab','Քիմիա','Լաբորատոր աշխատանք','Փորձի ձևակերպում։','ocean',['քիմիա','լաբորատոր'],[['title','Լաբորատոր աշխատանք','Թեմա · Խումբ'],['text','Նպատակ','- Ինչ ենք ստուգում'],['text','Սարքավորումներ և նյութեր','- Սարքավորում\n- Նյութեր\n- Անվտանգության կանոններ'],['text','Ընթացքը','- Քայլ 1\n- Քայլ 2\n- Քայլ 3'],['text','Արդյունքներ','- Դիտարկումներ\n- Հաշվարկներ'],['text','Եզրակացություն','- Նպատակին հասանք՞'],THANKS]),
+ T('phys-phenom','Ֆիզիկա','Ֆիզիկական երևույթ','Երևույթի բացատրություն։','dark',['ֆիզիկա','երևույթ'],[['title','Երևույթի անվանումը','Ֆիզիկա · Դասարան'],['text','Նկարագրություն','- Ինչ է տեղի ունենում\n- Որտեղ ենք հանդիպում'],['text','Օրենք և բանաձև','- Օրենքի ձևակերպում\n- Բանաձև\n- Մեծությունների միավորներ'],['text','Փորձ','- Սարքավորում\n- Ընթացք\n- Արդյունք'],['text','Կիրառություն','- Տեխնիկա\n- Առօրյա կյանք'],THANKS]),
+ T('phys-problem','Ֆիզիկա','Խնդրի լուծում','Խնդրի լուծման ստանդարտ քայլեր։','dark',['ֆիզիկա','խնդիր'],[['title','Խնդիր','Թեմա'],['text','Տրված է','- Մեծություններ\n- Միավորներ'],['text','Գտնել','- Ինչ է հարցվում'],['text','Լուծում','- Բանաձև\n- Տեղադրում\n- Հաշվարկ'],['text','Պատասխան','- Արժեք և միավոր\n- Ստուգում'],THANKS]),
+ T('math-concept','Մաթեմատիկա','Նոր հասկացություն','Մաթեմատիկական հասկացության ներկայացում։','classic',['մաթեմատիկա','հասկացություն'],[['title','Հասկացության անվանումը','Մաթեմատիկա · Դասարան'],['text','Սահմանում','- Ճշգրիտ ձևակերպում'],['twocol','Օրինակներ և հակաօրինակներ','- Օրինակ','- Հակաօրինակ'],['text','Հատկություններ','- Հատկություն 1\n- Հատկություն 2'],['text','Վարժություններ','- Առաջադրանք 1\n- Առաջադրանք 2'],THANKS]),
+ T('math-theorem','Մաթեմատիկա','Թեորեմ','Թեորեմի ձևակերպում և ապացույց։','classic',['մաթեմատիկա','թեորեմ'],[['title','Թեորեմի անվանումը','Թեմա'],['text','Ձևակերպում','- Պայման\n- Եզրակացություն'],['text','Ապացույցի գաղափարը','- Քայլ 1\n- Քայլ 2\n- Քայլ 3'],['text','Կիրառություն','- Օրինակ'],THANKS]),
+ T('math-solve','Մաթեմատիկա','Խնդիրների լուծում քայլ առ քայլ','Օրինակներով լուծման ձևաչափ։','sun',['մաթեմատիկա','խնդիր'],[['title','Խնդիրներ','Թեմա'],['text','Խնդիր 1','- Պայման\n- Լուծում\n- Պատասխան'],['text','Խնդիր 2','- Պայման\n- Լուծում\n- Պատասխան'],['text','Սովորական սխալներ','- Ինչին պետք է ուշադրություն դարձնել'],THANKS]),
+ T('bio-group','Կենսաբանություն','Օրգանիզմների խումբ','Օրգանիզմների խմբի բնութագիր։','forest',['կենսաբանություն','օրգանիզմ'],[['title','Խմբի անվանումը','Կենսաբանություն · Դասարան'],['imgtext','Բնութագիր','- Հիմնական հատկանիշներ\n- Կառուցվածք'],['text','Կենսամիջավայր','- Որտեղ է ապրում\n- Ինչով է սնվում'],['text','Բազմացում և զարգացում','- Ցիկլ'],['text','Նշանակությունը','- Բնության մեջ\n- Մարդու կյանքում'],THANKS]),
+ T('bio-system','Կենսաբանություն','Մարդու օրգան համակարգ','Օրգան համակարգի կառուցվածք և գործառույթ։','forest',['կենսաբանություն','մարդ'],[['title','Համակարգի անվանումը','Մարդու անատոմիա'],['imgtext','Կառուցվածք','- Օրգաններ\n- Հյուսվածքներ'],['text','Գործառույթներ','- Հիմնական աշխատանքը'],['text','Առողջություն','- Ինչպես պահպանել\n- Տարածված խնդիրներ'],THANKS]),
+ T('geo-region','Աշխարհագրություն','Երկրի / տարածաշրջանի ակնարկ','Աշխարհագրական օբյեկտի նկարագրություն։','ocean',['աշխարհագրություն','երկիր'],[['title','Երկիր / տարածաշրջան','Աշխարհագրություն · Դասարան'],['text','Աշխարհագրական դիրք','- Դիրք\n- Սահմաններ'],['text','Ռելիեֆ և կլիմա','- Ռելիեֆ\n- Կլիմա'],['text','Բնակչություն','- Թվաքանակ\n- Ազգային կազմ'],['text','Տնտեսություն','- Հիմնական ճյուղեր'],THANKS]),
+ T('geo-nature','Աշխարհագրություն','Բնական երևույթ','Բնական երևույթի բացատրություն։','ocean',['աշխարհագրություն','բնություն'],[['title','Երևույթի անվանումը','Աշխարհագրություն'],['text','Ինչ է','- Սահմանում'],['text','Պատճառները','- Գործոն 1\n- Գործոն 2'],['text','Հետևանքները','- Բնության վրա\n- Մարդկանց վրա'],['text','Պաշտպանության միջոցներ','- Ինչ կարելի է անել'],THANKS]),
+ T('art-work','Կերպարվեստ','Նկարչի ստեղծագործություն','Նկարի կամ քանդակի վերլուծություն։','rose',['արվեստ','նկար'],[['title','Ստեղծագործության անվանումը','Հեղինակ · Տարի'],['image','Ստեղծագործությունը',''],['text','Նկարագրություն','- Ինչ է պատկերված\n- Գույներ և կոմպոզիցիա'],['text','Տրամադրություն և միտք','- Ինչ է ասում հեղինակը'],['text','Իմ կարծիքը','- Ինչն է դուր գալիս'],THANKS]),
+ T('art-style','Կերպարվեստ','Արվեստի ուղղություն','Արվեստի ուղղության ակնարկ։','rose',['արվեստ','ուղղություն'],[['title','Ուղղության անվանումը','Ժամանակաշրջան'],['text','Բնորոշ գծեր','- Հատկանիշ 1\n- Հատկանիշ 2'],['text','Ներկայացուցիչներ','- Նկարիչ 1\n- Նկարիչ 2'],['text','Հայտնի գործեր','- Գործ 1\n- Գործ 2'],THANKS]),
+ T('lang-grammar','Հայոց լեզու','Քերականական թեմա','Կանոն, օրինակներ և վարժություններ։','classic',['լեզու','քերականություն'],[['title','Թեմա','Հայոց լեզու · Դասարան'],['text','Կանոն','- Ձևակերպում'],['twocol','Օրինակներ','- Ճիշտ','- Սխալ'],['text','Բացառություններ','- …'],['text','Վարժություններ','- Առաջադրանք 1\n- Առաջադրանք 2'],THANKS]),
+ T('lang-vocab','Անգլերեն','Բառապաշար','Նոր բառերի ներկայացում։','sun',['լեզու','բառապաշար'],[['title','Նոր բառեր','Թեմա'],['twocol','Բառեր և թարգմանություն','- Word — թարգմանություն\n- Word — թարգմանություն','- Word — թարգմանություն\n- Word — թարգմանություն'],['text','Նախադասություններ','- Օրինակ 1\n- Օրինակ 2'],['text','Վարժություն','- Լրացրեք բաց թողնված բառերը'],THANKS]),
+ T('inf-algo','Ինֆորմատիկա','Ալգորիթմի ներկայացում','Ալգորիթմի նկարագրություն։','dark',['ինֆորմատիկա','ալգորիթմ'],[['title','Ալգորիթմի անվանումը','Ինֆորմատիկա'],['text','Խնդիրը','- Մուտք\n- Ելք'],['text','Քայլեր','- Քայլ 1\n- Քայլ 2\n- Քայլ 3'],['text','Օրինակ','- Մուտքային տվյալներ\n- Արդյունք'],THANKS]),
+ T('env-nature','Շրջակա աշխարհ','Շրջակա աշխարհ՝ թեմա','Փոքր դասարանների համար։','sun',['շրջակա աշխարհ','տարրական'],[['title','Թեման','Շրջակա աշխարհ'],['imgtext','Ի՞նչ է սա','- Նկարագրություն\n- Օրինակ'],['text','Հետաքրքիր է','- Փաստ 1\n- Փաստ 2'],['text','Հարցեր','- Հարց 1\n- Հարց 2'],THANKS]),
+ T('music-work','Երաժշտություն','Երաժշտական ստեղծագործություն','Ստեղծագործության ծանոթացում։','rose',['երաժշտություն'],[['title','Ստեղծագործության անվանումը','Կոմպոզիտոր'],['text','Կոմպոզիտորի մասին','- Կյանք\n- Ոճ'],['text','Ստեղծագործությունը','- Ժանր\n- Տրամադրություն'],['text','Լսենք և քննարկենք','- Ի՞նչ լսեցինք'],THANKS]),
+ T('pe-sport','Ֆիզկուլտուրա','Մարզաձև','Մարզաձևի ներկայացում։','forest',['ֆիզկուլտուրա','սպորտ'],[['title','Մարզաձևի անվանումը','Ֆիզկուլտուրա'],['text','Կանոններ','- Հիմնական կանոններ'],['text','Տեխնիկա','- Տարրեր'],['text','Անվտանգություն','- Ինչ պետք է հիշել'],THANKS])
+];
+const TS={q:'',subj:'',fav:false,open:null};
+function tplDeck(t){
+  const th=SL.THEMES.find(x=>x.id===t.theme)||SL.THEMES[0];
+  const d={slides:t.slides.map(s=>Object.assign(SL.blankSlide(s.layout,s.title),{text:s.text,text2:s.text2,notes:s.notes}))};
+  SL.applyTheme(d,th);return d;
+}
+R.tpl=async function(el){
+  const subs=[...new Set(TPLS.map(t=>t.subj))];
+  const q=TS.q.trim().toLowerCase();
+  const list=TPLS.filter(t=>(!TS.subj||t.subj===TS.subj)&&(!TS.fav||UD.fav.tpl[t.id])&&(!q||(t.title+' '+t.desc+' '+t.tags.join(' ')+' '+t.subj).toLowerCase().indexOf(q)!==-1));
+  el.innerHTML='<div class="st-box"><div class="st-row sp" style="margin-bottom:12px"><div class="st-h" style="margin:0">Կաղապարներ ('+list.length+')</div></div>'
+   +'<div class="st-row" style="margin-bottom:10px"><input class="st-in" style="flex:1;min-width:180px" type="search" placeholder="Որոնել կաղապար, առարկա կամ թեգ..." value="'+esc(TS.q)+'" oninput="stTplQ(this.value)"><button class="sl-btn '+(TS.fav?'on':'')+'" onclick="stTplFav()">★ Ֆավորիտներ</button></div>'
+   +'<div class="st-row" style="margin-bottom:14px"><button class="st-chip '+(!TS.subj?'on':'')+'" onclick="stTplS(\'\')">Բոլորը</button>'+subs.map(s=>'<button class="st-chip '+(TS.subj===s?'on':'')+'" onclick="stTplS(\''+esc(s)+'\')">'+esc(s)+'</button>').join('')+'</div>'
+   +'<div id="st-tg">'+tplGrid(list)+'</div></div>';
+};
+function tplGrid(list){
+  if(!list.length)return '<div class="st-empty"><h3>Ոչինչ չգտնվեց</h3><p>Փոխեք որոնումը կամ ֆիլտրը։</p></div>';
+  return '<div class="st-grid">'+list.map(t=>{
+    const d=tplDeck(t);
+    return '<div class="st-card"><div class="st-pv">'+SL.box(d.slides[0],false,{deck:d,n:1})+'<button class="st-star" title="Ֆավորիտ" onclick="stTplStar(\''+t.id+'\')">'+(UD.fav.tpl[t.id]?'★':'☆')+'</button></div><div class="st-in2"><h3>'+esc(t.title)+'</h3><p>'+esc(t.desc)+'</p><p><span class="st-chip" style="cursor:default">'+esc(t.subj)+'</span> · '+t.slides.length+' սահիկ</p><div class="st-acts"><button class="sl-btn sm" onclick="stTplView(\''+t.id+'\')">👁 Նախադիտում</button>'+(canMake()?'<button class="sl-btn sm pri" onclick="stTplUse(\''+t.id+'\')">Օգտագործել</button>':'')+'</div></div></div>';
+  }).join('')+'</div>';
+}
+function tplRefresh(){
+  const q=TS.q.trim().toLowerCase();
+  const list=TPLS.filter(t=>(!TS.subj||t.subj===TS.subj)&&(!TS.fav||UD.fav.tpl[t.id])&&(!q||(t.title+' '+t.desc+' '+t.tags.join(' ')+' '+t.subj).toLowerCase().indexOf(q)!==-1));
+  const g=$('st-tg');if(g){g.innerHTML=tplGrid(list);SL.hydrate&&SL.hydrate(g);}
+}
+window.stTplQ=function(v){TS.q=v;tplRefresh();};
+window.stTplS=function(v){TS.subj=v;draw();};
+window.stTplFav=function(){TS.fav=!TS.fav;draw();};
+window.stTplStar=function(id){if(UD.fav.tpl[id])delete UD.fav.tpl[id];else UD.fav.tpl[id]=1;saveUD();tplRefresh();};
+window.stTplView=function(id){
+  const t=TPLS.find(x=>x.id===id);if(!t)return;const d=tplDeck(t);
+  modal('<h2>'+esc(t.title)+'</h2><p class="st-sub">'+esc(t.desc)+'</p><div class="st-g2" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));margin:12px 0">'+d.slides.map((s,i)=>SL.box(s,false,{deck:d,n:i+1})).join('')+'</div><div class="st-row"><button class="sl-btn" onclick="stClose()">Փակել</button>'+(canMake()?'<button class="sl-btn pri" onclick="stTplUse(\''+t.id+'\')">Օգտագործել</button>':'')+'</div>',true);
+  SL.hydrate&&SL.hydrate($('st-modal'));
+};
+window.stTplUse=function(id){
+  const t=TPLS.find(x=>x.id===id);if(!t||!canMake())return;
+  closeModal();
+  const ok=SL.newDeck({title:t.title,subject:t.subj==='Ընդհանուր'?'':t.subj,theme:t.theme,slides:t.slides});
+  if(ok===false){tst('Չհաջողվեց բացել խմբագրիչը։');return;}
+  UD.tplUse[id]=(UD.tplUse[id]||0)+1;logAct('tpl',t.title,id);
+};
+
+/* ================= ANIMATIONS ================= */
+const EFF=[['none','Առանց էֆեկտի'],['fade','Մարում (Fade)'],['zoom','Մեծացում (Zoom)'],['left','Սահում ձախից'],['right','Սահում աջից'],['up','Սահում ներքևից'],['down','Սահում վերևից'],['flip','Շրջում (Flip)'],['bounce','Ցատկ (Bounce)'],['rotate','Պտույտ']];
+const TRN=[['','Ըստ նախագծի'],['none','Առանց անցման'],['fade','Մարում'],['slide','Սահում'],['zoom','Մեծացում'],['flip','Շրջում']];
+function kfs(a){
+  switch(a){
+    case 'fade':return [{opacity:0},{opacity:1}];
+    case 'zoom':return [{opacity:0,scale:'.55'},{opacity:1,scale:'1'}];
+    case 'left':return [{opacity:0,translate:'-14% 0'},{opacity:1,translate:'0 0'}];
+    case 'right':return [{opacity:0,translate:'14% 0'},{opacity:1,translate:'0 0'}];
+    case 'up':return [{opacity:0,translate:'0 22%'},{opacity:1,translate:'0 0'}];
+    case 'down':return [{opacity:0,translate:'0 -22%'},{opacity:1,translate:'0 0'}];
+    case 'flip':return [{opacity:0,scale:'0 1'},{opacity:1,scale:'1 1'}];
+    case 'bounce':return [{opacity:0,translate:'0 -40%'},{opacity:1,translate:'0 0'}];
+    case 'rotate':return [{opacity:0,rotate:'-120deg',scale:'.5'},{opacity:1,rotate:'0deg',scale:'1'}];
+  }return null;
+}
+function runOn(node,an){
+  if(!node||!an||!an.a||an.a==='none'||!node.animate)return;
+  const k=kfs(an.a);if(!k)return;
+  try{node.animate(k,{duration:Math.max(100,(+an.d||.6)*1000),delay:Math.max(0,(+an.l||0)*1000),easing:an.a==='bounce'?'cubic-bezier(.34,1.56,.64,1)':'cubic-bezier(.2,.8,.2,1)',fill:'backwards'});}catch(e){}
+}
+function animTargets(b,sl){
+  const c=b.querySelector('.sl-c');
+  return {t:c&&c.querySelector('h1,h2'),b:c&&(c.querySelector('.sl-body')||c.querySelector('.sl-center p')||c.querySelector('.sl-sec p')),i:c&&(c.querySelector('.sl-pic')||c.querySelector('.sl-full'))};
+}
+window.MD_ANIM={
+  apply:function(b,sl){
+    const an=sl&&sl.an;
+    if(an){const t=animTargets(b,sl);['t','b','i'].forEach(k=>{if(an[k]&&t[k])runOn(t[k],an[k]);});}
+    (sl.els||[]).forEach(e=>{if(e.an){const n=b.querySelector('.sl-el[data-eid="'+e.id+'"]');runOn(n,e.an);}});
+  },
+  count:function(sl){let n=0;if(sl.an)['t','b','i'].forEach(k=>{if(sl.an[k]&&sl.an[k].a&&sl.an[k].a!=='none')n++;});(sl.els||[]).forEach(e=>{if(e.an&&e.an.a&&e.an.a!=='none')n++;});return n;}
+};
+const AS={deck:null,sel:0,dirty:false};
+R.anim=async function(el){
+  const list=(await myDecks()).filter(d=>SL.canEdit(d));
+  if(!canMake()){el.innerHTML='<div class="st-box st-empty"><h3>Այս բաժինը ուսուցիչների և աշակերտների համար է</h3></div>';return;}
+  let h='<div class="st-box"><div class="st-row sp" style="margin-bottom:12px"><div class="st-h" style="margin:0">Անիմացիաների ստուդիա</div><div class="st-row"><select class="st-in" id="st-an-pick" onchange="stAnLoad(this.value)"><option value="">Ընտրեք նախագիծ...</option>'+list.map(d=>'<option value="'+d.id+'"'+(AS.deck&&AS.deck.id===d.id?' selected':'')+'>'+esc(d.title)+'</option>').join('')+'</select></div></div>'
+    +'<div id="st-an">'+(AS.deck?'':'<div class="st-empty"><h3>Ընտրեք սահիկաշար</h3><p>Կկարգավորեք սահիկների անցումները, տեքստերի և նկարների անիմացիաները, ավտոմատ ցուցադրումը։ Անիմացիաները աշխատում են ցուցադրման (▶) ժամանակ։</p></div>')+'</div></div>';
+  el.innerHTML=h;
+  if(AS.deck)setTimeout(anDraw,0);
+};
+window.stAnLoad=async function(id){
+  if(!id){AS.deck=null;$('st-an').innerHTML='';return;}
+  try{const d=await SL.getDeck(id);if(!d)throw 0;AS.deck=d;AS.sel=0;AS.dirty=false;await SL.allImgs(d);anDraw();}catch(e){console.error(e);tst('Չհաջողվեց բացել նախագիծը։');}
+};
+function curSl(){return AS.deck.slides[AS.sel];}
+function effSel(val,cb,id){return '<select class="st-in" onchange="'+cb+'" '+(id?'id="'+id+'"':'')+'>'+EFF.map(e=>'<option value="'+e[0]+'"'+(val===e[0]?' selected':'')+'>'+e[1]+'</option>').join('')+'</select>';}
+function anRow(label,key,an){
+  an=an||{a:'none',d:.6,l:0};
+  return '<div class="st-q" style="margin-bottom:8px"><div class="st-row sp"><b style="font-size:13px">'+esc(label)+'</b>'+effSel(an.a,'stAnSet(\''+key+'\',\'a\',this.value)')+'</div><div class="st-row" style="margin-top:8px"><label class="st-sub">Տևողություն՝ <b id="d-'+key+'">'+(+an.d||.6)+'</b>վ <input type="range" min="0.2" max="3" step="0.1" value="'+(+an.d||.6)+'" oninput="stAnSet(\''+key+'\',\'d\',this.value);document.getElementById(\'d-'+key+'\').textContent=this.value"></label><label class="st-sub">Ուշացում՝ <b id="l-'+key+'">'+(+an.l||0)+'</b>վ <input type="range" min="0" max="5" step="0.1" value="'+(+an.l||0)+'" oninput="stAnSet(\''+key+'\',\'l\',this.value);document.getElementById(\'l-'+key+'\').textContent=this.value"></label></div></div>';
+}
+function anDraw(){
+  const root=$('st-an');if(!root||!AS.deck)return;
+  const d=AS.deck,sl=curSl();
+  const hasT=['title','section','text','twocol','imgtext'].indexOf(sl.layout||'text')!==-1,hasB=['title','section','text','twocol','imgtext','quote'].indexOf(sl.layout||'text')!==-1,hasI=['image','imgtext'].indexOf(sl.layout)!==-1&&!!sl.img;
+  const an=sl.an||{};
+  let rows='';
+  if(hasT)rows+=anRow('Վերնագիր','t',an.t);
+  if(hasB)rows+=anRow('Տեքստ','b',an.b);
+  if(hasI)rows+=anRow('Նկար','i',an.i);
+  (sl.els||[]).forEach((e,i)=>{const nm=e.t==='text'?'Տեքստ՝ '+(e.text||'').slice(0,18):e.t==='img'?'Նկար':e.t==='table'?'Աղյուսակ':'Պատկեր՝ '+(e.shape||'');rows+=anRow('Տարր '+(i+1)+' · '+nm,'e'+i,e.an);});
+  if(!rows)rows='<div class="st-note">Այս սահիկում անիմացվող տարր չկա։ Ավելացրեք տեքստ/նկար խմբագրիչում։</div>';
+  root.innerHTML='<div class="st-g2" style="grid-template-columns:200px 1fr;align-items:start"><div style="max-height:62vh;overflow:auto" class="st-list">'+d.slides.map((s,i)=>'<div class="st-li" style="padding:6px;cursor:pointer;'+(i===AS.sel?'border-color:var(--acc);box-shadow:0 0 0 2px var(--acc-lt)':'')+'" onclick="stAnSel('+i+')"><div style="width:100%">'+SL.box(s,false,{deck:d,n:i+1})+'<div class="st-sub" style="margin-top:4px">'+(i+1)+(MD_ANIM.count(s)?' · ✨ '+MD_ANIM.count(s):'')+(s.tr?' · ⇄':'')+'</div></div></div>').join('')+'</div>'
+   +'<div><div class="st-anim-prev" id="st-an-stage">'+SL.box(sl,false,{deck:d,n:AS.sel+1})+'</div><div class="st-row" style="justify-content:center;margin-bottom:12px"><button class="sl-btn pri" onclick="stAnPrev()">▶ Նախադիտել անիմացիան</button><button class="sl-btn" onclick="stAnPresent()">⛶ Ցուցադրել այս սահիկից</button></div>'
+   +'<div class="st-q"><div class="st-row sp"><b style="font-size:13px">Անցում այս սահիկին</b><select class="st-in" onchange="stAnTr(this.value)">'+TRN.map(t=>'<option value="'+t[0]+'"'+((sl.tr||'')===t[0]?' selected':'')+'>'+t[1]+'</option>').join('')+'</select></div></div>'
+   +rows
+   +'<div class="st-row" style="margin:6px 0"><button class="sl-btn sm" onclick="stAnAll()">Կիրառել այս սահիկի էֆեկտները բոլոր սահիկների վրա</button><button class="sl-btn sm dng" onclick="stAnClear()">Մաքրել այս սահիկի անիմացիաները</button></div>'
+   +'<div class="st-q"><div class="st-h">Ամբողջ ցուցադրության կարգավորումներ</div><div class="st-row"><label class="st-sub">Լռելյայն անցում <select class="st-in" onchange="stAnDeck(\'trans\',this.value)">'+TRN.slice(1).map(t=>'<option value="'+t[0]+'"'+((d.trans||'fade')===t[0]?' selected':'')+'>'+t[1]+'</option>').join('')+'</select></label><label class="st-sub">Ավտոմատ անցում՝ <input class="st-in" style="width:80px" type="number" min="0" max="120" value="'+(+d.auto||0)+'" onchange="stAnDeck(\'auto\',+this.value)"> վրկ (0՝ անջատված)</label><label class="st-sub"><input type="checkbox" '+(d.loop?'checked':'')+' onchange="stAnDeck(\'loop\',this.checked)"> Կրկնել</label></div></div>'
+   +'<div class="st-row"><button class="sl-btn pri" id="st-an-save" onclick="stAnSave()">💾 Պահպանել նախագծում</button><span class="st-sub" id="st-an-st">'+(AS.dirty?'Չպահպանված փոփոխություններ':'Պահպանված է')+'</span></div><div class="st-note" style="margin-top:10px">Անիմացիաները և անցումները պահվում են նախագծի հետ և երևում են ցուցադրման ռեժիմում։ PPTX/PDF արտահանումը դրանք չի ներառում (PowerPoint-ի ֆայլում անիմացիաներ չկան)։</div></div></div>';
+}
+function mark(){AS.dirty=true;const s=$('st-an-st');if(s)s.textContent='Չպահպանված փոփոխություններ';}
+window.stAnSel=function(i){AS.sel=i;anDraw();};
+window.stAnSet=function(key,prop,val){
+  const sl=curSl();let t;
+  if(key[0]==='e'&&key.length>1&&!isNaN(+key.slice(1))){const e=sl.els[+key.slice(1)];e.an=e.an||{a:'none',d:.6,l:0};t=e.an;}
+  else{sl.an=sl.an||{};sl.an[key]=sl.an[key]||{a:'none',d:.6,l:0};t=sl.an[key];}
+  t[prop]=prop==='a'?val:+val;
+  if(prop==='a'&&val==='none'){/* keep timing */}
+  mark();
+  if(prop==='a'){stAnPrev();}
+};
+window.stAnTr=function(v){const sl=curSl();if(v)sl.tr=v;else delete sl.tr;mark();anDraw();};
+window.stAnDeck=function(k,v){AS.deck[k]=v;mark();};
+window.stAnPrev=function(){const st=$('st-an-stage');if(!st)return;const sl=curSl();st.innerHTML=SL.box(sl,false,{deck:AS.deck,n:AS.sel+1});SL.hydrate&&SL.hydrate(st);MD_ANIM.apply(st,sl);};
+window.stAnAll=function(){
+  const src=curSl();if(!src.an&&!(src.els||[]).some(e=>e.an)){tst('Այս սահիկում էֆեկտներ չկան։');return;}
+  AS.deck.slides.forEach((s,i)=>{if(i===AS.sel)return;if(src.an)s.an=clone(src.an);if(src.tr)s.tr=src.tr;});
+  mark();anDraw();tst('Կիրառվեց բոլոր սահիկների վրա։');
+};
+window.stAnClear=function(){const sl=curSl();delete sl.an;(sl.els||[]).forEach(e=>delete e.an);mark();anDraw();};
+window.stAnSave=async function(){
+  const b=$('st-an-save');if(b)b.disabled=true;
+  try{await SL.saveDeck(AS.deck);AS.dirty=false;logAct('anim',AS.deck.title,AS.deck.id);const s=$('st-an-st');if(s)s.textContent='Պահպանված է';}
+  catch(e){console.error(e);tst('Չհաջողվեց պահպանել։');}
+  if(b)b.disabled=false;
+};
+window.stAnPresent=async function(){await SL.present(clone(AS.deck),AS.sel);};
+
+/* ================= EXPORT & SHARE ================= */
+window.MD_XO=window.MD_XO||{page:'169',scale:2};
+let EX={id:''};
+R.exp=async function(el){
+  const list=await decksAll();
+  if(!EX.id||!list.some(d=>d.id===EX.id))EX.id=(list[0]||{}).id||'';
+  el.innerHTML='<div class="st-box"><div class="st-h">Արտահանում և կիսում</div>'+(list.length?
+   '<div class="st-fg"><label>Նախագիծ</label><select class="st-in" onchange="EX_set(this.value)">'+list.map(d=>'<option value="'+d.id+'"'+(d.id===EX.id?' selected':'')+'>'+esc(d.title)+' ('+(d.count||0)+')</option>').join('')+'</select></div>'
+   +'<div class="st-row" style="margin-bottom:12px"><label class="st-sub">Էջի չափ (PDF/տպում)<br><select class="st-in" onchange="MD_XO.page=this.value"><option value="169"'+(MD_XO.page==='169'?' selected':'')+'>16:9 (էկրան)</option><option value="43"'+(MD_XO.page==='43'?' selected':'')+'>4:3</option><option value="a4"'+(MD_XO.page==='a4'?' selected':'')+'>A4 հորիզոնական</option><option value="letter"'+(MD_XO.page==='letter'?' selected':'')+'>Letter հորիզոնական</option></select></label><label class="st-sub">Նկարների որակ (PNG)<br><select class="st-in" onchange="MD_XO.scale=+this.value"><option value="1"'+(MD_XO.scale===1?' selected':'')+'>Ստանդարտ (1280 px)</option><option value="2"'+(MD_XO.scale===2?' selected':'')+'>Բարձր (1920 px)</option><option value="3"'+(MD_XO.scale===3?' selected':'')+'>Շատ բարձր (2560 px)</option></select></label></div>'
+   +'<div class="st-grid" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr))">'
+   +exCard('📄','PDF / Տպում','Բացում է տպելու պատուհանը․ ընտրեք «Պահպանել որպես PDF» կամ տպիչ։','stExPdf()')
+   +exCard('📊','PPTX (PowerPoint)','Ֆայլ PowerPoint-ի համար։','stExPptx()')
+   +exCard('{ }','JSON','Ամբողջական պատճեն՝ նկարներով, հետագայում ներմուծելու համար։','stExJson()')
+   +exCard('🖼️','Սահիկները՝ նկարներով','Յուրաքանչյուր սահիկ առանձին PNG, հավաքված մեկ ZIP-ով։','stExPng()')
+   +exCard('⛶','Ամբողջ էկրանով','Սկսում է ցուցադրությունը ամբողջ էկրանով։','stExShow()')
+   +exCard('🔒','Մասնավոր հղում և դասարաններ','Կիսվեք դասարանի հետ․ հղումը կաշխատի միայն հասանելիություն ունեցողների մոտ։','stExPrivate()')
+   +exCard('🌍','Հանրային հղում','Հրապարակեք Համայնքում և ստացեք հղում՝ բոլոր գրանցված օգտատերերի համար։','stExPublic()')
+   +'</div><div id="st-ex-st" class="st-sub" style="margin-top:12px"></div>':'<div class="st-empty"><h3>Նախագծեր չկան</h3><p>Նախ ստեղծեք սահիկաշար։</p></div>')+'</div>';
+};
+function exCard(ic,t,d,fn){return '<div class="st-card" style="padding:14px;gap:6px"><div style="font-size:26px">'+ic+'</div><h3>'+t+'</h3><p>'+d+'</p><div class="st-acts"><button class="sl-btn sm pri" onclick="'+fn+'">Կատարել</button></div></div>';}
+window.EX_set=function(v){EX.id=v;};
+window.stExpFor=function(id){EX.id=id;stGo('exp');};
+function exSt(m,bad){const e=$('st-ex-st');if(e){e.style.color=bad?'var(--red,#dc2626)':'';e.textContent=m;}}
+async function exDeck(){
+  const d=await SL.getDeck(EX.id);if(!d)throw new Error('missing');await SL.allImgs(d);return d;
+}
+window.stExPdf=async function(){try{exSt('Պատրաստվում է...');const d=await exDeck();await SL.exportPdf(d);logAct('export',d.title+' (PDF)',d.id);exSt('Տպելու պատուհանը բացվեց։');}catch(e){console.error(e);exSt('Չհաջողվեց։',1);}};
+window.stExPptx=async function(){try{exSt('PPTX-ը պատրաստվում է...');const d=await exDeck();await SL.exportPptx(d);logAct('export',d.title+' (PPTX)',d.id);exSt('Պատրաստ է։');}catch(e){console.error(e);exSt('PPTX-ը չհաջողվեց (պահանջվում է ինտերնետ)։',1);}};
+window.stExJson=async function(){try{await SL.exportJson(EX.id);logAct('export',(SL.idx()[EX.id]||{}).title+' (JSON)',EX.id);exSt('Ֆայլը ներբեռնվեց։');}catch(e){console.error(e);exSt('Չհաջողվեց։',1);}};
+window.stExShow=async function(){try{const d=await exDeck();await SL.present(d,0);}catch(e){console.error(e);exSt('Չհաջողվեց։',1);}};
+/* slide -> PNG (SVG foreignObject; no external libraries) */
+async function slidePng(d,i,w){
+  const h=Math.round(w*9/16);
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<div class="sl-box" style="width:'+w+'px;height:'+h+'px">'+SL.slideInner(d.slides[i],false,{deck:d,n:i+1})+'</div>';
+  const xhtml=new XMLSerializer().serializeToString(wrap.firstChild);
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="width:'+w+'px;height:'+h+'px"><style>'+SL.css().replace(/<\/style/gi,'')+'</style>'+xhtml+'</div></foreignObject></svg>';
+  const img=await new Promise((ok,no)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=()=>no(new Error('svg'));im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);});
+  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,w,h);x.drawImage(img,0,0,w,h);
+  return await new Promise((ok,no)=>c.toBlob(b=>b?ok(b):no(new Error('png')),'image/png'));
+}
+const CRCT=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+const crc32=u=>{let c=0xFFFFFFFF;for(let i=0;i<u.length;i++)c=CRCT[(c^u[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;};
+function zipStore(files){ // files:[{name,data:Uint8Array}]
+  const enc=new TextEncoder(),parts=[],cen=[];let off=0;
+  const u16=n=>[n&255,(n>>8)&255],u32=n=>[n&255,(n>>8)&255,(n>>16)&255,(n>>>24)&255];
+  files.forEach(f=>{
+    const nm=enc.encode(f.name),crc=crc32(f.data),sz=f.data.length;
+    const lh=new Uint8Array([0x50,0x4b,3,4,20,0,0,8,0,0,0,0,0,0,...u32(crc),...u32(sz),...u32(sz),...u16(nm.length),0,0]);
+    parts.push(lh,nm,f.data);
+    cen.push(new Uint8Array([0x50,0x4b,1,2,20,0,20,0,0,8,0,0,0,0,0,0,...u32(crc),...u32(sz),...u32(sz),...u16(nm.length),0,0,0,0,0,0,0,0,0,0,0,0,...u32(off)]),nm);
+    off+=lh.length+nm.length+sz;
+  });
+  const cl=cen.reduce((a,b)=>a+b.length,0);
+  const end=new Uint8Array([0x50,0x4b,5,6,0,0,0,0,...u16(files.length),...u16(files.length),...u32(cl),...u32(off),0,0]);
+  return new Blob(parts.concat(cen,[end]),{type:'application/zip'});
+}
+window.stExPng=async function(){
+  try{
+    const d=await exDeck(),W=Math.round(1280*({1:1,2:1.5,3:2}[MD_XO.scale||2]||1.5));
+    const files=[];
+    for(let i=0;i<d.slides.length;i++){exSt('Սահիկ '+(i+1)+' / '+d.slides.length+'...');const b=await slidePng(d,i,W);files.push({name:'slide-'+String(i+1).padStart(2,'0')+'.png',data:new Uint8Array(await b.arrayBuffer())});}
+    SL.download(zipStore(files),(d.title||'slides').replace(/[\\/:*?"<>|]+/g,'_')+'-slides.zip');
+    logAct('export',d.title+' (PNG)',d.id);exSt('ZIP ֆայլը ներբեռնվեց ('+files.length+' նկար)։');
+  }catch(e){console.error(e);exSt('Նկարների արտահանումը չհաջողվեց այս բրաուզերում։ Օգտագործեք PDF-ը։',1);}
+};
+function linkFor(kind,id){return location.origin+location.pathname+'#studio='+kind+':'+id;}
+window.stExPrivate=async function(){
+  try{
+    const d=await SL.getDeck(EX.id);if(!d)return;
+    if(!SL.canEdit(d)){modal('<h2>Մասնավոր հղում</h2><p>Հղում՝</p><input class="st-in" style="width:100%" readonly value="'+esc(linkFor('deck',d.id))+'" onclick="this.select()"><p class="st-sub">Կաշխատի միայն նրանց մոտ, ում նախագիծը հասանելի է։</p><button class="sl-btn" onclick="stClose()">Փակել</button>');return;}
+    const cls=Object.keys((DB&&DB.classes)||{}).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    modal('<h2>Մասնավոր հղում և դասարաններ</h2><p class="st-sub">Ընտրեք դասարանները, որոնց աշակերտները կտեսնեն այս նախագիծը։ Առանց ընտրության՝ նախագիծը անձնական է։</p><div class="st-row" style="margin:10px 0">'+(cls.length?cls.map(c=>'<label class="st-chip"><input type="checkbox" class="st-clsck" value="'+esc(c)+'" '+((d.classes||[]).indexOf(c)!==-1?'checked':'')+'> '+esc(c)+'</label>').join(''):'<span class="st-sub">Դասարաններ չկան։</span>')+'</div><div class="st-fg"><label>Հղում (կաշխատի միայն հասանելիություն ունեցողների մոտ, ովքեր մուտք են գործել)</label><input class="st-in" readonly value="'+esc(linkFor('deck',d.id))+'" onclick="this.select()"></div><div class="st-err" id="st-pe"></div><div class="st-row"><button class="sl-btn pri" onclick="stExPrivOk()">Պահպանել</button><button class="sl-btn" onclick="stClose()">Փակել</button></div>');
+  }catch(e){console.error(e);exSt('Չհաջողվեց։',1);}
+};
+window.stExPrivOk=async function(){
+  try{const d=await SL.getDeck(EX.id);d.classes=[...document.querySelectorAll('.st-clsck')].filter(c=>c.checked).map(c=>c.value);await SL.saveDeck(d);closeModal();exSt(d.classes.length?'Կիսված է՝ '+d.classes.join(', '):'Նախագիծը անձնական է։');}
+  catch(e){console.error(e);const x=$('st-pe');if(x)x.textContent='Չհաջողվեց պահպանել։';}
+};
+window.stExPublic=function(){stGo('comm');setTimeout(()=>stCommPublish(EX.id),80);};
+
+/* ================= MEDIA LIBRARY ================= */
+const MCATS=['Ընդհանուր','Գիտություն','Պատմություն','Բնություն','Արվեստ','Սխեմաներ','Այլ'];
+const ICONS={
+ 'Դպրոց':['📚','📖','✏️','📝','📐','📏','🎒','🏫','🎓','🧮','📌','📎','🗂️','📅','⏰','🔔','🖍️','📓','🔍','💡'],
+ 'Գիտություն':['🔬','🧪','🧬','⚗️','🔭','🧲','⚡','🔋','💻','🖥️','🛰️','🚀','🌡️','🧫','⚛️','📡','🔧','⚙️','🧮','🔦'],
+ 'Բնություն':['🌍','🌱','🌳','🌸','🍀','🌊','⛰️','🌋','☀️','🌙','⭐','☁️','🌧️','❄️','🔥','🦋','🐝','🐟','🦅','🐘'],
+ 'Արվեստ և երաժշտություն':['🎨','🖌️','🎭','🎵','🎶','🎹','🎻','🥁','🎸','📷','🎬','🖼️','✂️','🧵','🏛️','🗿','📜','🎤','🎧','🎺'],
+ 'Սպորտ':['⚽','🏀','🏐','🏓','🎾','🏊','🚴','🏃','🥇','🏆','🥋','♟️','⛹️','🤸','🏋️','⛷️','🧗','🎯','🥅','🏅'],
+ 'Նշաններ':['✅','❌','❓','❗','➕','➖','✖️','➗','➡️','⬅️','⬆️','⬇️','🔁','⭐','❤️','👍','👏','🎉','⚠️','🔒']
+};
+const GRADS=['linear-gradient(135deg,#6366f1,#8b5cf6)','linear-gradient(135deg,#06b6d4,#3b82f6)','linear-gradient(135deg,#f59e0b,#ef4444)','linear-gradient(135deg,#10b981,#065f4e)','linear-gradient(135deg,#ec4899,#be185d)','linear-gradient(135deg,#0f172a,#334155)','linear-gradient(135deg,#fde68a,#fca5a5)','linear-gradient(135deg,#bae6fd,#c7d2fe)'];
+const MS={sub:'mine',cat:'',fav:false,q:'',results:null,busy:false,msg:'',icat:Object.keys(ICONS)[0]};
+R.media=async function(el){
+  const subs=[['mine','Իմ գրադարանը'],['search','Նկարների որոնում'],['icons','Պատկերակներ'],['bg','Ֆոնային պատկերներ'],['video','Տեսանյութեր']];
+  let h='<div class="st-box"><div class="st-row" style="margin-bottom:14px">'+subs.map(s=>'<button class="st-chip '+(MS.sub===s[0]?'on':'')+'" onclick="stMs(\''+s[0]+'\')">'+s[1]+'</button>').join('')+'</div>';
+  h+=await mediaPane();
+  el.innerHTML=h+'</div>';
+};
+window.stMs=function(s){MS.sub=s;draw();};
+async function mediaPane(){
+  const ud=UD;
+  if(MS.sub==='mine'){
+    let items=ud.media.filter(m=>(!MS.cat||m.cat===MS.cat)&&(!MS.fav||ud.fav.media[m.id])&&(!MS.q||(m.name||'').toLowerCase().indexOf(MS.q.toLowerCase())!==-1));
+    return '<div class="st-row sp" style="margin-bottom:12px"><div class="st-row"><input class="st-in" type="search" placeholder="Որոնել..." value="'+esc(MS.q)+'" oninput="MS.q=this.value;stMsRe()"><select class="st-in" onchange="MS.cat=this.value;stMsRe()"><option value="">Բոլոր կատեգորիաները</option>'+MCATS.map(c=>'<option'+(MS.cat===c?' selected':'')+'>'+c+'</option>').join('')+'</select><button class="sl-btn '+(MS.fav?'on':'')+'" onclick="MS.fav=!MS.fav;stMsRe()">★</button></div>'+(canMake()?'<div class="st-row"><input type="file" id="st-up" accept="image/*" multiple style="display:none" onchange="stMsUp(this)"><button class="sl-btn pri" onclick="$(\'st-up\').click()">⬆ Վերբեռնել նկար (համակարգիչ / հեռախոս)</button></div>':'')+'</div><div class="st-err" id="st-me">'+esc(MS.msg)+'</div><div id="st-mg">'+mineGrid(items)+'</div>';
+  }
+  if(MS.sub==='search'){
+    return '<div class="st-row" style="margin-bottom:10px"><input class="st-in" style="flex:1;min-width:200px" id="st-sq" type="search" placeholder="Որոնել նկար (օր․ Արարատ, բջիջ, ջրվեժ)..." value="'+esc(MS.q)+'" onkeydown="if(event.key===\'Enter\')stMsSearch()"><button class="sl-btn pri" onclick="stMsSearch()">🔍 Որոնել</button></div><div class="st-note" style="margin-bottom:12px">Որոնումը կատարվում է Wikimedia Commons-ում (ազատ լիցենզիայով նկարներ)։ Օգտագործելիս նշեք հեղինակին և լիցենզիան՝ դրանք պահվում են նյութի հետ։</div><div class="st-err" id="st-me">'+esc(MS.msg)+'</div><div id="st-mr">'+(MS.busy?'<div class="st-empty">Որոնվում է...</div>':searchGrid())+'</div>';
+  }
+  if(MS.sub==='icons'){
+    return '<div class="st-row" style="margin-bottom:12px">'+Object.keys(ICONS).map(k=>'<button class="st-chip '+(MS.icat===k?'on':'')+'" onclick="MS.icat=\''+esc(k)+'\';stMsRe2()">'+esc(k)+'</button>').join('')+'</div><div class="st-emo">'+ICONS[MS.icat].map(e=>'<button onclick="stIcon(\''+e+'\')">'+e+'</button>').join('')+'</div><div class="st-sub" style="margin-top:10px">Սեղմեք պատկերակի վրա՝ սահիկաշարին ավելացնելու կամ պատճենելու համար։</div>';
+  }
+  if(MS.sub==='bg'){
+    const arts=SL.ARTIDS;
+    return '<div class="st-h">Ստեղծված ֆոներ</div><div class="st-grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));margin-bottom:16px">'+arts.map(k=>'<div class="st-card" style="cursor:pointer" onclick="stBg(\'art\',\''+k+'\')"><div class="st-pv" style="aspect-ratio:16/9;background:#334155 url(&quot;'+esc(SL.ART[k].url)+'&quot;) center/'+(SL.ART[k].tile?'60px':'cover')+'"></div><div class="st-in2" style="padding:8px"><h3 style="font-size:12px">'+esc(SL.ART[k].n)+'</h3></div></div>').join('')+'</div>'
+     +'<div class="st-h">Գունային անցումներ</div><div class="st-grid" style="grid-template-columns:repeat(auto-fill,minmax(110px,1fr));margin-bottom:16px">'+GRADS.map((g,i)=>'<div class="st-card" style="cursor:pointer" onclick="stBg(\'grad\','+i+')"><div style="aspect-ratio:16/9;background:'+g+'"></div></div>').join('')+'</div>'
+     +'<div class="st-h">Իմ նկարները ֆոնի համար</div>'+(ud.media.length?'<div class="st-mgrid">'+ud.media.slice(0,24).map(m=>'<div class="st-mi" style="cursor:pointer" onclick="stAddTo(\''+m.id+'\',\'bg\')"><img data-imgid="'+esc(m.id)+'" alt=""><div class="n">'+esc(m.name||'')+'</div></div>').join('')+'</div>':'<div class="st-sub">Նախ վերբեռնեք նկարներ «Իմ գրադարանը» բաժնում։</div>');
+  }
+  const vids=ud.videos.filter(v=>(!MS.fav||ud.fav.media[v.id]));
+  return '<div class="st-row" style="margin-bottom:10px"><input class="st-in" style="flex:1;min-width:200px" id="st-vu" placeholder="https://… (YouTube կամ ուղիղ .mp4 հղում)"><input class="st-in" id="st-vt" placeholder="Անվանում"><button class="sl-btn pri" onclick="stVidAdd()">＋ Ավելացնել</button></div><div class="st-err" id="st-me">'+esc(MS.msg)+'</div><div class="st-note" style="margin-bottom:12px">Տեսանյութերը պահվում են որպես հղումներ (ֆայլեր չեն վերբեռնվում)։ Սահիկաշարին ավելացվում է հղումը՝ որպես տեքստ։</div>'+(vids.length?'<div class="st-list">'+vids.map(v=>'<div class="st-li"><div class="t">'+esc(v.title||v.url)+'<div class="m">'+esc(v.url)+'</div></div><button class="sl-btn sm" onclick="stVidPlay(\''+v.id+'\')">▶ Դիտել</button>'+(canMake()?'<button class="sl-btn sm" onclick="stVidAddSl(\''+v.id+'\')">Սահիկաշարին</button>':'')+'<button class="sl-btn sm dng" onclick="stVidDel(\''+v.id+'\')">🗑</button></div>').join('')+'</div>':'<div class="st-empty">Տեսանյութեր դեռ չկան։</div>');
+}
+function mineGrid(items){
+  if(!items.length)return '<div class="st-empty"><h3>Գրադարանը դատարկ է</h3><p>'+(canMake()?'Վերբեռնեք նկարներ կամ որոնեք Wikimedia Commons-ում։':'')+'</p></div>';
+  return '<div class="st-mgrid">'+items.map(m=>'<div class="st-mi"><img data-imgid="'+esc(m.id)+'" alt=""><button class="st-star" style="width:28px;height:28px;font-size:14px;top:6px;right:6px" onclick="stMFav(\''+m.id+'\')">'+(UD.fav.media[m.id]?'★':'☆')+'</button><div class="n" title="'+esc(m.name)+'">'+esc(m.name||'Նկար')+'</div>'+(m.credit?'<div class="n st-sub" title="'+esc(m.credit)+'">© '+esc(m.credit)+'</div>':'')+'<div class="a"><select class="st-in" style="min-height:28px;padding:2px 4px;font-size:11px" onchange="stMCat(\''+m.id+'\',this.value)">'+MCATS.map(c=>'<option'+(m.cat===c?' selected':'')+'>'+c+'</option>').join('')+'</select>'+(canMake()?'<button class="sl-btn sm" onclick="stAddTo(\''+m.id+'\')">＋ Սահիկաշարին</button>':'')+'<button class="sl-btn sm dng" onclick="stMDel(\''+m.id+'\')">🗑</button></div></div>').join('')+'</div>';
+}
+function searchGrid(){
+  if(MS.results==null)return '<div class="st-empty">Մուտքագրեք որոնման բառը։</div>';
+  if(!MS.results.length)return '<div class="st-empty"><h3>Ոչինչ չգտնվեց</h3></div>';
+  return '<div class="st-mgrid" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))">'+MS.results.map((r,i)=>'<div class="st-mi"><img src="'+esc(r.thumb)+'" alt="" loading="lazy"><div class="n" title="'+esc(r.title)+'">'+esc(r.title)+'</div><div class="n st-sub" title="'+esc(r.credit)+'">© '+esc(r.credit)+'</div><div class="a">'+(canMake()?'<button class="sl-btn sm pri" onclick="stMsSave('+i+')">Պահել գրադարանում</button>':'')+'</div></div>').join('')+'</div>';
+}
+function stMsRe(){const g=$('st-mg');if(!g)return;const ud=UD;g.innerHTML=mineGrid(ud.media.filter(m=>(!MS.cat||m.cat===MS.cat)&&(!MS.fav||ud.fav.media[m.id])&&(!MS.q||(m.name||'').toLowerCase().indexOf(MS.q.toLowerCase())!==-1)));SL.hydrate&&SL.hydrate(g);}
+window.stMsRe=stMsRe;window.MS=MS;
+window.stMsRe2=draw;
+window.stMFav=function(id){if(UD.fav.media[id])delete UD.fav.media[id];else UD.fav.media[id]=1;saveUD();stMsRe();};
+window.stMCat=function(id,c){const m=UD.media.find(x=>x.id===id);if(m){m.cat=c;saveUD();}};
+window.stMDel=function(id){if(!confirm('Հեռացնե՞լ նյութը գրադարանից։ Արդեն սահիկաշարերում օգտագործված նկարները չեն ազդվի։'))return;UD.media=UD.media.filter(m=>m.id!==id);delete UD.fav.media[id];saveUD();stMsRe();};
+window.stMsUp=async function(inp){
+  const files=[...(inp.files||[])];if(!files.length)return;
+  const e=$('st-me');let ok=0;
+  for(const f of files){
+    if(!/^image\//.test(f.type)){MS.msg='«'+f.name+'»՝ միայն նկարներ են թույլատրվում։';continue;}
+    if(f.size>12*1024*1024){MS.msg='«'+f.name+'»՝ չափը մեծ է (մինչև 12 ՄԲ)։';continue;}
+    try{if(e)e.textContent='Վերբեռնվում է '+f.name+'...';const r=await SL.putImg(f,1400);UD.media.unshift({id:r.id,name:f.name.replace(/\.[^.]+$/,''),cat:MS.cat||'Ընդհանուր',ts:Date.now()});ok++;}
+    catch(er){console.error(er);MS.msg='Չհաջողվեց վերբեռնել «'+f.name+'»։';}
+  }
+  if(ok){MS.msg='';saveUD();logAct('media',ok+' նկար',''); }
+  inp.value='';draw();
+};
+window.stMsSearch=async function(){
+  const q=(($('st-sq')||{}).value||'').trim();if(q.length<2){MS.msg='Մուտքագրեք առնվազն 2 նիշ։';draw();return;}
+  MS.q=q;MS.busy=true;MS.msg='';const pane=$('st-mr');if(pane)pane.innerHTML='<div class="st-empty">Որոնվում է...</div>';
+  try{
+    const u='https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch='+encodeURIComponent(q+' filetype:bitmap')+'&gsrnamespace=6&gsrlimit=24&prop=imageinfo&iiprop=url|extmetadata|mime&iiurlwidth=1000&format=json&origin=*';
+    const r=await fetch(u);if(!r.ok)throw new Error('http '+r.status);const j=await r.json();
+    const pages=Object.values((j.query&&j.query.pages)||{});
+    MS.results=pages.map(p=>{const ii=(p.imageinfo||[])[0]||{},em=ii.extmetadata||{};const strip=s=>String((s&&s.value)||'').replace(/<[^>]*>/g,'').trim();
+      return {title:String(p.title||'').replace(/^File:/,'').replace(/\.[a-z]+$/i,''),thumb:ii.thumburl||ii.url,full:ii.thumburl||ii.url,credit:(strip(em.Artist)||'Անհայտ հեղինակ')+' · '+(strip(em.LicenseShortName)||'լիցենզիան նշված է Commons-ում')+' · Wikimedia Commons'};}).filter(x=>x.thumb);
+  }catch(e){console.error(e);MS.results=null;MS.msg='Որոնումը չհաջողվեց (ստուգեք ինտերնետը)։';}
+  MS.busy=false;draw();
+};
+window.stMsSave=async function(i){
+  const r=MS.results[i];if(!r)return;MS.msg='Պահվում է...';const e=$('st-me');if(e)e.textContent=MS.msg;
+  try{
+    const resp=await fetch(r.full);if(!resp.ok)throw new Error('http');const blob=await resp.blob();
+    const f=new File([blob],r.title+'.jpg',{type:blob.type||'image/jpeg'});
+    const x=await SL.putImg(f,1400);UD.media.unshift({id:x.id,name:r.title.slice(0,60),cat:'Ընդհանուր',credit:r.credit.slice(0,160),ts:Date.now()});saveUD();logAct('media',r.title,'');
+    MS.msg='Պահվեց «Իմ գրադարանը» բաժնում։';
+  }catch(er){console.error(er);MS.msg='Չհաջողվեց ներբեռնել նկարը։';}
+  draw();
+};
+/* add an image / icon / background to a slideshow */
+async function editableDecks(){return (await myDecks()).filter(d=>SL.canEdit(d));}
+async function addDlg(kind,payload){
+  const list=await editableDecks();
+  if(!list.length){tst('Խմբագրելի սահիկաշար չկա։ Նախ ստեղծեք մեկը։');return;}
+  window._stAdd={kind:kind,payload:payload};
+  modal('<h2>Ավելացնել սահիկաշարին</h2><div class="st-fg"><label>Սահիկաշար</label><select class="st-in" id="st-ad-d" onchange="stAddDeckSel()">'+list.map(d=>'<option value="'+d.id+'">'+esc(d.title)+'</option>').join('')+'</select></div><div class="st-fg"><label>Սահիկ</label><select class="st-in" id="st-ad-s"></select></div>'+(kind==='img'?'<div class="st-fg"><label>Ինչպես</label><select class="st-in" id="st-ad-m"><option value="el">Որպես նկար սահիկի վրա</option><option value="bg">Որպես սահիկի ֆոն</option></select></div>':'')+'<div class="st-err" id="st-ad-e"></div><div class="st-row"><button class="sl-btn pri" onclick="stAddOk()">Ավելացնել</button><button class="sl-btn" onclick="stClose()">Չեղարկել</button></div>');
+  stAddDeckSel();
+}
+window.stAddDeckSel=async function(){
+  const id=$('st-ad-d').value,s=$('st-ad-s');s.innerHTML='<option>...</option>';
+  try{const d=await SL.getDeck(id);s.innerHTML=d.slides.map((x,i)=>'<option value="'+i+'">'+(i+1)+'. '+esc((x.title||'(առանց վերնագրի)').slice(0,40))+'</option>').join('')+'<option value="new">＋ Նոր դատարկ սահիկ</option>';}catch(e){s.innerHTML='';}
+};
+window.stAddOk=async function(){
+  const A=window._stAdd,err=$('st-ad-e');if(!A)return;
+  try{
+    const d=await SL.getDeck($('st-ad-d').value);if(!d)throw 0;const si=$('st-ad-s').value;let sl;
+    if(si==='new'){sl=SL.blankSlide('blank','');d.slides.push(sl);}else sl=d.slides[+si];
+    sl.els=sl.els||[];
+    if(A.kind==='img'){
+      const mode=(($('st-ad-m')||{}).value)||'el';
+      if(mode==='bg'){sl.bgImg=A.payload;sl.bgFit=sl.bgFit||'cover';}
+      else sl.els.push({id:uid(),t:'img',img:A.payload,x:25,y:12,w:50,h:76,fit:'contain',br:0,op:100,rot:0});
+      d.imgs=[...new Set((d.imgs||[]).concat([A.payload]))];
+    }else if(A.kind==='emoji'){
+      sl.els.push({id:uid(),t:'text',x:42,y:30,w:16,h:24,text:A.payload,fs:12,b:false,i:false,u:false,al:'center',va:'mid',fill:'',br:0,op:100,rot:0});
+    }else if(A.kind==='video'){
+      sl.els.push({id:uid(),t:'text',x:8,y:70,w:84,h:20,text:'▶ Տեսանյութ՝ '+(A.payload.title||'')+'\n'+A.payload.url,fs:2.8,b:false,i:false,u:false,al:'left',va:'mid',fill:'',br:1,op:100,rot:0});
+      sl.notes=((sl.notes?sl.notes+'\n':'')+'Տեսանյութ՝ '+A.payload.url).slice(0,1500);
+    }
+    await SL.saveDeck(d);closeModal();tst('Ավելացվեց «'+d.title+'» սահիկաշարին։');logAct('media','Ավելացվեց '+d.title,d.id);
+  }catch(e){console.error(e);if(err)err.textContent='Չհաջողվեց ավելացնել։';}
+};
+window.stAddTo=function(id,mode){addDlg('img',id);if(mode==='bg')setTimeout(()=>{const m=$('st-ad-m');if(m)m.value='bg';},400);};
+window.stIcon=function(e){modal('<h2 style="font-size:46px;text-align:center;margin:0 0 12px">'+e+'</h2><div class="st-row" style="justify-content:center"><button class="sl-btn" onclick="stCopy(\''+e+'\')">Պատճենել</button>'+(canMake()?'<button class="sl-btn pri" onclick="stIconAdd(\''+e+'\')">＋ Սահիկաշարին</button>':'')+'<button class="sl-btn" onclick="stClose()">Փակել</button></div>');};
+window.stIconAdd=function(e){closeModal();addDlg('emoji',e);};
+window.stCopy=async function(t){try{await navigator.clipboard.writeText(t);tst('Պատճենվեց։');}catch(e){tst('Չհաջողվեց պատճենել։');}};
+window.stBg=async function(kind,v){
+  const list=await editableDecks();if(!list.length){tst('Խմբագրելի սահիկաշար չկա։');return;}
+  pickDeck(list,'Ո՞ր նախագծի սահիկներին կիրառել ֆոնը',async id=>{
+    try{const d=await SL.getDeck(id);
+      const ask=confirm('Կիրառե՞լ ֆոնը ԲՈԼՈՐ սահիկների վրա (OK) թե՞ միայն առաջինի (Cancel)։');
+      d.slides.forEach((s,i)=>{if(!ask&&i>0)return;if(kind==='art'){s.art=v;}else{s.bg=GRADS[v];s.tc=SL.autoTc(GRADS[v]);s.tcb='';s.bgImg='';}});
+      await SL.saveDeck(d);tst('Ֆոնը կիրառվեց։');logAct('media','Ֆոն՝ '+d.title,d.id);}catch(e){console.error(e);tst('Չհաջողվեց։');}
+  });
+};
+function ytId(u){const m=/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/.exec(u);return m?m[1]:'';}
+window.stVidAdd=function(){
+  const u=($('st-vu').value||'').trim(),t=($('st-vt').value||'').trim();
+  if(!/^https:\/\/[^\s]+$/.test(u)){MS.msg='Հղումը պետք է սկսվի https://-ով։';draw();return;}
+  UD.videos.unshift({id:uid(),url:u,title:t||u.slice(0,60),cat:'Ընդհանուր',ts:Date.now()});saveUD();MS.msg='';logAct('media',t||u,'');draw();
+};
+window.stVidDel=function(id){UD.videos=UD.videos.filter(v=>v.id!==id);saveUD();draw();};
+window.stVidPlay=function(id){
+  const v=UD.videos.find(x=>x.id===id);if(!v)return;const y=ytId(v.url);
+  const inner=y?'<iframe src="https://www.youtube-nocookie.com/embed/'+y+'" style="width:100%;aspect-ratio:16/9;border:0;border-radius:12px" allowfullscreen referrerpolicy="no-referrer"></iframe>':(/\.(mp4|webm|ogg)(\?|$)/i.test(v.url)?'<video src="'+esc(v.url)+'" controls style="width:100%;border-radius:12px"></video>':'<p>Այս հղումը ներկառուցել հնարավոր չէ։ <a href="'+esc(v.url)+'" target="_blank" rel="noopener noreferrer">Բացել նոր էջում</a></p>');
+  modal('<h2>'+esc(v.title)+'</h2>'+inner+'<div class="st-row" style="margin-top:12px"><button class="sl-btn" onclick="stClose()">Փակել</button></div>',true);
+};
+window.stVidAddSl=function(id){const v=UD.videos.find(x=>x.id===id);if(v)addDlg('video',{url:v.url,title:v.title});};
+
+/* ================= QUIZ MAKER ================= */
+const QI='quiz_index',QK=id=>'quiz_'+id,QR=id=>'quizres_'+id;
+const QTYPES=[['single','Մեկ ճիշտ պատասխան'],['multi','Մի քանի ճիշտ պատասխան'],['tf','Ճիշտ / Սխալ'],['open','Բաց հարց (կարճ պատասխան)']];
+async function qIdxLoad(){const d=await bGet(QI);return (d&&d.quizzes)||{};}
+async function qIdxPut(m){await fsdb.collection(FS_COL).doc(QI).set(fsClean({quizzes:{[m.id]:m}}),{merge:true});}
+async function qIdxDel(id){await fsdb.collection(FS_COL).doc(QI).set({quizzes:{[id]:firebase.firestore.FieldValue.delete()}},{merge:true});}
+const qMeta=q=>({id:q.id,title:q.title,subject:q.subject||'',owner:q.owner,ownerName:q.ownerName||'',created:q.created,updated:q.updated,count:q.questions.length,pts:q.questions.reduce((a,x)=>a+(+x.pts||1),0),classes:q.classes||[],time:q.time||0});
+const QB={q:null,isNew:false};
+const blankQ=t=>({id:uid(),type:t||'single',text:'',opts:t==='tf'?['Ճիշտ','Սխալ']:(t==='open'?[]:['','','','']),ok:[0],ans:[],pts:1,expl:''});
+R.quiz=async function(el){
+  const idx=await qIdxLoad();const list=Object.values(idx).filter(q=>q&&q.id&&quizVisible(q)).sort((a,b)=>(b.updated||0)-(a.updated||0));
+  const mine=list.filter(q=>q.owner===me()||isAdm()),shared=list.filter(q=>!(q.owner===me()||isAdm()));
+  const row=q=>{const ed=q.owner===me()||isAdm();return '<div class="st-li"><div class="t">'+esc(q.title)+'<div class="m">'+(q.subject?esc(q.subject)+' · ':'')+q.count+' հարց · '+q.pts+' միավոր'+(q.time?' · '+q.time+' րոպե':'')+' · '+fmtD(q.updated)+(!ed?' · '+esc(q.ownerName||''):'')+((q.classes||[]).length?' · 👥 '+esc(q.classes.join(', ')):'')+'</div></div><button class="sl-btn sm pri" onclick="stQuizTake(\''+q.id+'\')">▶ Անցնել</button>'+(ed?'<button class="sl-btn sm" onclick="stQuizPrev(\''+q.id+'\')">👁 Նախադիտում</button><button class="sl-btn sm" onclick="stQuizEdit(\''+q.id+'\')">✎</button><button class="sl-btn sm" onclick="stQuizRes(\''+q.id+'\')">📈 Արդյունքներ</button><button class="sl-btn sm" onclick="stQuizPdf(\''+q.id+'\')">📄 PDF</button><button class="sl-btn sm dng" onclick="stQuizDel(\''+q.id+'\')">🗑</button>':'<button class="sl-btn sm" onclick="stQuizMine(\''+q.id+'\')">Իմ արդյունքները</button>')+'</div>';};
+  el.innerHTML='<div class="st-box"><div class="st-row sp" style="margin-bottom:12px"><div class="st-h" style="margin:0">Թեստեր</div>'+(canMake()?'<div class="st-row"><button class="sl-btn" onclick="stQuizAI()">✨ Ստեղծել ԱԲ-ով</button><button class="sl-btn pri" onclick="stQuizNew()">＋ Նոր թեստ</button></div>':'')+'</div>'
+   +(mine.length?'<div class="st-h">'+(isAdm()?'Բոլոր թեստերը':'Իմ թեստերը')+'</div><div class="st-list" style="margin-bottom:16px">'+mine.map(row).join('')+'</div>':'')
+   +(shared.length?'<div class="st-h">Ինձ հասանելի թեստեր</div><div class="st-list">'+shared.map(row).join('')+'</div>':'')
+   +(!list.length?'<div class="st-empty"><h3>Թեստեր դեռ չկան</h3><p>'+(canMake()?'Ստեղծեք առաջին թեստը ձեռքով կամ ԱԲ-ով։':'Երբ ուսուցիչը թեստ կիսի ձեր դասարանի հետ, այն կերևա այստեղ։')+'</p></div>':'')+'</div>';
+};
+window.stQuizNew=function(){
+  if(!canMake())return;
+  QB.q={id:uid(),title:'',subject:'',owner:me(),ownerName:CU.name||'',created:Date.now(),classes:[],time:0,pick:0,shuffleQ:true,shuffleA:true,questions:[blankQ('single')]};QB.isNew=true;qbDraw();
+};
+window.stQuizEdit=async function(id){
+  try{const q=await bGet(QK(id));if(!q||!q.questions)throw 0;QB.q=q;QB.isNew=false;qbDraw();}catch(e){tst('Չհաջողվեց բացել թեստը։');}
+};
+function qbDraw(){
+  const q=QB.q;if(!q)return;
+  const cls=Object.keys((DB&&DB.classes)||{}).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  const m=modal('<h2>'+(QB.isNew?'Նոր թեստ':'Թեստի խմբագրում')+'</h2><div class="st-g2" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"><div class="st-fg"><label>Վերնագիր</label><input class="st-in" value="'+esc(q.title)+'" oninput="QB.q.title=this.value"></div><div class="st-fg"><label>Առարկա</label><input class="st-in" list="st-subj" value="'+esc(q.subject)+'" oninput="QB.q.subject=this.value"><datalist id="st-subj">'+SL.SUBJECTS.map(s=>'<option value="'+esc(s)+'">').join('')+'</datalist></div><div class="st-fg"><label>Ժամանակաչափ (րոպե, 0՝ առանց սահմանի)</label><input class="st-in" type="number" min="0" max="240" value="'+(q.time||0)+'" oninput="QB.q.time=Math.max(0,+this.value||0)"></div><div class="st-fg"><label>Հարցերի քանակը մեկ փորձում (0՝ բոլորը)</label><input class="st-in" type="number" min="0" max="200" value="'+(q.pick||0)+'" oninput="QB.q.pick=Math.max(0,+this.value||0)"></div></div>'
+   +'<div class="st-row" style="margin-bottom:10px"><label class="st-chip"><input type="checkbox" '+(q.shuffleQ?'checked':'')+' onchange="QB.q.shuffleQ=this.checked"> Խառնել հարցերը</label><label class="st-chip"><input type="checkbox" '+(q.shuffleA?'checked':'')+' onchange="QB.q.shuffleA=this.checked"> Խառնել պատասխանները</label></div>'
+   +(cls.length?'<div class="st-fg"><label>Կիսվել դասարանների հետ</label><div class="st-row">'+cls.map(c=>'<label class="st-chip"><input type="checkbox" '+((q.classes||[]).indexOf(c)!==-1?'checked':'')+' onchange="stQbCls(\''+esc(c)+'\',this.checked)"> '+esc(c)+'</label>').join('')+'</div></div>':'')
+   +'<div id="st-qs">'+qbQs()+'</div><div class="st-row" style="margin:8px 0"><button class="sl-btn sm" onclick="stQbAdd(\'single\')">＋ Մեկ ճիշտ</button><button class="sl-btn sm" onclick="stQbAdd(\'multi\')">＋ Մի քանի ճիշտ</button><button class="sl-btn sm" onclick="stQbAdd(\'tf\')">＋ Ճիշտ/Սխալ</button><button class="sl-btn sm" onclick="stQbAdd(\'open\')">＋ Բաց հարց</button><button class="sl-btn sm" onclick="stQbAI()">✨ Ավելացնել ԱԲ-ով</button></div><div class="st-err" id="st-qe"></div><div class="st-row"><button class="sl-btn pri" onclick="stQbSave()">💾 Պահպանել</button><button class="sl-btn" onclick="stQbPrevDraft()">👁 Նախադիտում</button><button class="sl-btn" onclick="stClose()">Փակել</button></div>',true);
+}
+function qbQs(){
+  return QB.q.questions.map((x,i)=>'<div class="st-q"><div class="st-row sp"><b>Հարց '+(i+1)+'</b><div class="st-row"><select class="st-in" onchange="stQbType('+i+',this.value)">'+QTYPES.map(t=>'<option value="'+t[0]+'"'+(x.type===t[0]?' selected':'')+'>'+t[1]+'</option>').join('')+'</select><label class="st-sub">Միավոր <input class="st-in" style="width:64px" type="number" min="0.5" step="0.5" value="'+(+x.pts||1)+'" oninput="QB.q.questions['+i+'].pts=+this.value||1"></label><button class="sl-btn sm" onclick="stQbMove('+i+',-1)">↑</button><button class="sl-btn sm" onclick="stQbMove('+i+',1)">↓</button><button class="sl-btn sm dng" onclick="stQbDel('+i+')">🗑</button></div></div><textarea class="st-in" style="margin:8px 0;min-height:60px" placeholder="Հարցի տեքստը" oninput="QB.q.questions['+i+'].text=this.value">'+esc(x.text)+'</textarea>'
+   +(x.type==='open'?'<div class="st-fg"><label>Ընդունելի պատասխաններ (ստորակետով բաժանած, մեծատառերը նշանակություն չունեն)</label><input class="st-in" value="'+esc((x.ans||[]).join(', '))+'" oninput="QB.q.questions['+i+'].ans=this.value.split(\',\').map(s=>s.trim()).filter(Boolean)"></div>'
+   :x.opts.map((o,j)=>'<div class="st-opt"><input type="'+(x.type==='multi'?'checkbox':'radio')+'" name="qo'+i+'" '+(x.ok.indexOf(j)!==-1?'checked':'')+' onchange="stQbOk('+i+','+j+',this.checked)" title="Ճիշտ պատասխան"><input class="st-in" '+(x.type==='tf'?'readonly':'')+' value="'+esc(o)+'" placeholder="Տարբերակ '+(j+1)+'" oninput="QB.q.questions['+i+'].opts['+j+']=this.value">'+(x.type!=='tf'&&x.opts.length>2?'<button class="sl-btn sm" onclick="stQbOpt('+i+','+j+',-1)">✕</button>':'')+'</div>').join('')+(x.type!=='tf'&&x.opts.length<8?'<button class="sl-btn sm" onclick="stQbOpt('+i+',-1,1)">＋ Տարբերակ</button>':''))
+   +'<div class="st-fg" style="margin-top:8px"><label>Բացատրություն (ցուցադրվում է արդյունքի մեջ, ըստ ցանկության)</label><input class="st-in" value="'+esc(x.expl||'')+'" oninput="QB.q.questions['+i+'].expl=this.value"></div></div>').join('');
+}
+function qbRe(){const e=$('st-qs');if(e)e.innerHTML=qbQs();}
+window.QB=QB;
+window.stQbCls=function(c,on){const a=QB.q.classes=QB.q.classes||[];const i=a.indexOf(c);if(on&&i<0)a.push(c);if(!on&&i>=0)a.splice(i,1);};
+window.stQbAdd=function(t){QB.q.questions.push(blankQ(t));qbRe();};
+window.stQbDel=function(i){if(QB.q.questions.length<2){tst('Թեստում պետք է լինի առնվազն մեկ հարց։');return;}QB.q.questions.splice(i,1);qbRe();};
+window.stQbMove=function(i,d){const a=QB.q.questions,j=i+d;if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];qbRe();};
+window.stQbType=function(i,t){const x=QB.q.questions[i],keep=x.text,pts=x.pts,ex=x.expl;QB.q.questions[i]=Object.assign(blankQ(t),{id:x.id,text:keep,pts:pts,expl:ex});qbRe();};
+window.stQbOk=function(i,j,on){const x=QB.q.questions[i];if(x.type==='multi'){const k=x.ok.indexOf(j);if(on&&k<0)x.ok.push(j);if(!on&&k>=0)x.ok.splice(k,1);}else x.ok=[j];};
+window.stQbOpt=function(i,j,d){const x=QB.q.questions[i];if(d>0){x.opts.push('');}else{x.opts.splice(j,1);x.ok=x.ok.filter(k=>k!==j).map(k=>k>j?k-1:k);}qbRe();};
+function qbValidate(q){
+  if(!(q.title||'').trim())return 'Նշեք թեստի վերնագիրը։';
+  for(let i=0;i<q.questions.length;i++){
+    const x=q.questions[i],n='Հարց '+(i+1)+'՝ ';
+    if(!(x.text||'').trim())return n+'գրեք հարցի տեքստը։';
+    if(x.type==='open'){if(!(x.ans||[]).length)return n+'նշեք առնվազն մեկ ընդունելի պատասխան։';continue;}
+    const filled=x.opts.filter(o=>(o||'').trim());
+    if(filled.length<2||x.opts.some(o=>!(o||'').trim()))return n+'լրացրեք բոլոր տարբերակները (առնվազն 2)։';
+    if(!x.ok.length)return n+'նշեք ճիշտ պատասխանը։';
+  }
+  return '';
+}
+window.stQbSave=async function(){
+  const q=QB.q,e=qbValidate(q),el=$('st-qe');
+  if(e){if(el)el.textContent=e;return;}
+  try{q.updated=Date.now();q.title=q.title.trim();await bSet(QK(q.id),q);await qIdxPut(qMeta(q));if(QB.isNew)logAct('quiz',q.title,q.id);QB.isNew=false;closeModal();tst('Թեստը պահպանվեց։');if(ST.tab==='quiz')draw();}
+  catch(er){console.error(er);if(el)el.textContent='Չհաջողվեց պահպանել։';}
+};
+window.stQbPrevDraft=function(){const e=qbValidate(QB.q);if(e){$('st-qe').textContent=e;return;}runQuiz(clone(QB.q),true,true);};
+window.stQuizDel=async function(id){
+  if(!confirm('Ջնջե՞լ թեստը և նրա արդյունքները։'))return;
+  try{await fsdb.collection(FS_COL).doc(QK(id)).delete();await fsdb.collection(FS_COL).doc(QR(id)).delete().catch(()=>{});await qIdxDel(id);draw();}catch(e){console.error(e);tst('Չհաջողվեց ջնջել։');}
+};
+window.stQuizPrev=async function(id){const q=await bGet(QK(id));if(q&&q.questions)runQuiz(q,true,false);};
+window.stQuizTake=async function(id){try{const q=await bGet(QK(id));if(!q||!q.questions)throw 0;runQuiz(q,false,false);}catch(e){tst('Չհաջողվեց բացել թեստը։');}};
+
+/* ---- running a quiz ---- */
+const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const norm=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
+let RQ=null;
+function runQuiz(q,preview,draft){
+  let qs=q.questions.map(x=>clone(x));
+  if(q.shuffleQ)qs=shuf(qs);
+  if(q.pick&&q.pick>0&&q.pick<qs.length)qs=qs.slice(0,q.pick);
+  qs=qs.map(x=>{ // shuffle options but keep the correct set
+    if(x.type==='open'||x.type==='tf'||!q.shuffleA)return Object.assign(x,{map:x.opts.map((_,i)=>i)});
+    const order=shuf(x.opts.map((_,i)=>i));return Object.assign(x,{opts:order.map(i=>x.opts[i]),ok:x.ok.map(k=>order.indexOf(k)),map:order});
+  });
+  RQ={q:q,qs:qs,i:0,ans:qs.map(()=>null),t0:Date.now(),preview:preview,draft:draft,done:false};
+  if(q.time)RQ.end=Date.now()+q.time*60000;
+  rqDraw();
+  clearInterval(RQ.tm);if(q.time)RQ.tm=setInterval(()=>{if(!RQ||RQ.done){return;}const left=RQ.end-Date.now();const t=$('st-rq-t');if(t)t.textContent=fmtLeft(left);if(left<=0){clearInterval(RQ.tm);rqFinish(true);}},500);
+}
+const fmtLeft=ms=>{ms=Math.max(0,Math.ceil(ms/1000));return Math.floor(ms/60)+':'+String(ms%60).padStart(2,'0');};
+function rqDraw(){
+  const r=RQ,x=r.qs[r.i],last=r.i===r.qs.length-1;
+  let body='';
+  if(x.type==='open')body='<input class="st-in" style="width:100%" id="st-rq-open" placeholder="Գրեք պատասխանը" value="'+esc(r.ans[r.i]||'')+'" oninput="RQ.ans[RQ.i]=this.value">';
+  else body=x.opts.map((o,j)=>{const sel=x.type==='multi'?(r.ans[r.i]||[]).indexOf(j)!==-1:r.ans[r.i]===j;return '<label class="st-o"><input type="'+(x.type==='multi'?'checkbox':'radio')+'" name="rq" '+(sel?'checked':'')+' onchange="rqPick('+j+',this.checked)"><span>'+esc(o)+'</span></label>';}).join('');
+  modal('<div class="st-take"><div class="st-row sp"><b>'+esc(r.q.title)+(r.draft?' (նախադիտում)':r.preview?' (նախադիտում՝ արդյունքը չի պահվում)':'')+'</b>'+(r.q.time?'<b id="st-rq-t" style="color:var(--acc)">'+fmtLeft(r.end-Date.now())+'</b>':'')+'</div><div style="height:6px;background:var(--surf3);border-radius:4px;margin:10px 0"><div style="height:100%;width:'+((r.i+1)/r.qs.length*100)+'%;background:var(--acc);border-radius:4px"></div></div><div class="st-sub">Հարց '+(r.i+1)+' / '+r.qs.length+' · '+(+x.pts||1)+' միավոր'+(x.type==='multi'?' · նշեք բոլոր ճիշտները':'')+'</div><h3 style="margin:8px 0 12px">'+esc(x.text)+'</h3>'+body+'<div class="st-err" id="st-rq-e"></div><div class="st-row sp" style="margin-top:12px"><button class="sl-btn" '+(r.i===0?'disabled':'')+' onclick="rqGo(-1)">‹ Նախորդ</button><div class="st-row"><button class="sl-btn" onclick="rqClose()">Դուրս գալ</button>'+(last?'<button class="sl-btn pri" onclick="rqFinish(false)">Ավարտել ✓</button>':'<button class="sl-btn pri" onclick="rqGo(1)">Հաջորդ ›</button>')+'</div></div></div>');
+}
+window.RQ_=()=>RQ;
+window.rqPick=function(j,on){const r=RQ,x=r.qs[r.i];if(x.type==='multi'){const a=r.ans[r.i]||[];const k=a.indexOf(j);if(on&&k<0)a.push(j);if(!on&&k>=0)a.splice(k,1);r.ans[r.i]=a;}else r.ans[r.i]=j;};
+window.rqGo=function(d){RQ.i=Math.max(0,Math.min(RQ.qs.length-1,RQ.i+d));rqDraw();};
+window.rqClose=function(){if(RQ&&!RQ.done&&!confirm('Դուրս գա՞լ։ Արդյունքը չի պահվի։'))return;if(RQ)clearInterval(RQ.tm);RQ=null;closeModal();};
+function gradeQ(x,a){
+  const pts=+x.pts||1;
+  if(x.type==='open'){const ok=a!=null&&(x.ans||[]).some(s=>norm(s)===norm(a));return {pts:ok?pts:0,ok:ok,max:pts};}
+  if(x.type==='multi'){const sel=a||[];const good=sel.filter(j=>x.ok.indexOf(j)!==-1).length,bad=sel.filter(j=>x.ok.indexOf(j)===-1).length;const f=Math.max(0,(good-bad)/x.ok.length);return {pts:Math.round(pts*f*100)/100,ok:f===1,max:pts};}
+  const ok=a!=null&&x.ok.indexOf(a)!==-1;return {pts:ok?pts:0,ok:ok,max:pts};
+}
+window.rqFinish=async function(auto){
+  const r=RQ;if(!r||r.done)return;
+  if(!auto){const un=r.qs.filter((x,i)=>x.type==='open'?!(r.ans[i]||'').trim():(r.ans[i]==null||(Array.isArray(r.ans[i])&&!r.ans[i].length))).length;if(un&&!confirm('Չպատասխանված հարցեր՝ '+un+'։ Ավարտե՞լ։'))return;}
+  r.done=true;clearInterval(r.tm);
+  const gr=r.qs.map((x,i)=>gradeQ(x,r.ans[i]));const score=Math.round(gr.reduce((a,g)=>a+g.pts,0)*100)/100,max=gr.reduce((a,g)=>a+g.max,0),pct=max?Math.round(score/max*100):0;
+  const dur=Math.round((Date.now()-r.t0)/1000);
+  let saved='';
+  if(!r.preview){
+    try{const aid=uid();const u=(DB.users||{})[CU.username]||CU;await fsdb.collection(FS_COL).doc(QR(r.q.id)).set(fsClean({att:{[aid]:{u:me(),name:CU.name||me(),cls:u.class||CU.class||'',score:score,max:max,pct:pct,ts:Date.now(),dur:dur}}}),{merge:true});saved='Արդյունքը պահպանվեց։';logAct('attempt',r.q.title,r.q.id);}
+    catch(e){console.error(e);saved='Արդյունքը չհաջողվեց պահպանել։';}
+  }
+  modal('<h2>Արդյունք</h2><div class="st-stats"><div class="st-stat"><b>'+score+' / '+max+'</b><span>Միավոր</span></div><div class="st-stat"><b>'+pct+'%</b><span>Ճիշտ</span></div><div class="st-stat"><b>'+Math.floor(dur/60)+':'+String(dur%60).padStart(2,'0')+'</b><span>Ժամանակ</span></div></div><div class="st-sub" style="margin-bottom:10px">'+esc(saved)+(auto?' Ժամանակը սպառվեց։':'')+'</div><div class="st-take">'+r.qs.map((x,i)=>{
+    const g=gr[i],a=r.ans[i];let yours,right;
+    if(x.type==='open'){yours=esc(a||'—');right=esc((x.ans||[]).join(' / '));}
+    else{yours=esc((x.type==='multi'?(a||[]):(a==null?[]:[a])).map(j=>x.opts[j]).join(', ')||'—');right=esc(x.ok.map(j=>x.opts[j]).join(', '));}
+    return '<div class="st-q"><b>'+(i+1)+'. '+esc(x.text)+'</b><div class="st-sub" style="margin-top:4px">'+(g.ok?'<span class="st-ok">✓ Ճիշտ</span>':'<span style="color:var(--red,#dc2626)">✗ '+(g.pts>0?'Մասնակի':'Սխալ')+'</span>')+' · '+g.pts+' / '+g.max+'</div><div style="font-size:13px;margin-top:4px">Ձեր պատասխանը՝ '+yours+'</div>'+(g.ok?'':'<div style="font-size:13px">Ճիշտ պատասխանը՝ <b>'+right+'</b></div>')+(x.expl?'<div class="st-sub" style="margin-top:4px">💬 '+esc(x.expl)+'</div>':'')+'</div>';}).join('')+'</div><div class="st-row"><button class="sl-btn pri" onclick="rqClose2()">Փակել</button></div>',true);
+};
+window.rqClose2=function(){if(RQ)clearInterval(RQ.tm);RQ=null;closeModal();if(ST.tab==='quiz')draw();};
+/* ---- results ---- */
+async function readRes(id){const d=await bGet(QR(id));return Object.values((d&&d.att)||{}).sort((a,b)=>b.ts-a.ts);}
+window.stQuizRes=async function(id){
+  const q=(await qIdxLoad())[id];const at=await readRes(id);
+  const avg=at.length?Math.round(at.reduce((a,x)=>a+x.pct,0)/at.length):0;
+  const by={};at.forEach(a=>{(by[a.u]=by[a.u]||[]).push(a);});
+  modal('<h2>Արդյունքներ՝ '+esc(q?q.title:'')+'</h2><div class="st-stats"><div class="st-stat"><b>'+at.length+'</b><span>Փորձեր</span></div><div class="st-stat"><b>'+Object.keys(by).length+'</b><span>Մասնակիցներ</span></div><div class="st-stat"><b>'+avg+'%</b><span>Միջին արդյունք</span></div></div>'+(at.length?'<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th align="left">Մասնակից</th><th>Դաս.</th><th>Միավոր</th><th>%</th><th>Ամսաթիվ</th></tr></thead><tbody>'+at.map(a=>'<tr style="border-top:1px solid var(--bdr)"><td>'+esc(a.name)+'</td><td align="center">'+esc(a.cls||'')+'</td><td align="center">'+a.score+' / '+a.max+'</td><td align="center"><b>'+a.pct+'%</b></td><td align="center">'+fmtDT(a.ts)+'</td></tr>').join('')+'</tbody></table></div>':'<div class="st-empty">Փորձեր դեռ չկան։</div>')+'<div class="st-row" style="margin-top:12px"><button class="sl-btn" onclick="stClose()">Փակել</button></div>',true);
+};
+window.stQuizMine=async function(id){
+  const q=(await qIdxLoad())[id];const at=(await readRes(id)).filter(a=>a.u===me());
+  modal('<h2>Իմ արդյունքները՝ '+esc(q?q.title:'')+'</h2>'+(at.length?'<div class="st-list">'+at.map(a=>'<div class="st-li"><div class="t">'+a.score+' / '+a.max+' ('+a.pct+'%)</div><div class="m">'+fmtDT(a.ts)+'</div></div>').join('')+'</div>':'<div class="st-empty">Դուք դեռ չեք անցել այս թեստը։</div>')+'<div class="st-row" style="margin-top:12px"><button class="sl-btn" onclick="stClose()">Փակել</button></div>');
+};
+/* ---- PDF (print) ---- */
+window.stQuizPdf=async function(id){
+  const q=await bGet(QK(id));if(!q||!q.questions)return;
+  const withKey=confirm('Ավելացնե՞լ պատասխանների բանալին վերջին էջում։');
+  const L='ԱԲԳԴԵԶԷԸ';
+  const qh=q.questions.map((x,i)=>'<div class="q"><p><b>'+(i+1)+'.</b> '+esc(x.text)+' <i>('+(+x.pts||1)+' մ.)</i></p>'+(x.type==='open'?'<div class="ln"></div>':'<ol class="o">'+x.opts.map((o,j)=>'<li>'+L[j]+') '+esc(o)+'</li>').join('')+'</ol>')+'</div>').join('');
+  const key=withKey?'<div style="page-break-before:always"><h2>Պատասխանների բանալի</h2>'+q.questions.map((x,i)=>'<p>'+(i+1)+'. '+(x.type==='open'?esc((x.ans||[]).join(' / ')):x.ok.map(j=>L[j]+') '+esc(x.opts[j])).join('; '))+'</p>').join('')+'</div>':'';
+  const html='<!doctype html><html><head><meta charset="utf-8"><title>'+esc(q.title)+'</title><style>body{font-family:"Noto Sans Armenian",Arial,sans-serif;margin:18mm;color:#111}h1{font-size:20px;margin:0 0 4px}.meta{color:#555;font-size:12px;margin-bottom:14px}.q{margin:0 0 12px;break-inside:avoid}.o{list-style:none;padding-left:18px;margin:4px 0}.o li{margin:2px 0}.ln{border-bottom:1px solid #999;height:26px;margin-top:6px}</style></head><body><h1>'+esc(q.title)+'</h1><div class="meta">'+(q.subject?esc(q.subject)+' · ':'')+q.questions.length+' հարց'+(q.time?' · '+q.time+' րոպե':'')+'<br>Անուն, ազգանուն՝ ____________________ Ամսաթիվ՝ __________</div>'+qh+key+'</body></html>';
+  const fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);fr.srcdoc=html;
+  fr.onload=()=>setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print();}catch(e){tst('Տպելու պատուհանը չհաջողվեց բացել։');}setTimeout(()=>fr.remove(),60000);},300);
+};
+
+/* ================= AI LAB ================= */
+const AIS={sub:'text',busy:false,out:'',err:'',mode:'generate',img:null,chat:null,cfg:null};
+const AIT=[['text','✍️','Տեքստեր'],['explain','🎓','Դասի բացատրություն'],['quiz','📝','Թեստեր'],['speech','🎤','Ներկայացման խոսք'],['design','🎨','Դիզայնի առաջարկներ'],['img','🖼️','Նկարի գեներացում'],['search','🔍','Նկարների որոնում'],['chat','💬','ԱԲ չաթ'],['deck','🧩','Սահիկաշար ԱԲ-ով']];
+function parseJson(t){const a=t.indexOf('{'),b=t.lastIndexOf('}');if(a<0||b<a)throw new Error('json');return JSON.parse(t.slice(a,b+1));}
+async function aiCall(body){
+  const u=await SL.aiUrl();if(!u)throw new Error('noai');
+  const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),70000);
+  try{
+    const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:ac.signal});
+    if(!r.ok)throw new Error('http '+r.status);
+    const j=await r.json();if(j.error)throw new Error(j.error);return String(j.text||'');
+  }finally{clearTimeout(tm);}
+}
+const aiErr=e=>e&&e.message==='noai'?'ԱԲ սերվիսը դեռ միացված չէ։ Ադմինը պետք է միացնի այն «ԱԲ լաբորատորիա» էջի ներքևում։':(e&&e.name==='AbortError'?'Պատասխանը ուշացավ։ Փորձեք կրկին։':'ԱԲ-ը չպատասխանեց։ Ստուգեք կապը և փորձեք կրկին։');
+function deckText(d){return d.slides.map((s,i)=>(i+1)+'. '+(s.title||'')+(s.text?'\n'+s.text:'')+(s.text2?'\n'+s.text2:'')).join('\n\n');}
+R.ai=async function(el){
+  AIS.cfg=await SL.aiUrl().catch(()=>'');
+  const mk=canMake();
+  let h='<div class="st-box"><div class="st-row" style="margin-bottom:14px">'+AIT.map(t=>'<button class="st-chip '+(AIS.sub===t[0]?'on':'')+'" onclick="stAi(\''+t[0]+'\')">'+t[1]+' '+t[2]+'</button>').join('')+'</div><div id="st-ai-p">'+aiPanel(mk)+'</div></div>';
+  if(!AIS.cfg&&['text','explain','quiz','speech','design','chat'].indexOf(AIS.sub)!==-1)h+='<div class="st-note" style="margin-top:12px">⚠️ Այս գործիքը աշխատում է ԱԲ միջանկյալ սերվիսով (Cloudflare Worker, անվճար), որը դեռ միացված չէ։ '+(isAdm()?'Տեղադրեք սերվիսի հասցեն ստորև։':'Դիմեք ադմինիստրատորին։')+'</div>';
+  if(isAdm())h+='<div class="st-box" style="margin-top:12px"><div class="st-h">⚙ ԱԲ սերվիսի հասցե (ադմին)</div><div class="st-row"><input id="st-ai-u" class="st-in" style="flex:1;min-width:220px" placeholder="https://....workers.dev" value="'+esc(AIS.cfg||'')+'"><button class="sl-btn pri" onclick="stAiCfg()">Պահպանել</button></div><div class="st-sub" style="margin-top:6px">Օգտագործվում է նաև սահիկաշարերի ԱԲ օգնականի համար։ Worker-ի նոր տարբերակը (ai-worker.js) պետք է տեղադրված լինի։</div></div>';
+  el.innerHTML=h;
+};
+window.stAi=function(s){AIS.sub=s;AIS.out='';AIS.err='';draw();};
+window.stAiCfg=async function(){
+  const u=(($('st-ai-u')||{}).value||'').trim();
+  if(u&&!/^https:\/\/[^\s]+$/.test(u)){tst('Հասցեն պետք է սկսվի https://-ով։');return;}
+  try{await bSet('slides_ai_config',{url:u,by:me(),ts:Date.now()});tst('Պահպանվեց։');draw();}catch(e){console.error(e);tst('Չհաջողվեց պահպանել։');}
+};
+function outBox(){
+  return '<div id="st-ai-o">'+(AIS.err?'<div class="st-err">'+esc(AIS.err)+'</div>':'')+(AIS.busy?'<div class="st-sub">ԱԲ-ը մշակում է...</div>':'')+(AIS.out?'<div class="st-out" id="st-ai-out">'+esc(AIS.out)+'</div><div class="st-row" style="margin-top:8px"><button class="sl-btn sm" onclick="stAiCopy()">📋 Պատճենել</button><button class="sl-btn sm" onclick="stAiToSlide()">＋ Ավելացնել սահիկաշարին</button></div>':'')+'</div>';
+}
+function aiPanel(mk){
+  const S=AIS.sub;
+  if(S==='deck')return '<p>ԱԲ-ը կազմում է ամբողջական սահիկաշար՝ վերնագրերով, տեքստով, նկարների գաղափարներով և ներկայացման նշումներով։</p>'+(mk?'<button class="sl-btn pri" onclick="MD_SL.openAssistant()">✨ Բացել ԱԲ օգնականը</button>':'<p class="st-sub">Այս հնարավորությունը հասանելի է ուսուցիչներին և աշակերտներին։</p>');
+  if(S==='text')return '<div class="st-fg"><label>Գործողություն</label><select class="st-in" onchange="AIS.mode=this.value">'+[['generate','Գեներացնել տեքստ'],['edit','Խմբագրել և ուղղել'],['summarize','Ամփոփել']].map(m=>'<option value="'+m[0]+'"'+(AIS.mode===m[0]?' selected':'')+'>'+m[1]+'</option>').join('')+'</select></div><div class="st-fg"><label>Հարցում կամ տեքստ</label><textarea class="st-in" id="st-ai-t" placeholder="Օր․ Գրեք 150 բառանոց տեքստ Արարատ լեռան մասին 5-րդ դասարանի համար"></textarea></div><button class="sl-btn pri" onclick="stAiRun(\'text\')">✨ Կատարել</button>'+outBox();
+  if(S==='explain')return '<div class="st-fg"><label>Թեմա</label><input class="st-in" id="st-ai-t" placeholder="Օր․ Ֆոտոսինթեզ"></div><div class="st-fg"><label>Դասարան</label><select class="st-in" id="st-ai-g">'+[3,4,5,6,7,8,9,10,11,12].map(g=>'<option value="'+g+'"'+(g===7?' selected':'')+'>'+g+'-րդ դասարան</option>').join('')+'</select></div><button class="sl-btn pri" onclick="stAiRun(\'explain\')">🎓 Բացատրել պարզ</button>'+outBox();
+  if(S==='speech')return '<p>Ընտրեք սահիկաշար, և ԱԲ-ը կգրի ներկայացման խոսքը՝ ըստ սահիկների։</p><button class="sl-btn pri" onclick="stAiPickDeck(\'speech\')">Ընտրել սահիկաշար</button>'+outBox();
+  if(S==='design')return '<p>ԱԲ-ը կառաջարկի ձևավորում և խորհուրդներ ընտրված սահիկաշարի համար։ Թեման կարող եք կիրառել մեկ սեղմումով։</p><button class="sl-btn pri" onclick="stAiPickDeck(\'design\')">Ընտրել սահիկաշար</button><div id="st-ai-dz"></div>'+outBox();
+  if(S==='quiz')return '<p>ԱԲ-ը ստեղծում է թեստ ձեր թեմայով։ Նախքան պահպանելը կարող եք խմբագրել հարցերը։</p>'+(mk?'<button class="sl-btn pri" onclick="stQuizAI()">✨ Ստեղծել թեստ ԱԲ-ով</button>':'<p class="st-sub">Թեստեր ստեղծում են ուսուցիչները և աշակերտները։</p>');
+  if(S==='img'){
+    return '<div class="st-fg"><label>Նկարի նկարագրություն (ավելի լավ արդյունք՝ անգլերենով)</label><textarea class="st-in" id="st-ai-t" style="min-height:70px" placeholder="Օր․ cute watercolor illustration of Mount Ararat at sunrise"></textarea></div><div class="st-row"><button class="sl-btn pri" onclick="stImgGen()">🖼️ Գեներացնել</button></div><div id="st-img-o">'+imgOut()+'</div><div class="st-note" style="margin-top:10px">Նկարը գեներացվում է Pollinations անվճար արտաքին ծառայությամբ։ Կարող է դանդաղ լինել կամ երբեմն անհասանելի։ Նկարները արհեստական են՝ դասարանում օգտագործելուց առաջ դիտեք դրանք։</div>';
+  }
+  if(S==='search')return '<p>Նկարների որոնում Wikimedia Commons-ում՝ հեղինակի և լիցենզիայի նշումով։</p><div class="st-row"><input class="st-in" id="st-ai-t" style="flex:1;min-width:200px" placeholder="Որոնում՝ Ereван, Mount Ararat..." onkeydown="if(event.key===\'Enter\')stAiSearch()"><button class="sl-btn pri" onclick="stAiSearch()">🔍 Որոնել</button></div>';
+  if(S==='chat')return chatPanel();
+  return '';
+}
+window.stAiCopy=function(){const t=AIS.out;try{navigator.clipboard.writeText(t).then(()=>tst('Պատճենվեց։'));}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();tst('Պատճենվեց։');}};
+window.stAiSearch=function(){const q=(($('st-ai-t')||{}).value||'').trim();if(q.length<2){tst('Մուտքագրեք առնվազն 2 նիշ։');return;}MS.sub='search';MS.q=q;MS.results=null;ST.tab='media';LS.set('md_st_tab','media');paint().then(()=>{const i=$('st-sq');if(i)i.value=q;window.stMsSearch&&stMsSearch();});};
+function refreshOut(){const o=$('st-ai-o');if(o)o.outerHTML=outBox();}
+window.stAiRun=async function(kind){
+  if(AIS.busy)return;
+  const v=(($('st-ai-t')||{}).value||'').trim();if(v.length<2){AIS.err='Լրացրեք դաշտը։';refreshOut();return;}
+  AIS.busy=true;AIS.err='';AIS.out='';refreshOut();
+  try{
+    const task=kind==='explain'?'explain':AIS.mode;
+    const extra=kind==='explain'?{grade:+($('st-ai-g')||{}).value||7}:null;
+    AIS.out=(await aiCall({task:task,prompt:v,extra:extra})).trim();
+    logAct('ai',(kind==='explain'?'Բացատրություն՝ ':'Տեքստ՝ ')+v.slice(0,50),'');
+  }catch(e){console.error(e);AIS.err=aiErr(e);}
+  AIS.busy=false;refreshOut();
+};
+window.stAiPickDeck=async function(kind){
+  const list=await (kind==='design'?editableDecks():myDecks());
+  pickDeck(list,kind==='speech'?'Ընտրեք սահիկաշար խոսքի համար':'Ընտրեք սահիկաշար դիզայնի համար',id=>aiDeckRun(kind,id));
+};
+async function aiDeckRun(kind,id){
+  if(AIS.busy)return;AIS.busy=true;AIS.err='';AIS.out='';refreshOut();const dz=$('st-ai-dz');if(dz)dz.innerHTML='';
+  try{
+    const d=await SL.getDeck(id);if(!d)throw new Error('deck');AIS.deck=d;
+    if(kind==='speech'){AIS.out=(await aiCall({task:'speech',prompt:deckText(d).slice(0,5500)})).trim();AIS.speechDeck=id;logAct('ai','Խոսք՝ '+d.title,id);}
+    else{
+      const j=parseJson(await aiCall({task:'design',prompt:'Deck title: '+d.title+'\n'+deckText(d).slice(0,4000),extra:{themes:SL.THEMES.map(t=>t.id+' ('+t.n+')')}}));
+      const th=SL.THEMES.find(t=>t.id===j.theme)||SL.THEMES[0];AIS.theme=th.id;
+      AIS.out=(j.tips||[]).slice(0,6).map(x=>'• '+x).join('\n')+'\n\nԱռաջարկվող թեմա՝ '+(th.n||th.id);logAct('ai','Դիզայն՝ '+d.title,id);
+      if(dz)dz.innerHTML='<div class="st-row" style="margin-top:10px"><button class="sl-btn pri" onclick="stAiApplyTheme(\''+id+'\')">🎨 Կիրառել թեման</button></div>';
+    }
+  }catch(e){console.error(e);AIS.err=aiErr(e);}
+  AIS.busy=false;refreshOut();
+  if(kind==='speech'&&AIS.out){const o=$('st-ai-o');if(o)o.insertAdjacentHTML('beforeend','<div class="st-row" style="margin-top:8px"><button class="sl-btn sm pri" onclick="stAiSaveNotes()">💾 Պահպանել սահիկների նշումներում</button></div>');}
+}
+window.stAiApplyTheme=async function(id){
+  try{const d=await SL.getDeck(id);const th=SL.THEMES.find(t=>t.id===AIS.theme);if(!d||!th)return;if(!SL.canEdit(d)){tst('Այս նախագիծը խմբագրելու իրավունք չունեք։');return;}SL.applyTheme(d,th);await SL.saveDeck(d);tst('Թեման կիրառվեց։');}catch(e){console.error(e);tst('Չհաջողվեց։');}
+};
+window.stAiSaveNotes=async function(){
+  try{
+    const d=await SL.getDeck(AIS.speechDeck);if(!d||!SL.canEdit(d)){tst('Այս նախագիծը խմբագրելու իրավունք չունեք։');return;}
+    const parts=AIS.out.split(/\n\s*(?=Սահիկ\s*\d+)/);let n=0;
+    parts.forEach(p=>{const m=/^Սահիկ\s*(\d+)\s*[՝:\-–]?\s*([\s\S]*)$/.exec(p.trim());if(m){const i=+m[1]-1;if(d.slides[i]){d.slides[i].notes=m[2].trim();n++;}}});
+    if(!n){tst('Չհաջողվեց բաժանել սահիկների։ Պատճենեք ձեռքով։');return;}
+    await SL.saveDeck(d);tst('Նշումները պահվեցին՝ '+n+' սահիկ։');
+  }catch(e){console.error(e);tst('Չհաջողվեց։');}
+};
+window.stAiToSlide=async function(){
+  const t=AIS.out;if(!t)return;
+  const list=await editableDecks();if(!list.length){tst('Խմբագրելի սահիկաշար չկա։');return;}
+  pickDeck(list,'Ընտրեք սահիկաշար',async id=>{
+    try{const d=await SL.getDeck(id);const s=SL.blankSlide('text','ԱԲ տեքստ');s.text=t.split('\n').filter(Boolean).slice(0,14).map(x=>/^[-•]/.test(x)?x:'- '+x).join('\n');s.els=s.els||[];d.slides.push(s);await SL.saveDeck(d);tst('Ավելացվեց նոր սահիկ։');}catch(e){console.error(e);tst('Չհաջողվեց։');}
+  });
+};
+/* ----- image generation ----- */
+function imgOut(){
+  const g=AIS.img;if(!g)return '';
+  return '<div style="margin-top:12px">'+(g.state==='load'?'<div class="st-sub">Գեներացվում է...</div>':'')+(g.state==='err'?'<div class="st-err">Չհաջողվեց գեներացնել։ Փորձեք կրկին կամ փոխեք նկարագրությունը։</div>':'')
+   +'<img id="st-gimg" alt="" style="max-width:100%;border-radius:12px;display:'+(g.state==='ok'?'block':'none')+'" src="'+esc(g.url)+'" onload="stImgDone(1)" onerror="stImgDone(0)">'
+   +(g.state==='ok'?'<div class="st-row" style="margin-top:8px"><button class="sl-btn sm pri" onclick="stImgSave()">💾 Պահել գրադարանում</button><button class="sl-btn sm" onclick="stImgGen(1)">🔄 Նոր տարբերակ</button></div>':'')+'</div>';
+}
+window.stImgGen=function(again){
+  const p=(($('st-ai-t')||{}).value||'').trim()||(AIS.img&&AIS.img.p)||'';if(p.length<3){tst('Գրեք նկարի նկարագրությունը։');return;}
+  const seed=Math.floor(Math.random()*1e6);
+  AIS.img={p:p,state:'load',url:'https://image.pollinations.ai/prompt/'+encodeURIComponent(p.slice(0,400))+'?width=1024&height=576&nologo=true&seed='+seed};
+  const o=$('st-img-o');if(o)o.innerHTML=imgOut();
+  clearTimeout(AIS.it);AIS.it=setTimeout(()=>{if(AIS.img&&AIS.img.state==='load')stImgDone(0);},60000);
+  logAct('ai','Նկար՝ '+p.slice(0,50),'');
+};
+window.stImgDone=function(ok){if(!AIS.img||AIS.img.state!=='load')return;clearTimeout(AIS.it);AIS.img.state=ok?'ok':'err';const o=$('st-img-o');if(o)o.innerHTML=imgOut();if(ok){const im=$('st-gimg');if(im)im.style.display='block';}};
+window.stImgSave=async function(){
+  const g=AIS.img;if(!g)return;tst('Պահվում է...');
+  try{
+    const r=await fetch(g.url);if(!r.ok)throw new Error('http');const b=await r.blob();
+    const f=new File([b],'ai.jpg',{type:b.type||'image/jpeg'});const x=await SL.putImg(f,1400);
+    UD.media.unshift({id:x.id,name:('ԱԲ՝ '+g.p).slice(0,60),cat:'Ընդհանուր',credit:'Գեներացված (Pollinations)',ts:Date.now()});saveUD();logAct('media','ԱԲ նկար','');tst('Պահվեց «Նկարներ և նյութեր» բաժնում։');
+  }catch(e){console.error(e);tst('Այս բրաուզերը թույլ չտվեց պահել նկարը։ Աջ սեղմեք նկարի վրա և պահեք ձեռքով։');}
+};
+/* ----- quiz by AI ----- */
+function aiQuizToQuestions(j,n){
+  const out=[];(j.questions||[]).slice(0,n||30).forEach(x=>{
+    const type=['single','multi','tf','open'].indexOf(x.type)!==-1?x.type:'single';
+    const q=blankQ(type);q.text=String(x.text||'').slice(0,400);q.expl=String(x.expl||'').slice(0,400);
+    if(type==='open'){q.opts=[];q.ok=[];q.ans=(x.ans||[]).map(a=>String(a).slice(0,100)).filter(Boolean);if(!q.ans.length||!q.text)return;}
+    else{
+      q.opts=type==='tf'?['Ճիշտ','Սխալ']:(x.opts||[]).map(o=>String(o).slice(0,200)).slice(0,6);
+      q.ok=(x.ok||[]).map(Number).filter(i=>i>=0&&i<q.opts.length);if(type==='single'&&q.ok.length>1)q.ok=[q.ok[0]];
+      if(!q.text||q.opts.length<2||!q.ok.length||q.opts.some(o=>!o))return;
+    }
+    out.push(q);
+  });
+  return out;
+}
+let QAI={add:false};
+window.stQuizAI=function(){QAI.add=false;quizAiDlg();};
+window.stQbAI=function(){QAI.add=true;quizAiDlg();};
+function quizAiDlg(){
+  modal('<h2>✨ Թեստ ԱԲ-ով</h2><div class="st-fg"><label>Թեմա</label><input class="st-in" id="st-qa-t" placeholder="Օր․ Հայաստանի աշխարհագրություն"></div><div class="st-row"><div class="st-fg" style="flex:1"><label>Դասարան</label><select class="st-in" id="st-qa-g">'+[3,4,5,6,7,8,9,10,11,12].map(g=>'<option value="'+g+'"'+(g===7?' selected':'')+'>'+g+'</option>').join('')+'</select></div><div class="st-fg" style="flex:1"><label>Հարցերի քանակ</label><input class="st-in" id="st-qa-n" type="number" min="1" max="20" value="8"></div><div class="st-fg" style="flex:1"><label>Տեսակ</label><select class="st-in" id="st-qa-k"><option value="mix">Խառը</option><option value="single">Մեկ ճիշտ</option><option value="multi">Մի քանի ճիշտ</option><option value="tf">Ճիշտ / Սխալ</option><option value="open">Բաց հարց</option></select></div></div><div class="st-err" id="st-qa-e"></div><div class="st-row"><button class="sl-btn" onclick="stClose()">Փակել</button><button class="sl-btn pri" id="st-qa-b" onclick="stQuizAIGo()">Ստեղծել</button></div>');
+}
+window.stQuizAIGo=async function(){
+  const t=($('st-qa-t').value||'').trim(),n=Math.max(1,Math.min(20,parseInt($('st-qa-n').value)||8)),g=$('st-qa-g').value,k=$('st-qa-k').value,e=$('st-qa-e'),b=$('st-qa-b');
+  if(t.length<3){e.textContent='Գրեք թեման։';return;}
+  b.disabled=true;e.textContent='ԱԲ-ը ստեղծում է հարցերը...';
+  try{
+    const j=parseJson(await aiCall({task:'quiz',prompt:'Topic: '+t+'\nGrade: '+g+'\nNumber of questions: '+n+'\nQuestion types: '+(k==='mix'?'mix of single, multi, tf and open':k)}));
+    const qs=aiQuizToQuestions(j,n);if(!qs.length)throw new Error('empty');
+    if(QAI.add&&QB.q){QB.q.questions=QB.q.questions.filter(x=>x.text.trim()||x.opts.some(o=>o.trim())).concat(qs);if(!QB.q.title)QB.q.title=t;qbDraw();}
+    else{QB.q={id:uid(),title:String(j.title||t).slice(0,120),subject:'',owner:me(),ownerName:CU.name||'',created:Date.now(),classes:[],time:0,pick:0,shuffleQ:true,shuffleA:true,questions:qs};QB.isNew=true;qbDraw();}
+    tst('Ստեղծվեց '+qs.length+' հարց։ Ստուգեք և պահպանեք։');logAct('ai','Թեստ՝ '+t,'');
+  }catch(er){console.error(er);e.textContent=er&&er.message==='empty'||er&&er.message==='json'?'ԱԲ-ը ճիշտ ձևաչափով հարցեր չվերադարձրեց։ Փորձեք կրկին։':aiErr(er);b.disabled=false;}
+};
+/* ----- chat with history ----- */
+function curChat(){
+  if(!AIS.chat||!UD.chats.some(c=>c.id===AIS.chat))AIS.chat=(UD.chats[0]||{}).id||null;
+  return UD.chats.find(c=>c.id===AIS.chat)||null;
+}
+function chatPanel(){
+  const c=curChat();
+  return '<div class="st-row" style="margin-bottom:10px"><select class="st-in" onchange="stChatSel(this.value)" style="flex:1;min-width:160px">'+(UD.chats.length?UD.chats.map(x=>'<option value="'+x.id+'"'+(c&&c.id===x.id?' selected':'')+'>'+esc(x.title)+'</option>').join(''):'<option>Նոր խոսակցություն</option>')+'</select><button class="sl-btn sm" onclick="stChatNew()">＋ Նոր</button>'+(c?'<button class="sl-btn sm" onclick="stChatDel()">🗑</button>':'')+'</div>'
+   +'<div class="st-chat" id="st-chat">'+(c&&c.msgs.length?c.msgs.map(m=>'<div class="st-m '+(m.role==='user'?'u':'a')+'">'+esc(m.content)+'</div>').join(''):'<div class="st-sub">Հարցրեք ցանկացած բան դասի, առաջադրանքի կամ նախագծի մասին։</div>')+'</div>'
+   +'<div class="st-row" style="margin-top:10px"><textarea class="st-in" id="st-ct" style="min-height:44px;flex:1" placeholder="Գրեք հաղորդագրություն..." onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();stChatSend();}"></textarea><button class="sl-btn pri" id="st-cb" onclick="stChatSend()">Ուղարկել</button></div><div class="st-err" id="st-ce"></div>';
+}
+window.stChatSel=function(id){AIS.chat=id;draw();};
+window.stChatNew=function(){const c={id:uid(),title:'Խոսակցություն '+fmtD(Date.now()),msgs:[],ts:Date.now()};UD.chats.unshift(c);AIS.chat=c.id;saveUD();draw();};
+window.stChatDel=function(){if(!confirm('Ջնջե՞լ այս խոսակցությունը։'))return;UD.chats=UD.chats.filter(x=>x.id!==AIS.chat);AIS.chat=null;saveUD();draw();};
+window.stChatSend=async function(){
+  const inp=$('st-ct');const v=(inp.value||'').trim();if(!v||AIS.busy)return;
+  let c=curChat();if(!c){c={id:uid(),title:v.slice(0,40),msgs:[],ts:Date.now()};UD.chats.unshift(c);AIS.chat=c.id;}
+  if(!c.msgs.length)c.title=v.slice(0,40);
+  c.msgs.push({role:'user',content:v});c.ts=Date.now();inp.value='';AIS.busy=true;
+  const box=$('st-chat');if(box){box.insertAdjacentHTML('beforeend','<div class="st-m u">'+esc(v)+'</div><div class="st-m a" id="st-cw">...</div>');box.scrollTop=box.scrollHeight;}
+  $('st-cb').disabled=true;$('st-ce').textContent='';
+  try{
+    const a=(await aiCall({task:'chat',messages:c.msgs.slice(-16)})).trim();
+    c.msgs.push({role:'assistant',content:a});if(c.msgs.length>60)c.msgs=c.msgs.slice(-60);if(UD.chats.length>30)UD.chats.length=30;saveUD();logAct('ai','Չաթ','');
+  }catch(e){console.error(e);c.msgs.pop();inp.value=v;$('st-ce').textContent=aiErr(e);saveUD();}
+  AIS.busy=false;const w=$('st-cw');if(w)w.remove();
+  const em=$('st-ce')?$('st-ce').textContent:'',keepv=inp.value;
+  const p=$('st-ai-p');if(p){p.innerHTML=chatPanel();const b2=$('st-chat');if(b2)b2.scrollTop=b2.scrollHeight;$('st-ce').textContent=em;$('st-ct').value=keepv;}
+};
+
+/* ================= STATISTICS ================= */
+const SS={r:LS.get('md_st_range','30')};
+R.stat=async function(el){
+  const range=SS.r==='all'?0:+SS.r,now=Date.now();
+  const decks=(await myDecks()).filter(d=>d.owner===me());
+  let qs=[];try{qs=(await quizzesAll()).filter(q=>q.owner===me());}catch(e){}
+  const ev=await myEvents();
+  const first=[].concat(ev.map(e=>e.ts),decks.map(d=>d.created),qs.map(q=>q.created)).filter(Boolean).sort((a,b)=>a-b)[0]||now;
+  const since=range?now-range*DAY:0,inR=ts=>ts&&ts>=since;
+  const dR=decks.filter(d=>inR(d.created)),qR=qs.filter(q=>inR(q.created)),eR=ev.filter(e=>inR(e.ts));
+  const days=range||Math.max(14,Math.min(365,Math.ceil((now-first)/DAY)+1));
+  const cnt=k=>eR.filter(e=>e.k===k).length;
+  const tplC={};eR.filter(e=>e.k==='tpl').forEach(e=>{const l=(UD.log||[]).find(x=>x.ts===e.ts&&x.k==='tpl');const id=l&&l.r;if(id)tplC[id]=(tplC[id]||0)+1;});
+  const tplTop=Object.entries(tplC).map(([id,n])=>[(TPLS.find(t=>t.id===id)||{title:id}).title,n]).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const subC={};dR.forEach(d=>{const s=d.subject||'Առանց առարկայի';subC[s]=(subC[s]||0)+1;});
+  qR.forEach(q=>{const s=q.subject;if(s)subC[s]=(subC[s]||0)+1;});
+  const subTop=Object.entries(subC).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const hb=(rows,empty)=>rows.length?rows.map(r=>'<div class="st-hb"><span class="l" title="'+esc(r[0])+'">'+esc(r[0])+'</span><span class="b"><i style="width:'+Math.round(r[1]/rows[0][1]*100)+'%"></i></span><b>'+r[1]+'</b></div>').join(''):'<div class="st-sub">'+empty+'</div>';
+  el.innerHTML='<div class="st-box" style="margin-bottom:16px"><div class="st-row sp"><div class="st-h" style="margin:0">Իմ վիճակագրությունը</div><div class="st-row">'+[['7','7 օր'],['30','30 օր'],['90','90 օր'],['all','Ամբողջ ժամանակ']].map(r=>'<button class="st-chip '+(SS.r===r[0]?'on':'')+'" onclick="stStatR(\''+r[0]+'\')">'+r[1]+'</button>').join('')+'</div></div></div>'
+   +'<div class="st-stats"><div class="st-stat"><b>'+dR.length+'</b><span>Նոր նախագծեր</span></div><div class="st-stat"><b>'+dR.reduce((a,d)=>a+(d.count||0),0)+'</b><span>Ստեղծված սահիկներ</span></div><div class="st-stat"><b>'+qR.length+'</b><span>Ստեղծված թեստեր</span></div><div class="st-stat"><b>'+cnt('present')+'</b><span>Ցուցադրություններ</span></div><div class="st-stat"><b>'+cnt('attempt')+'</b><span>Անցած թեստեր</span></div><div class="st-stat"><b>'+cnt('ai')+'</b><span>ԱԲ օգտագործում</span></div><div class="st-stat"><b>'+cnt('export')+'</b><span>Արտահանումներ</span></div></div>'
+   +'<div class="st-box" style="margin-bottom:16px"><div class="st-h">Ակտիվություն ('+(range?('վերջին '+range+' օր'):'ամբողջ ժամանակ')+')</div>'+(eR.length?barChart(dayBuckets(eR.map(e=>e.ts),days)):'<div class="st-sub">Այս ժամանակահատվածում գործողություններ չկան։</div>')+'</div>'
+   +'<div class="st-g2"><div class="st-box"><div class="st-h">Ամենաշատ օգտագործված կաղապարներ</div>'+hb(tplTop,'Կաղապար դեռ չեք օգտագործել։')+'</div><div class="st-box"><div class="st-h">Ամենաշատ օգտագործված առարկաներ</div>'+hb(subTop,'Առարկա նշված նախագծեր չկան։')+'</div></div>'
+   +'<div class="st-note" style="margin-top:12px">Թվերը հաշվվում են ձեր իրական նախագծերից, թեստերից և գործողությունների պատմությունից։ Գործողությունների պատմությունը սկսվել է այս բաժնի ավելացումից հետո։</div>';
+};
+window.stStatR=function(r){SS.r=r;LS.set('md_st_range',r);draw();};
+
+/* ================= COMMUNITY ================= */
+const CI='comm_index',CP=id=>'comm_post_'+id;
+const CS={q:'',cat:'',sort:'new',view:'all'};
+const RLBL={student:'Աշակերտ',teacher:'Ուսուցիչ',parent:'Ծնող',admin:'Ադմին'};
+async function cIdx(){const d=await bGet(CI);return Object.values((d&&d.posts)||{}).filter(p=>p&&p.id);}
+async function cIdxPut(m){await fsdb.collection(FS_COL).doc(CI).set(fsClean({posts:{[m.id]:m}}),{merge:true});}
+async function cIdxDel(id){await fsdb.collection(FS_COL).doc(CI).set({posts:{[id]:firebase.firestore.FieldValue.delete()}},{merge:true});}
+async function postTx(id,fn){return fsdb.runTransaction(async tx=>{const ref=fsdb.collection(FS_COL).doc(CP(id));const sn=await tx.get(ref);if(!sn.exists)throw new Error('gone');const d=sn.data();d.likes=d.likes||{};d.views=d.views||{};const r=fn(d);tx.set(ref,fsClean(d));return r;});}
+R.comm=async function(el){
+  const all=await cIdx();
+  const cats=[...new Set(all.map(p=>p.cat).filter(Boolean))].sort();
+  const q=CS.q.toLowerCase();
+  let list=all.filter(p=>(!CS.cat||p.cat===CS.cat)&&(!q||(p.title+' '+(p.desc||'')+' '+(p.authorName||'')).toLowerCase().includes(q)));
+  if(CS.view==='saved')list=list.filter(p=>UD.fav.post[p.id]);
+  if(CS.view==='mine')list=list.filter(p=>p.author===me());
+  list.sort((a,b)=>CS.sort==='likes'?(b.likes||0)-(a.likes||0):CS.sort==='views'?(b.views||0)-(a.views||0):(b.ts||0)-(a.ts||0));
+  el.innerHTML='<div class="st-box"><div class="st-row sp" style="margin-bottom:12px"><div class="st-row">'+[['all','Բոլորը'],['saved','⭐ Պահպանված'],['mine','Իմ հրապարակածները']].map(v=>'<button class="st-chip '+(CS.view===v[0]?'on':'')+'" onclick="stCommV(\''+v[0]+'\')">'+v[1]+'</button>').join('')+'</div>'+(canMake()?'<button class="sl-btn pri" onclick="stCommPublish()">🌍 Հրապարակել աշխատանք</button>':'')+'</div>'
+   +'<div class="st-row" style="margin-bottom:14px"><input id="st-cq" class="st-in" style="flex:1;min-width:160px" placeholder="Որոնել..." value="'+esc(CS.q)+'" oninput="stCommQ(this.value)"><select class="st-in" onchange="CS_set(\'cat\',this.value)"><option value="">Բոլոր կատեգորիաները</option>'+cats.map(c=>'<option'+(CS.cat===c?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select><select class="st-in" onchange="CS_set(\'sort\',this.value)">'+[['new','Նորերը'],['likes','Ամենահավանվածները'],['views','Ամենադիտվածները']].map(s=>'<option value="'+s[0]+'"'+(CS.sort===s[0]?' selected':'')+'>'+s[1]+'</option>').join('')+'</select></div>'
+   +(list.length?'<div class="st-grid">'+list.map(cCard).join('')+'</div>':'<div class="st-empty"><h3>'+(all.length?'Ոչինչ չի գտնվել':'Համայնքում դեռ աշխատանքներ չկան')+'</h3><p>'+(canMake()?'Հրապարակեք ձեր աշխատանքը՝ «Հրապարակել աշխատանք» կոճակով։ Հրապարակումը կատարվում է միայն ձեր համաձայնությամբ։':'Երբ օգտատերերը աշխատանքներ հրապարակեն, դրանք կերևան այստեղ։')+'</p></div>')+'</div>';
+};
+function cCard(p){
+  const mine=p.author===me()||isAdm();
+  return '<div class="st-card"><div class="st-pv">'+deckCover({bg:p.bg,tc:p.tc,cover:p.cover,title:p.title})+'<button class="st-star" title="Պահպանել" onclick="stCommSave(\''+p.id+'\')">'+(UD.fav.post[p.id]?'★':'☆')+'</button></div><div class="st-in2"><h3>'+esc(p.title)+'</h3><p>'+esc((p.desc||'').slice(0,110))+'</p><div class="st-sub"><a href="#" style="color:var(--acc)" onclick="stCommAuthor(\''+esc(p.author)+'\');return false">'+esc(p.authorName||p.author)+'</a> · '+esc(p.cat||'')+' · '+(p.slides||0)+' սահիկ</div><div class="st-sub">♥ '+(p.likes||0)+' · 👁 '+(p.views||0)+' · '+fmtD(p.ts)+'</div><div class="st-acts"><button class="sl-btn sm pri" onclick="stCommView(\''+p.id+'\')">Դիտել</button><button class="sl-btn sm" onclick="stCommLike(\''+p.id+'\')">♥ Հավանել</button>'+(mine?'<button class="sl-btn sm" onclick="stCommDel(\''+p.id+'\')">Ջնջել</button>':'')+'</div></div></div>';
+}
+window.CS_set=function(k,v){CS[k]=v;draw();};
+window.stCommV=function(v){CS.view=v;draw();};
+window.stCommQ=function(v){CS.q=v;clearTimeout(CS.t);CS.t=setTimeout(async()=>{await draw();const i=$('st-cq');if(i){i.focus();i.setSelectionRange(v.length,v.length);}},300);};
+window.stCommSave=function(id){if(UD.fav.post[id])delete UD.fav.post[id];else UD.fav.post[id]=Date.now();saveUD();draw();};
+window.stCommPublish=async function(pre){
+  if(!canMake())return;
+  const list=(await myDecks()).filter(d=>d.owner===me()||isAdm());
+  if(!list.length){tst('Նախագծեր չկան։');return;}
+  const d0=list.find(d=>d.id===pre)||list[0];
+  const cats=SL.SUBJECTS.concat(['Այլ']);
+  modal('<h2>🌍 Հրապարակել Համայնքում</h2><div class="st-fg"><label>Նախագիծ</label><select class="st-in" id="st-pb-d" onchange="stPbFill()">'+list.map(d=>'<option value="'+d.id+'"'+(d.id===d0.id?' selected':'')+'>'+esc(d.title)+'</option>').join('')+'</select></div><div class="st-fg"><label>Վերնագիր</label><input class="st-in" id="st-pb-t" maxlength="120" value="'+esc(d0.title)+'"></div><div class="st-fg"><label>Նկարագրություն</label><textarea class="st-in" id="st-pb-n" maxlength="400" style="min-height:70px"></textarea></div><div class="st-fg"><label>Կատեգորիա</label><select class="st-in" id="st-pb-c">'+cats.map(c=>'<option'+(c===d0.subject?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select></div>'
+   +'<label class="st-note" style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" id="st-pb-ok" style="margin-top:3px"> <span>Համաձայն եմ, որ այս աշխատանքի պատճենը կհրապարակվի և կտեսնեն կայքի բոլոր գրանցված օգտատերերը։ Կարող եմ ցանկացած պահի ջնջել հրապարակումը։</span></label><div class="st-err" id="st-pb-e"></div><div class="st-row"><button class="sl-btn" onclick="stClose()">Փակել</button><button class="sl-btn pri" id="st-pb-b" onclick="stPbGo()">Հրապարակել</button></div>');
+};
+window.stPbFill=function(){const id=$('st-pb-d').value,m=SL.idx()[id];if(m){$('st-pb-t').value=m.title;const c=$('st-pb-c');[...c.options].forEach(o=>{if(o.value===m.subject)c.value=m.subject;});}};
+window.stPbGo=async function(){
+  const e=$('st-pb-e'),b=$('st-pb-b');
+  if(!$('st-pb-ok').checked){e.textContent='Հրապարակելու համար անհրաժեշտ է ձեր համաձայնությունը։';return;}
+  const id=$('st-pb-d').value,title=$('st-pb-t').value.trim();if(!title){e.textContent='Գրեք վերնագիրը։';return;}
+  b.disabled=true;e.textContent='Հրապարակվում է...';
+  try{
+    const d=await SL.getDeck(id);if(!d||!(SL.canEdit(d)))throw new Error('perm');
+    const old=(await cIdx()).find(p=>p.deckId===id&&p.author===me());
+    const pid=old?old.id:uid();
+    const nd=await SL.remap(d);nd.classes=[];
+    let likes={},views={};if(old){try{const o=await bGet(CP(pid));likes=o.likes||{};views=o.views||{};}catch(er){}}
+    await bSet(CP(pid),{deck:nd,likes:likes,views:views,author:me()});
+    const m=SL.idx()[id]||{};
+    await cIdxPut({id:pid,deckId:id,title:title.slice(0,120),desc:$('st-pb-n').value.trim().slice(0,400),cat:$('st-pb-c').value,author:me(),authorName:CU.name||me(),authorRole:CU.role,ts:Date.now(),likes:Object.keys(likes).length,views:Object.keys(views).length,slides:d.slides.length,cover:m.cover||'',bg:m.bg||'',tc:m.tc||''});
+    logAct('publish',title,pid);closeModal();tst('Հրապարակվեց։');if(ST.tab!=='comm'){ST.tab='comm';LS.set('md_st_tab','comm');paint();}else draw();
+  }catch(er){console.error(er);e.textContent='Չհաջողվեց հրապարակել։';b.disabled=false;}
+};
+async function postMeta(id){return (await cIdx()).find(p=>p.id===id);}
+window.stCommView=async function(id){
+  try{
+    const p=await postMeta(id);if(!p){tst('Աշխատանքը չի գտնվել կամ հեռացվել է։');return;}
+    let views=p.views||0;
+    try{const r=await postTx(id,d=>{if(!d.views[me()]){d.views[me()]=Date.now();}return Object.keys(d.views).length;});if(r!==views){views=r;await cIdxPut({id:id,views:r});}}catch(e){console.warn(e);}
+    modal('<h2>'+esc(p.title)+'</h2><div class="st-sub" style="margin-bottom:8px">Հեղինակ՝ <a href="#" style="color:var(--acc)" onclick="stCommAuthor(\''+esc(p.author)+'\');return false">'+esc(p.authorName||p.author)+'</a> · '+esc(p.cat||'')+' · '+(p.slides||0)+' սահիկ · '+fmtD(p.ts)+'</div><p>'+esc(p.desc||'')+'</p><div class="st-sub">♥ '+(p.likes||0)+' · 👁 '+views+'</div><div class="st-row" style="margin-top:12px"><button class="sl-btn pri" onclick="stCommPlay(\''+id+'\')">▶ Դիտել</button><button class="sl-btn" onclick="stCommLike(\''+id+'\',1)">♥ Հավանել</button><button class="sl-btn" onclick="stCommSave(\''+id+'\');stClose()">'+(UD.fav.post[id]?'★ Հեռացնել պահպանվածից':'☆ Պահպանել')+'</button>'+(canMake()?'<button class="sl-btn" onclick="stCommCopy(\''+id+'\')">📄 Պատճենել իմ նախագծերում</button>':'')+'<button class="sl-btn" onclick="stCommShare(\''+id+'\')">🔗 Կիսվել</button></div>');
+  }catch(e){console.error(e);tst('Չհաջողվեց բացել։');}
+};
+window.stCommPlay=async function(id){try{const o=await bGet(CP(id));if(!o||!o.deck)throw 0;closeModal();await SL.present(o.deck,0);}catch(e){console.error(e);tst('Չհաջողվեց բացել։');}};
+window.stCommLike=async function(id,keep){
+  try{
+    const n=await postTx(id,d=>{if(d.likes[me()])delete d.likes[me()];else d.likes[me()]=Date.now();return Object.keys(d.likes).length;});
+    await cIdxPut({id:id,likes:n});if(keep){closeModal();stCommView(id);}else draw();
+  }catch(e){console.error(e);tst('Չհաջողվեց։');}
+};
+window.stCommShare=function(id){
+  const u=linkFor('post',id);
+  try{navigator.clipboard.writeText(u).then(()=>tst('Հղումը պատճենվեց։'));}catch(e){}
+  modal('<h2>Կիսվել</h2><p class="st-sub">Հղումը կաշխատի կայքի գրանցված օգտատերերի համար։</p><input class="st-in" style="width:100%" readonly value="'+esc(u)+'" onclick="this.select()"><div class="st-row" style="margin-top:12px"><button class="sl-btn" onclick="stClose()">Փակել</button></div>');
+};
+window.stCommCopy=async function(id){
+  try{
+    const o=await bGet(CP(id));if(!o||!o.deck)throw 0;
+    const nd=await SL.remap(o.deck);nd.id=uid();nd.owner=me();nd.ownerName=CU.name||'';nd.classes=[];nd.created=Date.now();nd.title=(nd.title||'Աշխատանք')+' (պատճեն)';
+    await SL.saveDeck(nd);logAct('copy',nd.title,nd.id);closeModal();tst('Պատճենվեց «Իմ նախագծերը» բաժնում։');
+  }catch(e){console.error(e);tst('Չհաջողվեց։');}
+};
+window.stCommDel=async function(id){
+  const p=await postMeta(id);if(!p)return;if(!(p.author===me()||isAdm()))return;
+  if(!confirm('Հեռացնե՞լ հրապարակումը Համայնքից։ Ձեր սահիկաշարը կմնա։'))return;
+  try{await cIdxDel(id);try{await bSet(CP(id),{deleted:true,deck:null,likes:{},views:{}});}catch(e){}tst('Հրապարակումը հեռացվեց։');draw();}catch(e){console.error(e);tst('Չհաջողվեց։');}
+};
+window.stCommAuthor=async function(u){
+  const all=(await cIdx()).filter(p=>p.author===u);
+  const nm=all[0]?all[0].authorName:u,role=all[0]?all[0].authorRole:'';
+  modal('<h2>'+esc(nm)+'</h2><div class="st-sub" style="margin-bottom:10px">'+esc(RLBL[role]||'')+'</div><div class="st-stats"><div class="st-stat"><b>'+all.length+'</b><span>Աշխատանք</span></div><div class="st-stat"><b>'+all.reduce((a,p)=>a+(p.likes||0),0)+'</b><span>Հավանում</span></div><div class="st-stat"><b>'+all.reduce((a,p)=>a+(p.views||0),0)+'</b><span>Դիտում</span></div></div>'+(all.length?'<div class="st-list">'+all.sort((a,b)=>(b.ts||0)-(a.ts||0)).map(p=>'<div class="st-li"><div class="t">'+esc(p.title)+'<div class="m">'+esc(p.cat||'')+' · ♥ '+(p.likes||0)+' · 👁 '+(p.views||0)+'</div></div><button class="sl-btn sm pri" onclick="stCommView(\''+p.id+'\')">Դիտել</button></div>').join('')+'</div>':'<div class="st-sub">Հրապարակված աշխատանքներ չկան։</div>')+'<div class="st-row" style="margin-top:12px"><button class="sl-btn" onclick="stClose()">Փակել</button></div>');
+};
+
+/* ================= deep links (#studio=kind:id) ================= */
+let hoDone='';
+function hashOpen(){
+  const m=/^#studio=(deck|post|quiz):([A-Za-z0-9_-]+)$/.exec(location.hash||'');
+  if(!m||!CU||hoDone===location.hash)return;
+  hoDone=location.hash;const kind=m[1],id=m[2];
+  try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+  setTimeout(async()=>{
+    try{
+      if(kind==='deck'){await SL.loadIdx();if(SL.idx()[id]&&SL.canSee(SL.idx()[id]))window.slPresent(id);else tst('Այս նախագիծը ձեզ հասանելի չէ։');}
+      else if(kind==='post'){ST.tab='comm';LS.set('md_st_tab','comm');showPg('studio');setTimeout(()=>stCommView(id),400);}
+      else if(kind==='quiz'){showPg('studio');ST.tab='quiz';setTimeout(()=>stQuizTake(id),400);}
+    }catch(e){console.error(e);}
+  },600);
+}
+window.addEventListener('hashchange',()=>{try{hoDone='';hashOpen();}catch(e){}});
+})();
+</script>
+
 <script id="md-ctl-js">
 /* ===== Account blocking + journal control (admin) ===== */
 (function(){
