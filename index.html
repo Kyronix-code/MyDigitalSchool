@@ -6727,6 +6727,7 @@ button .ico,.btn .ico{width:1.4em;height:1.4em}
     var p=node.parentElement;if(!p)return;
     var tag=p.tagName;
     if(tag==='SCRIPT'||tag==='STYLE'||tag==='TEXTAREA'||tag==='TITLE')return;
+    if(p.closest&&p.closest('[data-noico]'))return;
     var v=node.nodeValue;if(!v||!RE.test(v)){RE.lastIndex=0;return;}RE.lastIndex=0;
     if(tag==='OPTION'){node.nodeValue=v.replace(STRIP,'');return;}
     var navEl=p.closest&&p.closest('[data-p]');var nav=navEl?navEl.getAttribute('data-p'):null;
@@ -10899,7 +10900,7 @@ textarea.st-in{width:100%;min-height:90px;resize:vertical;box-sizing:border-box}
 document.head.appendChild(css);
 
 /* ================= shell ================= */
-const TABS=[['home','🏠','Գլխավոր'],['ai','✨','ԱԲ լաբորատորիա'],['tpl','🧩','Կաղապարներ'],['media','🖼️','Նկարներ և նյութեր'],['quiz','📝','Թեստեր'],['anim','🎬','Անիմացիաներ'],['proj','📁','Իմ նախագծերը'],['exp','📤','Արտահանում և կիսում'],['stat','📊','Վիճակագրություն'],['comm','🌐','Համայնք']];
+const TABS=[['home','🏠','Գլխավոր'],['ai','✨','ԱԲ լաբորատորիա'],['tpl','🧩','Կաղապարներ'],['media','🖼️','Նկարներ և նյութեր'],['quiz','📝','Թեստեր'],['doc','📄','Փաստաթղթեր'],['info','📊','Ինֆոգրաֆիկաներ'],['anim','🎬','Անիմացիաներ'],['proj','📁','Իմ նախագծերը'],['exp','📤','Արտահանում և կիսում'],['stat','📊','Վիճակագրություն'],['comm','🌐','Համայնք']];
 const ST={tab:LS.get('md_st_tab','home'),busy:0,view:LS.get('md_st_view','grid')};
 const R={}; // tab renderers: R.home=async(el)=>...
 function body(){return $('st-body');}
@@ -10933,7 +10934,7 @@ async function draw(){
 }
 window.ST_TAB=()=>ST.tab;
 window.stGo=function(t){if(!R[t])return;ST.tab=t;LS.set('md_st_tab',t);paint();};
-window.stRedraw=draw;
+window.stRedraw=draw;window.stTab=()=>ST.tab;
 function ensureUI(){
   if(!CU)return;
   const nav=$('nav'),mn=$('mn');if(!nav||!mn)return;
@@ -11921,6 +11922,342 @@ window.stCommAuthor=async function(u){
   modal('<h2>'+esc(nm)+'</h2><div class="st-sub" style="margin-bottom:10px">'+esc(RLBL[role]||'')+'</div><div class="st-stats"><div class="st-stat"><b>'+all.length+'</b><span>Աշխատանք</span></div><div class="st-stat"><b>'+all.reduce((a,p)=>a+(p.likes||0),0)+'</b><span>Հավանում</span></div><div class="st-stat"><b>'+all.reduce((a,p)=>a+(p.views||0),0)+'</b><span>Դիտում</span></div></div>'+(all.length?'<div class="st-list">'+all.sort((a,b)=>(b.ts||0)-(a.ts||0)).map(p=>'<div class="st-li"><div class="t">'+esc(p.title)+'<div class="m">'+esc(p.cat||'')+' · ♥ '+(p.likes||0)+' · 👁 '+(p.views||0)+'</div></div><button class="sl-btn sm pri" onclick="stCommView(\''+p.id+'\')">Դիտել</button></div>').join('')+'</div>':'<div class="st-sub">Հրապարակված աշխատանքներ չկան։</div>')+'<div class="st-row" style="margin-top:12px"><button class="sl-btn" onclick="stClose()">Փակել</button></div>');
 };
 
+
+/* ================= SHARED: per-user project lists for documents / infographics ================= */
+const PK2={doc:{idx:'mdocs_',item:'mdoc_',tab:'doc',ico:'📄',nm:'Փաստաթուղթ'},info:{idx:'minfos_',item:'minfo_',tab:'info',ico:'📊',nm:'Ինֆոգրաֆիկա'}};
+async function pList(k){const d=await bGet(PK2[k].idx+me());return Object.values((d&&d.items)||{}).filter(x=>x&&x.id).sort((a,b)=>(b.ts||0)-(a.ts||0));}
+async function pMeta(k,m){await fsdb.collection(FS_COL).doc(PK2[k].idx+me()).set(fsClean({items:{[m.id]:m}}),{merge:true});}
+async function pMetaDel(k,id){await fsdb.collection(FS_COL).doc(PK2[k].idx+me()).set({items:{[id]:firebase.firestore.FieldValue.delete()}},{merge:true});}
+function cleanHtml(h){
+  const t=document.createElement('template');t.innerHTML=String(h||'');
+  t.content.querySelectorAll('script,iframe,object,embed,link,meta,style,form,base').forEach(n=>n.remove());
+  t.content.querySelectorAll('*').forEach(n=>{[...n.attributes].forEach(a=>{const nm=a.name.toLowerCase(),v=String(a.value).trim().toLowerCase();if(nm.startsWith('on')||((nm==='href'||nm==='src'||nm==='xlink:href')&&(v.startsWith('javascript:')||(v.startsWith('data:')&&!(v.startsWith('data:image/')&&nm==='src')))))n.removeAttribute(a.name);});});
+  return t.innerHTML;
+}
+function imgToData(file,max,q){return new Promise((ok,no)=>{const fr=new FileReader();fr.onerror=no;fr.onload=()=>{const im=new Image();im.onerror=no;im.onload=()=>{const s=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',q||.82));};im.src=fr.result;};fr.readAsDataURL(file);});}
+function printHtml(title,bodyHtml,css){
+  const f=document.createElement('iframe');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(f);
+  const d=f.contentWindow.document;d.open();d.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(title)+'</title><style>'+css+'</style></head><body>'+bodyHtml+'</body></html>');d.close();
+  setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print();}catch(e){tst('Տպելը չհաջողվեց։');}setTimeout(()=>f.remove(),4000);},400);
+}
+function pCards(k,list,q){
+  const P=PK2[k];
+  return list.length?'<div class="st-grid">'+list.map(x=>'<div class="st-card"><div class="st-pv" style="display:flex;align-items:center;justify-content:center;font-size:44px;background:var(--surf2);height:120px;cursor:pointer" onclick="stPOpen(\''+k+'\',\''+x.id+'\')">'+P.ico+'</div><div class="st-in2"><h3>'+esc(x.title)+'</h3><div class="st-sub">'+fmtD(x.ts)+(x.pages?' · '+x.pages+' էջ':'')+(x.n?' · '+x.n+' տարր':'')+'</div><div class="st-acts"><button class="sl-btn sm pri" onclick="stPOpen(\''+k+'\',\''+x.id+'\')">Բացել</button><button class="sl-btn sm" onclick="stPDup(\''+k+'\',\''+x.id+'\')">Պատճենել</button><button class="sl-btn sm" onclick="stPRen(\''+k+'\',\''+x.id+'\')">Վերանվանել</button><button class="sl-btn sm" onclick="stPDel(\''+k+'\',\''+x.id+'\')">Ջնջել</button></div></div></div>').join('')+'</div>'
+   :'<div class="st-empty"><h3>'+(q?'Ոչինչ չի գտնվել':'Դեռ ոչինչ չեք ստեղծել')+'</h3><p>'+(q?'Փորձեք այլ որոնում։':'Սկսեք ձևանմուշով կամ դատարկ էջով։')+'</p></div>';
+}
+const PQ={doc:'',info:''};
+async function pTab(k,el){
+  const P=PK2[k],list=await pList(k),q=PQ[k].toLowerCase(),fl=list.filter(x=>!q||String(x.title).toLowerCase().includes(q));
+  el.innerHTML='<div class="st-box"><div class="st-row stsp" style="margin-bottom:14px"><div class="st-h" style="margin:0">'+(k==='doc'?'Իմ փաստաթղթերը':'Իմ ինֆոգրաֆիկաները')+'</div><div class="st-row"><input class="st-in" id="st-pq" type="search" placeholder="Որոնել..." value="'+esc(PQ[k])+'" oninput="stPQ(\''+k+'\',this.value)">'+(canMake()?'<button class="sl-btn pri" onclick="stPNew(\''+k+'\')">＋ Նոր '+(k==='doc'?'փաստաթուղթ':'ինֆոգրաֆիկա')+'</button>':'')+'</div></div>'+pCards(k,fl,q)+'</div>';
+}
+window.stPQ=function(k,v){PQ[k]=v;clearTimeout(PQ.t);PQ.t=setTimeout(async()=>{await draw();const i=$('st-pq');if(i){i.focus();i.setSelectionRange(v.length,v.length);}},250);};
+window.stPNew=function(k){k==='doc'?docTplDlg():infoTplDlg();};
+window.stPOpen=async function(k,id){try{const d=await bGet(PK2[k].item+id);if(!d||!d.owner)throw 0;if(d.owner!==me()&&!isAdm()){tst('Հասանելի չէ։');return;}k==='doc'?docOpen(d):infoOpen(d);}catch(e){console.error(e);tst('Չհաջողվեց բացել։');}};
+window.stPDup=async function(k,id){try{const d=await bGet(PK2[k].item+id);const n=JSON.parse(JSON.stringify(d));n.id=uid();n.title=(d.title||'')+' (պատճեն)';n.ts=Date.now();await bSet(PK2[k].item+n.id,n);await pMeta(k,metaOf(k,n));logAct('copy',n.title,n.id);draw();}catch(e){console.error(e);tst('Չհաջողվեց։');}};
+window.stPRen=async function(k,id){const nm=prompt('Նոր անուն․');if(!nm||!nm.trim())return;try{const d=await bGet(PK2[k].item+id);d.title=nm.trim().slice(0,120);await bSet(PK2[k].item+id,d);await pMeta(k,metaOf(k,d));draw();}catch(e){console.error(e);tst('Չհաջողվեց։');}};
+window.stPDel=async function(k,id){if(!confirm('Ջնջե՞լ նախագիծը։ Սա հնարավոր չէ հետ բերել։'))return;try{await pMetaDel(k,id);try{await bSet(PK2[k].item+id,{deleted:true,owner:me()});}catch(e){}tst('Ջնջվեց։');draw();}catch(e){console.error(e);tst('Չհաջողվեց։');}};
+const metaOf=(k,d)=>k==='doc'?{id:d.id,title:d.title,ts:d.ts,pages:(d.pages||[]).length}:{id:d.id,title:d.title,ts:d.ts,n:(d.els||[]).length};
+R.doc=async function(el){await pTab('doc',el);};
+R.info=async function(el){await pTab('info',el);};
+
+/* ================= DOCUMENT EDITOR ================= */
+const DOCP='<p><br></p>';
+const DTPL=[
+ ['blank','📄','Դատարկ փաստաթուղթ','Սկսեք զրոյից',()=>['<h1>Վերնագիր</h1>'+DOCP]],
+ ['lesson','📚','Դասի պլան','Նպատակ, ընթացք, գնահատում',()=>['<h1>Դասի պլան</h1><p><b>Առարկա՝</b> &nbsp; <b>Դասարան՝</b> &nbsp; <b>Ամսաթիվ՝</b></p><h2>Նպատակներ</h2><ul><li>&nbsp;</li><li>&nbsp;</li></ul><h2>Դասի ընթացք</h2><table><tr><th>Փուլ</th><th>Գործունեություն</th><th>Ժամանակ</th></tr><tr><td>Ներածություն</td><td>&nbsp;</td><td>5 ր</td></tr><tr><td>Նոր նյութ</td><td>&nbsp;</td><td>20 ր</td></tr><tr><td>Ամրապնդում</td><td>&nbsp;</td><td>15 ր</td></tr></table><h2>Գնահատում</h2><p><br></p>']],
+ ['report','📈','Հաշվետվություն','Ամփոփում, արդյունքներ, եզրակացություն',()=>['<h1>Հաշվետվություն</h1><p>Ժամանակահատված՝ &nbsp;</p><h2>Ամփոփում</h2><p><br></p><h2>Արդյունքներ</h2><table><tr><th>Ցուցանիշ</th><th>Արժեք</th><th>Նշում</th></tr><tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr></table><h2>Եզրակացություն</h2><p><br></p>']],
+ ['letter','✉️','Պաշտոնական նամակ','Դիմում / նամակ',()=>['<p style="text-align:right">Ամսաթիվ՝ &nbsp;</p><p><b>Ում՝</b> &nbsp;</p><h2>Թեմա՝ &nbsp;</h2><p>Հարգելի &nbsp;,</p><p><br></p><p>Հարգանքով՝</p><p>&nbsp;</p>']],
+ ['notes','🗒️','Նիստի արձանագրություն','Մասնակիցներ, որոշումներ',()=>['<h1>Նիստի արձանագրություն</h1><p><b>Ամսաթիվ՝</b> &nbsp; <b>Մասնակիցներ՝</b> &nbsp;</p><h2>Օրակարգ</h2><ol><li>&nbsp;</li></ol><h2>Որոշումներ</h2><ul><li>&nbsp;</li></ul><h2>Առաջադրանքներ</h2><table><tr><th>Ինչ</th><th>Ով</th><th>Մինչև</th></tr><tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr></table>']],
+ ['lab','🧪','Լաբորատոր աշխատանք','Նպատակ, ընթացք, եզրակացություն',()=>['<h1>Լաբորատոր աշխատանք</h1><h2>Նպատակ</h2><p><br></p><h2>Անհրաժեշտ նյութեր</h2><ul><li>&nbsp;</li></ul><h2>Ընթացք</h2><ol><li>&nbsp;</li></ol><h2>Արդյունքներ</h2><p><br></p><h2>Եզրակացություն</h2><p><br></p>']],
+];
+function docTplDlg(){
+  modal('<h2>Նոր փաստաթուղթ</h2><div class="st-grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">'+DTPL.map(t=>'<div class="st-card" style="cursor:pointer" onclick="stDocNew(\''+t[0]+'\')"><div class="st-in2" style="text-align:center"><div style="font-size:34px">'+t[1]+'</div><h3 style="font-size:14px">'+t[2]+'</h3><div class="st-sub">'+t[3]+'</div></div></div>').join('')+'</div><div class="st-row" style="margin-top:12px"><button class="sl-btn" onclick="stClose()">Փակել</button></div>',true);
+}
+window.stDocNew=function(id){const t=DTPL.find(x=>x[0]===id)||DTPL[0];closeModal();docOpen({id:uid(),owner:me(),title:t[0]==='blank'?'Անանուն փաստաթուղթ':t[2],pages:t[4](),ts:Date.now(),isNew:true});logAct('doc','Նոր փաստաթուղթ՝ '+t[2],'');};
+let DE=null;
+function docCss(){return '.dc-page{background:#fff;color:#17191F;width:794px;min-height:1123px;box-sizing:border-box;padding:72px 76px;margin:0 auto 22px;box-shadow:0 2px 16px rgba(0,0,0,.12);border-radius:3px;font:16px/1.65 Inter,"Noto Sans Armenian",system-ui,sans-serif;outline:none;position:relative;word-wrap:break-word}.dc-page h1{font-size:32px;line-height:1.2;margin:0 0 14px;font-weight:700}.dc-page h2{font-size:23px;margin:22px 0 8px;font-weight:700}.dc-page h3{font-size:18px;margin:16px 0 6px;font-weight:700}.dc-page p{margin:0 0 10px}.dc-page ul,.dc-page ol{margin:0 0 10px;padding-left:26px}.dc-page table{border-collapse:collapse;width:100%;margin:10px 0}.dc-page td,.dc-page th{border:1px solid #cfd4de;padding:8px 10px;vertical-align:top;min-width:40px}.dc-page th{background:#f1f3f8;text-align:left}.dc-page img{max-width:100%;height:auto;border-radius:4px}.dc-page blockquote{border-left:4px solid #4778F5;margin:12px 0;padding:4px 16px;color:#4b5263;background:#f5f7fc}.dc-page hr{border:0;border-top:1px solid #d6dae3;margin:16px 0}.dc-page a{color:#4778F5}';}
+function docOpen(d){
+  DE={d:d,pg:0,t:null,saved:!d.isNew,busy:false};
+  let o=$('md-doc');if(o)o.remove();
+  o=document.createElement('div');o.id='md-doc';o.className='md-full';o.setAttribute('data-noico','1');
+  o.innerHTML='<style>'+docCss()+'</style>'
+   +'<div class="mf-top"><button class="sl-btn" onclick="stDocClose()" title="Փակել (Esc)">← Փակել</button><input class="mf-title" id="dc-title" maxlength="120" value="'+esc(d.title)+'" oninput="stDocDirty()"><span class="mf-save" id="dc-st"></span><span style="flex:1"></span>'
+   +'<button class="sl-btn" title="Հետարկել (Ctrl+Z)" onmousedown="event.preventDefault()" onclick="stDocCmd(\'undo\')">↶</button><button class="sl-btn" title="Կրկնել (Ctrl+Y)" onmousedown="event.preventDefault()" onclick="stDocCmd(\'redo\')">↷</button>'
+   +'<button class="sl-btn" onclick="stDocPdf()" title="Արտահանել PDF (Ctrl+P)">PDF</button><button class="sl-btn pri" onclick="stDocSave(true)" title="Պահպանել (Ctrl+S)">Պահպանել</button></div>'
+   +'<div class="mf-bar" onmousedown="if(event.target.tagName!==\'SELECT\'&&event.target.tagName!==\'INPUT\')event.preventDefault()">'
+   +'<select title="Տեքստի ոճ" onchange="stDocBlock(this.value);this.value=\'\'"><option value="">Ոճ</option><option value="p">Սովորական</option><option value="h1">Վերնագիր 1</option><option value="h2">Վերնագիր 2</option><option value="h3">Վերնագիր 3</option><option value="blockquote">Մեջբերում</option></select>'
+   +'<button title="Թավ (Ctrl+B)" onclick="stDocCmd(\'bold\')"><b>B</b></button><button title="Շեղ (Ctrl+I)" onclick="stDocCmd(\'italic\')"><i>I</i></button><button title="Ընդգծած (Ctrl+U)" onclick="stDocCmd(\'underline\')"><u>U</u></button><button title="Վրագծած" onclick="stDocCmd(\'strikeThrough\')"><s>S</s></button>'
+   +'<label class="mf-c" title="Տեքստի գույն">A<input type="color" value="#17191F" onchange="stDocCmd(\'foreColor\',this.value)"></label><label class="mf-c" title="Նշում" style="background:#fde68a">▮<input type="color" value="#fde68a" onchange="stDocCmd(\'hiliteColor\',this.value)"></label>'
+   +'<span class="mf-sep"></span><button title="Ձախ" onclick="stDocCmd(\'justifyLeft\')">⬅</button><button title="Կենտրոն" onclick="stDocCmd(\'justifyCenter\')">↔</button><button title="Աջ" onclick="stDocCmd(\'justifyRight\')">➡</button><button title="Լայնությամբ" onclick="stDocCmd(\'justifyFull\')">☰</button>'
+   +'<span class="mf-sep"></span><button title="Կետավոր ցուցակ" onclick="stDocCmd(\'insertUnorderedList\')">• ≡</button><button title="Համարակալված" onclick="stDocCmd(\'insertOrderedList\')">1.≡</button>'
+   +'<span class="mf-sep"></span><button title="Հղում" onclick="stDocLink()">🔗</button><button title="Աղյուսակ" onclick="stDocTable()">▦</button><button title="Նկար" onclick="document.getElementById(\'dc-img\').click()">🖼</button><button title="Բաժանարար գիծ" onclick="stDocCmd(\'insertHorizontalRule\')">―</button><button title="Մաքրել ձևավորումը" onclick="stDocCmd(\'removeFormat\')">✕</button><input type="file" id="dc-img" accept="image/*" hidden onchange="stDocImg(this)"></div>'
+   +'<div class="mf-body"><div class="mf-side" id="dc-side"></div><div class="mf-main" id="dc-main"></div></div>';
+  document.body.appendChild(o);document.body.style.overflow='hidden';
+  docRender();docStatus(d.isNew?'Նոր փաստաթուղթ':'Բացված է');
+  o.addEventListener('keydown',docKey);
+}
+function docRender(){
+  const m=$('dc-main');m.innerHTML=DE.d.pages.map((h,i)=>'<div class="dc-page" contenteditable="true" spellcheck="false" data-i="'+i+'" oninput="stDocDirty()" onfocus="DE_pg('+i+')">'+cleanHtml(h)+'</div>').join('');
+  docSide();
+}
+window.DE_pg=function(i){if(DE){DE.pg=i;docSide();}};
+function docSide(){
+  const s=$('dc-side');if(!s||!DE)return;const pgs=[...document.querySelectorAll('#dc-main .dc-page')];
+  s.innerHTML='<div class="st-h" style="margin:4px 0 8px">Էջեր</div>'+pgs.map((p,i)=>{const t=(p.querySelector('h1,h2,h3')||p).textContent.trim().slice(0,28)||'Դատարկ';return '<div class="mf-pg '+(i===DE.pg?'on':'')+'" onclick="stDocGo('+i+')"><b>'+(i+1)+'</b><span>'+esc(t)+'</span></div>';}).join('')
+   +'<div class="st-row" style="margin-top:10px;flex-wrap:wrap"><button class="sl-btn sm" title="Նոր էջ" onclick="stDocPg(\'add\')">＋ Էջ</button><button class="sl-btn sm" onclick="stDocPg(\'dup\')">Պատճենել</button><button class="sl-btn sm" onclick="stDocPg(\'up\')">↑</button><button class="sl-btn sm" onclick="stDocPg(\'down\')">↓</button><button class="sl-btn sm" onclick="stDocPg(\'del\')">🗑</button></div>';
+}
+function docCollect(){return [...document.querySelectorAll('#dc-main .dc-page')].map(p=>cleanHtml(p.innerHTML));}
+window.stDocGo=function(i){const p=document.querySelectorAll('#dc-main .dc-page')[i];if(p){DE.pg=i;p.scrollIntoView({behavior:'smooth',block:'start'});p.focus();docSide();}};
+window.stDocPg=function(a){
+  const pages=docCollect(),i=Math.min(DE.pg,pages.length-1);
+  if(a==='add')pages.splice(i+1,0,DOCP);else if(a==='dup')pages.splice(i+1,0,pages[i]);
+  else if(a==='del'){if(pages.length<2){tst('Վերջին էջը հնարավոր չէ ջնջել։');return;}if(!confirm('Ջնջե՞լ էջը։'))return;pages.splice(i,1);}
+  else if(a==='up'&&i>0){[pages[i-1],pages[i]]=[pages[i],pages[i-1]];DE.pg=i-1;}
+  else if(a==='down'&&i<pages.length-1){[pages[i+1],pages[i]]=[pages[i],pages[i+1]];DE.pg=i+1;}
+  else return;
+  if(a==='add'||a==='dup')DE.pg=i+1;if(a==='del')DE.pg=Math.max(0,i-1);
+  DE.d.pages=pages;docRender();docDirty();setTimeout(()=>stDocGo(DE.pg),30);
+};
+window.stDocCmd=function(c,v){document.execCommand('styleWithCSS',false,true);document.execCommand(c,false,v||null);docDirty();};
+window.stDocBlock=function(t){if(!t)return;document.execCommand('formatBlock',false,t==='p'?'<p>':'<'+t+'>');docDirty();};
+window.stDocLink=function(){const u=prompt('Հղման հասցե (https://...)․');if(!u)return;if(!/^(https?:\/\/|mailto:)/i.test(u)){tst('Հասցեն պետք է սկսվի https:// -ով։');return;}document.execCommand('createLink',false,u);docDirty();};
+window.stDocTable=function(){const r=parseInt(prompt('Տողերի քանակ (1–20)․','3'));const c=parseInt(prompt('Սյուների քանակ (1–10)․','3'));if(!(r>0&&r<=20&&c>0&&c<=10))return;let h='<table>';for(let i=0;i<r;i++){h+='<tr>';for(let j=0;j<c;j++)h+=(i===0?'<th>&nbsp;</th>':'<td>&nbsp;</td>');h+='</tr>';}document.execCommand('insertHTML',false,h+'</table><p><br></p>');docDirty();};
+window.stDocImg=async function(inp){const f=inp.files&&inp.files[0];inp.value='';if(!f)return;if(!/^image\//.test(f.type)){tst('Ընտրեք նկար։');return;}try{const u=await imgToData(f,1000,.8);document.execCommand('insertImage',false,u);docDirty();}catch(e){tst('Նկարը չբացվեց։');}};
+function docStatus(t,cls){const s=$('dc-st');if(s){s.textContent=t;s.className='mf-save '+(cls||'');}}
+function docDirty(){if(!DE)return;DE.saved=false;docStatus('Չպահպանված փոփոխություններ...');clearTimeout(DE.t);DE.t=setTimeout(()=>stDocSave(false),1500);}
+window.stDocDirty=docDirty;
+window.stDocSave=async function(manual){
+  if(!DE||DE.busy)return;clearTimeout(DE.t);DE.busy=true;docStatus('Պահպանվում է...');
+  try{
+    const d=DE.d;d.title=(($('dc-title')||{}).value||'Անանուն փաստաթուղթ').trim().slice(0,120)||'Անանուն փաստաթուղթ';d.pages=docCollect();d.ts=Date.now();d.owner=d.owner||me();delete d.isNew;
+    const size=JSON.stringify(d).length;if(size>950000){docStatus('Փաստաթուղթը շատ մեծ է (նկարները)։ Հեռացրեք որոշ նկարներ։','er');DE.busy=false;return;}
+    await bSet(PK2.doc.item+d.id,d);await pMeta('doc',metaOf('doc',d));DE.saved=true;docStatus('✓ Պահպանված է '+new Date().toLocaleTimeString('hy-AM',{hour:'2-digit',minute:'2-digit'}),'ok');if(manual)tst('Պահպանվեց։');
+  }catch(e){console.error(e);docStatus('Չհաջողվեց պահպանել','er');}
+  DE.busy=false;
+};
+window.stDocClose=async function(){if(DE&&!DE.saved)await stDocSave(false);const o=$('md-doc');if(o)o.remove();document.body.style.overflow='';DE=null;if(ST.tab==='doc')draw();};
+window.stDocPdf=function(){if(!DE)return;const pages=docCollect();printHtml(($('dc-title')||{}).value||'Փաստաթուղթ',pages.map(h=>'<div class="dc-page">'+h+'</div>').join(''),docCss()+'@page{size:A4;margin:0}body{margin:0;background:#fff}.dc-page{box-shadow:none!important;margin:0!important;border-radius:0!important;width:210mm!important;min-height:297mm!important;page-break-after:always;padding:20mm!important}');};
+function docKey(e){
+  if(!DE)return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();stDocSave(true);}
+  else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='p'){e.preventDefault();stDocPdf();}
+  else if(e.key==='Escape'&&!e.defaultPrevented&&document.activeElement&&document.activeElement.tagName==='BODY')stDocClose();
+}
+
+/* ================= INFOGRAPHIC EDITOR ================= */
+const IC=['#4778F5','#8874EA','#22C3A6','#F5A524','#F0566B','#17191F','#858B98','#FFFFFF','#F7F8FA','#E8EEFF'];
+let IE=null;
+const infoNew=(t,x,y,w,h,o)=>Object.assign({id:uid(),t:t,x:x,y:y,w:w,h:h,op:1},o||{});
+const ITPL=[
+ ['blank','⬜','Դատարկ','Սպիտակ կտավ',()=>({bg:'#FFFFFF',els:[infoNew('text',90,80,900,120,{text:'Վերնագիր',fs:76,fw:800,color:'#17191F',al:'left'})]})],
+ ['stats','📊','Վիճակագրական տեղեկանք','3 թիվ + գծապատկեր',()=>({bg:'#F7F8FA',els:[
+   infoNew('shape',0,0,1080,330,{shape:'rect',fill:'#4778F5',rad:0}),
+   infoNew('text',80,70,920,150,{text:'Դպրոցի տարվա արդյունքները',fs:58,fw:800,color:'#FFFFFF',al:'left'}),
+   infoNew('text',80,225,920,50,{text:'2025–2026 ուսումնական տարի',fs:30,fw:400,color:'#DCE6FF',al:'left'}),
+   infoNew('stat',80,390,290,220,{num:'1200',label:'Աշակերտ',fill:'#FFFFFF',color:'#4778F5'}),
+   infoNew('stat',395,390,290,220,{num:'86',label:'Ուսուցիչ',fill:'#FFFFFF',color:'#8874EA'}),
+   infoNew('stat',710,390,290,220,{num:'94%',label:'Առաջադիմություն',fill:'#FFFFFF',color:'#22C3A6'}),
+   infoNew('chart',80,660,920,560,{kind:'bar',title:'Միջին գնահատական ըստ դասարանների',data:[['5-րդ',7.8],['6-րդ',8.1],['7-րդ',7.5],['8-րդ',8.4],['9-րդ',8.0]],fill:'#FFFFFF'})]})],
+ ['steps','🪜','Քայլեր','4 քայլերի գործընթաց',()=>({bg:'#FFFFFF',els:[
+   infoNew('text',80,80,920,110,{text:'Ինչպես գրել շարադրություն',fs:62,fw:800,color:'#17191F',al:'left'}),
+   ...[['1','Թեմա','Ընտրեք թեման և պարզեք նպատակը','#4778F5'],['2','Պլան','Կազմեք հիմնական կետերի պլանը','#8874EA'],['3','Գրել','Գրեք ներածություն, հիմնական մաս, եզրակացություն','#22C3A6'],['4','Ստուգել','Կարդացեք և ուղղեք սխալները','#F5A524']].flatMap((s,i)=>[
+     infoNew('shape',80,260+i*250,920,210,{shape:'rect',fill:'#F7F8FA',rad:36}),
+     infoNew('shape',110,300+i*250,130,130,{shape:'circle',fill:s[3]}),
+     infoNew('text',110,320+i*250,130,90,{text:s[0],fs:70,fw:800,color:'#FFFFFF',al:'center'}),
+     infoNew('text',280,300+i*250,680,60,{text:s[1],fs:44,fw:800,color:'#17191F',al:'left'}),
+     infoNew('text',280,365+i*250,680,80,{text:s[2],fs:28,fw:400,color:'#5F6676',al:'left'})])]})],
+ ['compare','⚖️','Համեմատություն','Երկու սյուն',()=>({bg:'#F7F8FA',els:[
+   infoNew('text',80,70,920,100,{text:'Համեմատություն',fs:64,fw:800,color:'#17191F',al:'center'}),
+   infoNew('shape',70,230,450,900,{shape:'rect',fill:'#FFFFFF',rad:40}),infoNew('shape',560,230,450,900,{shape:'rect',fill:'#FFFFFF',rad:40}),
+   infoNew('text',100,270,390,80,{text:'Տարբերակ Ա',fs:40,fw:800,color:'#4778F5',al:'left'}),infoNew('text',590,270,390,80,{text:'Տարբերակ Բ',fs:40,fw:800,color:'#8874EA',al:'left'}),
+   infoNew('text',100,380,390,600,{text:'• Առավելություն 1\n• Առավելություն 2\n• Առավելություն 3',fs:30,fw:400,color:'#17191F',al:'left'}),infoNew('text',590,380,390,600,{text:'• Առավելություն 1\n• Առավելություն 2\n• Առավելություն 3',fs:30,fw:400,color:'#17191F',al:'left'})]})],
+ ['pie','🥧','Բաշխվածություն','Շրջանաձև գծապատկեր',()=>({bg:'#FFFFFF',els:[
+   infoNew('text',80,80,920,110,{text:'Ինչպես ենք անցկացնում օրը',fs:60,fw:800,color:'#17191F',al:'left'}),
+   infoNew('chart',90,260,900,700,{kind:'donut',title:'',data:[['Դպրոց',7],['Տնային առաջադրանք',3],['Սպորտ',2],['Քուն',8],['Ազատ ժամանակ',4]],fill:'#FFFFFF'}),
+   infoNew('text',80,1000,920,160,{text:'Տվյալները օրինակելի են՝ խմբագրեք աջ վահանակում։',fs:28,fw:400,color:'#858B98',al:'left'})]})],
+];
+function infoTplDlg(){
+  modal('<h2>Նոր ինֆոգրաֆիկա</h2><div class="st-grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">'+ITPL.map(t=>'<div class="st-card" style="cursor:pointer" onclick="stInfoNew(\''+t[0]+'\')"><div class="st-in2" style="text-align:center"><div style="font-size:34px">'+t[1]+'</div><h3 style="font-size:14px">'+t[2]+'</h3><div class="st-sub">'+t[3]+'</div></div></div>').join('')+'</div><div class="st-row" style="margin-top:12px"><button class="sl-btn" onclick="stClose()">Փակել</button></div>',true);
+}
+window.stInfoNew=function(id){const t=ITPL.find(x=>x[0]===id)||ITPL[0],b=t[4]();closeModal();infoOpen({id:uid(),owner:me(),title:t[0]==='blank'?'Անանուն ինֆոգրաֆիկա':t[2],w:1080,h:1350,bg:b.bg,els:b.els,ts:Date.now(),isNew:true});logAct('info','Նոր ինֆոգրաֆիկա՝ '+t[2],'');};
+function chartSvg(e){
+  const W=e.w,H=e.h,data=(e.data||[]).filter(r=>r&&isFinite(+r[1])).map(r=>[String(r[0]),+r[1]]),pal=IC.slice(0,5).concat(['#22C3A6','#F0566B']);
+  const title=e.title?'<text x="'+W/2+'" y="40" text-anchor="middle" font-size="30" font-weight="700" fill="#17191F">'+esc(e.title)+'</text>':'';
+  const top=e.title?70:20;let g='';
+  if(!data.length)return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="100%"><text x="50%" y="50%" text-anchor="middle" fill="#858B98" font-size="26">Տվյալներ չկան</text></svg>';
+  const max=Math.max(...data.map(r=>r[1]),1e-9);
+  if(e.kind==='bar'){
+    const ph=H-top-70,bw=(W-80)/data.length;
+    data.forEach((r,i)=>{const h=Math.max(2,r[1]/max*ph),x=50+i*bw+bw*.15,y=top+ph-h;g+='<rect x="'+x+'" y="'+y+'" width="'+bw*.7+'" height="'+h+'" rx="12" fill="'+pal[i%pal.length]+'"/><text x="'+(x+bw*.35)+'" y="'+(y-10)+'" text-anchor="middle" font-size="24" font-weight="700" fill="#17191F">'+r[1]+'</text><text x="'+(x+bw*.35)+'" y="'+(H-30)+'" text-anchor="middle" font-size="22" fill="#5F6676">'+esc(r[0])+'</text>';});
+  }else if(e.kind==='line'){
+    const ph=H-top-80,step=data.length>1?(W-120)/(data.length-1):0;let pts=data.map((r,i)=>[60+i*step,top+ph-(r[1]/max)*ph]);
+    g+='<polyline fill="none" stroke="#4778F5" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" points="'+pts.map(p=>p.join(',')).join(' ')+'"/>';
+    pts.forEach((p,i)=>{g+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="10" fill="#fff" stroke="#4778F5" stroke-width="6"/><text x="'+p[0]+'" y="'+(p[1]-20)+'" text-anchor="middle" font-size="22" font-weight="700" fill="#17191F">'+data[i][1]+'</text><text x="'+p[0]+'" y="'+(H-30)+'" text-anchor="middle" font-size="22" fill="#5F6676">'+esc(data[i][0])+'</text>';});
+  }else{
+    const sum=data.reduce((a,r)=>a+Math.max(0,r[1]),0)||1,R=Math.min(W*.5,(H-top)*.5)-30,cx=W*.36,cy=top+(H-top)/2;let a0=-Math.PI/2;
+    data.forEach((r,i)=>{const a=Math.max(0,r[1])/sum*Math.PI*2,a1=a0+a,lg=a>Math.PI?1:0,x0=cx+R*Math.cos(a0),y0=cy+R*Math.sin(a0),x1=cx+R*Math.cos(a1),y1=cy+R*Math.sin(a1);
+      g+=(data.length===1?'<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="'+pal[0]+'"/>':'<path d="M'+cx+','+cy+' L'+x0+','+y0+' A'+R+','+R+' 0 '+lg+' 1 '+x1+','+y1+' Z" fill="'+pal[i%pal.length]+'"/>');a0=a1;});
+    if(e.kind==='donut')g+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R*.55+'" fill="'+(e.fill||'#fff')+'"/><text x="'+cx+'" y="'+(cy+12)+'" text-anchor="middle" font-size="40" font-weight="800" fill="#17191F">'+sum+'</text>';
+    data.forEach((r,i)=>{const y=cy-data.length*21+i*42;g+='<rect x="'+(W*.72-10)+'" y="'+(y-14)+'" width="22" height="22" rx="6" fill="'+pal[i%pal.length]+'"/><text x="'+(W*.72+24)+'" y="'+(y+4)+'" font-size="23" fill="#17191F">'+esc(r[0])+' · '+Math.round(r[1]/sum*100)+'%</text>';});
+  }
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" width="100%" height="100%">'+title+g+'</svg>';
+}
+function elHtml(e){
+  const base='position:absolute;left:'+e.x+'px;top:'+e.y+'px;width:'+e.w+'px;height:'+e.h+'px;opacity:'+(e.op==null?1:e.op)+';box-sizing:border-box;';let inner='',st=base;
+  if(e.t==='text'){st+='font-size:'+e.fs+'px;font-weight:'+e.fw+';color:'+e.color+';text-align:'+(e.al||'left')+';line-height:1.2;white-space:pre-wrap;overflow:hidden;word-break:break-word;font-family:Inter,\'Noto Sans Armenian\',system-ui,sans-serif;';inner=esc(e.text);}
+  else if(e.t==='shape'){st+='background:'+(e.shape==='line'?'transparent':e.fill)+';'+(e.shape==='circle'?'border-radius:50%;':'border-radius:'+(e.shape==='line'?0:e.rad||0)+'px;')+(e.shape==='line'?'border-top:'+(e.sw||6)+'px solid '+e.fill+';height:0;':'')+(e.stroke?'border:'+(e.sw||4)+'px solid '+e.stroke+';':'');}
+  else if(e.t==='icon'){st+='font-size:'+e.fs+'px;line-height:'+e.h+'px;text-align:center;';inner=esc(e.emoji);}
+  else if(e.t==='img'){inner='<img src="'+esc(e.src)+'" style="width:100%;height:100%;object-fit:cover;border-radius:'+(e.rad||0)+'px;display:block" alt="">';}
+  else if(e.t==='stat'){st+='background:'+e.fill+';border-radius:36px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Inter,\'Noto Sans Armenian\',system-ui,sans-serif;';inner='<div style="font-size:'+Math.round(e.h*.42)+'px;font-weight:800;color:'+e.color+';line-height:1">'+esc(e.num)+'</div><div style="font-size:'+Math.round(e.h*.14)+'px;color:#5F6676;margin-top:12px;text-align:center">'+esc(e.label)+'</div>';}
+  else if(e.t==='chart'){st+='background:'+(e.fill||'#fff')+';border-radius:28px;padding:10px;font-family:Inter,\'Noto Sans Armenian\',system-ui,sans-serif;';inner=chartSvg(Object.assign({},e,{w:e.w-20,h:e.h-20}));}
+  return '<div class="in-el" data-id="'+e.id+'" style="'+st+'">'+inner+'</div>';
+}
+function infoOpen(d){
+  IE={d:d,sel:null,zoom:.5,undo:[],redo:[],t:null,saved:!d.isNew,busy:false};d.w=d.w||1080;d.h=d.h||1350;
+  let o=$('md-info');if(o)o.remove();
+  o=document.createElement('div');o.id='md-info';o.className='md-full';
+  o.innerHTML='<div class="mf-top"><button class="sl-btn" onclick="stInfoClose()" title="Փակել">← Փակել</button><input class="mf-title" id="in-title" maxlength="120" value="'+esc(d.title)+'" oninput="stInfoDirty()"><span class="mf-save" id="in-st"></span><span style="flex:1"></span>'
+   +'<button class="sl-btn" title="Հետարկել (Ctrl+Z)" onclick="stInfoUndo()">↶</button><button class="sl-btn" title="Կրկնել (Ctrl+Y)" onclick="stInfoRedo()">↷</button><button class="sl-btn" onclick="stInfoZoom(-.1)" title="Փոքրացնել">−</button><span id="in-z" style="min-width:42px;text-align:center;font-size:12px"></span><button class="sl-btn" onclick="stInfoZoom(.1)" title="Մեծացնել">＋</button><button class="sl-btn" onclick="stInfoFit()" title="Տեղավորել">⤢</button>'
+   +'<button class="sl-btn" onclick="stInfoPng()">PNG</button><button class="sl-btn" onclick="stInfoPdf()">PDF</button><button class="sl-btn pri" onclick="stInfoSave(true)" title="Ctrl+S">Պահպանել</button></div>'
+   +'<div class="mf-body"><div class="mf-side in-left" id="in-left"></div><div class="mf-main in-main" id="in-main"><div id="in-wrap"><div id="in-stage" data-noico="1"></div></div></div><div class="mf-side in-right" id="in-right"></div></div>';
+  document.body.appendChild(o);document.body.style.overflow='hidden';
+  infoLeft();infoRender();infoFit();infoStatus(d.isNew?'Նոր ինֆոգրաֆիկա':'Բացված է');
+  const st=$('in-stage');st.addEventListener('pointerdown',infoDown);o.addEventListener('keydown',infoKey);o.tabIndex=-1;o.focus();
+  window.addEventListener('resize',infoFit);
+}
+function infoLeft(){
+  const sw=IC.map(c=>'<button class="in-sw" style="background:'+c+'" title="'+c+'" onclick="stInfoBg(\''+c+'\')"></button>').join('');
+  const em=['⭐','✅','❤️','💡','🎯','📌','🏆','📚','🔬','🌍','🎨','⚽'].map(e=>'<button class="in-em" onclick="stInfoAdd(\'icon\',\''+e+'\')">'+e+'</button>').join('');
+  $('in-left').innerHTML='<div class="st-h" style="margin:2px 0 6px">Ավելացնել</div><div class="in-grid"><button onclick="stInfoAdd(\'text\')">Տեքստ</button><button onclick="stInfoAdd(\'title\')">Վերնագիր</button><button onclick="stInfoAdd(\'rect\')">▭ Քառակուսի</button><button onclick="stInfoAdd(\'circle\')">◯ Շրջան</button><button onclick="stInfoAdd(\'line\')">― Գիծ</button><button onclick="stInfoAdd(\'stat\')">123 Թիվ</button><button onclick="stInfoAdd(\'bar\')">▮▯ Սյունակային</button><button onclick="stInfoAdd(\'line-c\')">⟋ Գծային</button><button onclick="stInfoAdd(\'pie\')">◔ Շրջանային</button><button onclick="stInfoAdd(\'donut\')">◎ Օղակ</button><button onclick="document.getElementById(\'in-img\').click()">🖼 Նկար</button></div><input type="file" id="in-img" hidden accept="image/*" onchange="stInfoImg(this)">'
+   +'<div class="st-h" style="margin:12px 0 6px">Պատկերակներ</div><div class="in-grid e">'+em+'</div><div class="st-h" style="margin:12px 0 6px">Ֆոն</div><div class="in-sws">'+sw+'</div>'
+   +'<div class="st-h" style="margin:12px 0 6px">Կտավի չափ</div><select class="st-in" onchange="stInfoSize(this.value)"><option value="1080x1350">Ուղղահայաց 1080×1350</option><option value="1080x1080">Քառակուսի 1080×1080</option><option value="1920x1080">Լայն 1920×1080</option><option value="1080x1920">Պատմություն 1080×1920</option></select>';
+  const s=document.querySelector('#in-left select');if(s)s.value=IE.d.w+'x'+IE.d.h;
+}
+function infoRender(){
+  const d=IE.d,st=$('in-stage');if(!st)return;
+  st.style.cssText='width:'+d.w+'px;height:'+d.h+'px;background:'+d.bg+';position:relative;transform:scale('+IE.zoom+');transform-origin:0 0;box-shadow:0 4px 30px rgba(0,0,0,.18);overflow:hidden;touch-action:none';
+  st.innerHTML=d.els.map(elHtml).join('')+selBox();
+  const w=$('in-wrap');if(w){w.style.width=d.w*IE.zoom+'px';w.style.height=d.h*IE.zoom+'px';}
+  const z=$('in-z');if(z)z.textContent=Math.round(IE.zoom*100)+'%';
+  infoRight();
+}
+function selBox(){
+  const e=IE.sel&&IE.d.els.find(x=>x.id===IE.sel);if(!e)return '';
+  const hs=['nw','ne','sw','se','n','s','w','e'],pos={nw:[0,0],ne:[1,0],sw:[0,1],se:[1,1],n:[.5,0],s:[.5,1],w:[0,.5],e:[1,.5]};
+  const sc=1/IE.zoom,hp=14*sc;
+  return '<div class="in-sel" style="left:'+e.x+'px;top:'+e.y+'px;width:'+e.w+'px;height:'+(e.t==='shape'&&e.shape==='line'?(e.sw||6):e.h)+'px;outline-width:'+2*sc+'px">'+hs.map(h=>'<i class="in-h" data-h="'+h+'" style="left:calc('+pos[h][0]*100+'% - '+hp/2+'px);top:calc('+pos[h][1]*100+'% - '+hp/2+'px);width:'+hp+'px;height:'+hp+'px;border-width:'+2*sc+'px"></i>').join('')+'</div>';
+}
+function infoSnap(){IE.undo.push(JSON.stringify({els:IE.d.els,bg:IE.d.bg,w:IE.d.w,h:IE.d.h}));if(IE.undo.length>80)IE.undo.shift();IE.redo=[];}
+function infoRestore(s){const o=JSON.parse(s);IE.d.els=o.els;IE.d.bg=o.bg;IE.d.w=o.w;IE.d.h=o.h;if(!IE.d.els.some(e=>e.id===IE.sel))IE.sel=null;infoRender();infoDirty();}
+window.stInfoUndo=function(){if(!IE||!IE.undo.length)return;IE.redo.push(JSON.stringify({els:IE.d.els,bg:IE.d.bg,w:IE.d.w,h:IE.d.h}));infoRestore(IE.undo.pop());};
+window.stInfoRedo=function(){if(!IE||!IE.redo.length)return;IE.undo.push(JSON.stringify({els:IE.d.els,bg:IE.d.bg,w:IE.d.w,h:IE.d.h}));infoRestore(IE.redo.pop());};
+function pt(ev){const r=$('in-stage').getBoundingClientRect();return [(ev.clientX-r.left)/IE.zoom,(ev.clientY-r.top)/IE.zoom];}
+let drag=null;
+function infoDown(ev){
+  const h=ev.target.closest('.in-h'),el=ev.target.closest('.in-el');
+  if(h&&IE.sel){const e=IE.d.els.find(x=>x.id===IE.sel);infoSnap();drag={k:'rs',h:h.dataset.h,e:e,o:{x:e.x,y:e.y,w:e.w,h:e.h},p:pt(ev)};}
+  else if(el){IE.sel=el.dataset.id;const e=IE.d.els.find(x=>x.id===IE.sel);infoSnap();drag={k:'mv',e:e,o:{x:e.x,y:e.y},p:pt(ev),moved:false};infoRender();}
+  else{IE.sel=null;infoRender();return;}
+  ev.preventDefault();window.addEventListener('pointermove',infoMove);window.addEventListener('pointerup',infoUp,{once:true});
+}
+function infoMove(ev){
+  if(!drag)return;const p=pt(ev),dx=p[0]-drag.p[0],dy=p[1]-drag.p[1],e=drag.e;
+  if(drag.k==='mv'){e.x=Math.round(drag.o.x+dx);e.y=Math.round(drag.o.y+dy);drag.moved=true;}
+  else{const h=drag.h,o=drag.o;let x=o.x,y=o.y,w=o.w,hh=o.h;if(h.includes('e'))w=o.w+dx;if(h.includes('s'))hh=o.h+dy;if(h.includes('w')){w=o.w-dx;x=o.x+dx;}if(h.includes('n')){hh=o.h-dy;y=o.y+dy;}
+    if(w<20){if(h.includes('w'))x=o.x+o.w-20;w=20;}if(hh<20){if(h.includes('n'))y=o.y+o.h-20;hh=20;}e.x=Math.round(x);e.y=Math.round(y);e.w=Math.round(w);e.h=Math.round(hh);}
+  const node=document.querySelector('.in-el[data-id="'+e.id+'"]');if(node)node.outerHTML=elHtml(e);const sb=document.querySelector('.in-sel');if(sb)sb.outerHTML=selBox();
+}
+function infoUp(){window.removeEventListener('pointermove',infoMove);if(drag&&(drag.k==='rs'||drag.moved)){infoDirty();}else if(drag&&IE.undo.length)IE.undo.pop();drag=null;infoRender();}
+function infoKey(ev){
+  if(!IE)return;const tag=(ev.target.tagName||'').toLowerCase(),typing=tag==='input'||tag==='textarea'||tag==='select';
+  const c=ev.ctrlKey||ev.metaKey,k=ev.key.toLowerCase();
+  if(c&&k==='s'){ev.preventDefault();stInfoSave(true);return;}
+  if(typing)return;
+  if(c&&k==='z'){ev.preventDefault();ev.shiftKey?stInfoRedo():stInfoUndo();}
+  else if(c&&k==='y'){ev.preventDefault();stInfoRedo();}
+  else if(c&&k==='d'){ev.preventDefault();stInfoDup();}
+  else if(ev.key==='Delete'||ev.key==='Backspace'){ev.preventDefault();stInfoDel();}
+  else if(ev.key==='Escape'){if(IE.sel){IE.sel=null;infoRender();}else stInfoClose();}
+  else if(ev.key.startsWith('Arrow')&&IE.sel){ev.preventDefault();const e=IE.d.els.find(x=>x.id===IE.sel),s=ev.shiftKey?20:2;infoSnap();if(ev.key==='ArrowLeft')e.x-=s;if(ev.key==='ArrowRight')e.x+=s;if(ev.key==='ArrowUp')e.y-=s;if(ev.key==='ArrowDown')e.y+=s;infoRender();infoDirty();}
+}
+function selEl(){return IE&&IE.sel&&IE.d.els.find(x=>x.id===IE.sel)||null;}
+window.stInfoAdd=function(t,v){
+  infoSnap();const W=IE.d.w,H=IE.d.h;let e;
+  const cx=w=>Math.round((W-w)/2),cy=h=>Math.round((H-h)/2);
+  if(t==='text')e=infoNew('text',cx(600),cy(100),600,100,{text:'Ձեր տեքստը',fs:40,fw:400,color:'#17191F',al:'left'});
+  else if(t==='title')e=infoNew('text',cx(900),cy(120),900,120,{text:'Վերնագիր',fs:76,fw:800,color:'#17191F',al:'left'});
+  else if(t==='rect')e=infoNew('shape',cx(400),cy(260),400,260,{shape:'rect',fill:'#4778F5',rad:32});
+  else if(t==='circle')e=infoNew('shape',cx(300),cy(300),300,300,{shape:'circle',fill:'#8874EA'});
+  else if(t==='line')e=infoNew('shape',cx(600),cy(6),600,6,{shape:'line',fill:'#17191F',sw:6});
+  else if(t==='icon')e=infoNew('icon',cx(160),cy(160),160,160,{emoji:v,fs:120});
+  else if(t==='stat')e=infoNew('stat',cx(300),cy(220),300,220,{num:'100',label:'Ցուցանիշ',fill:'#E8EEFF',color:'#4778F5'});
+  else if(t==='img')e=infoNew('img',cx(500),cy(400),500,400,{src:v,rad:24});
+  else{const kind=t==='line-c'?'line':t;e=infoNew('chart',cx(720),cy(520),720,520,{kind:kind,title:'Վերնագիր',data:[['Ա',4],['Բ',7],['Գ',5],['Դ',9]],fill:'#FFFFFF'});}
+  IE.d.els.push(e);IE.sel=e.id;infoRender();infoDirty();
+};
+window.stInfoImg=async function(inp){const f=inp.files&&inp.files[0];inp.value='';if(!f)return;try{const u=await imgToData(f,900,.8);stInfoAdd('img',u);}catch(e){tst('Նկարը չբացվեց։');}};
+window.stInfoBg=function(c){infoSnap();IE.d.bg=c;infoRender();infoDirty();};
+window.stInfoSize=function(v){infoSnap();const a=v.split('x');IE.d.w=+a[0];IE.d.h=+a[1];infoRender();infoFit();infoDirty();};
+window.stInfoDup=function(){const e=selEl();if(!e)return;infoSnap();const n=JSON.parse(JSON.stringify(e));n.id=uid();n.x+=30;n.y+=30;IE.d.els.push(n);IE.sel=n.id;infoRender();infoDirty();};
+window.stInfoDel=function(){const e=selEl();if(!e)return;infoSnap();IE.d.els=IE.d.els.filter(x=>x!==e);IE.sel=null;infoRender();infoDirty();};
+window.stInfoOrder=function(w){const e=selEl();if(!e)return;infoSnap();const a=IE.d.els,i=a.indexOf(e);a.splice(i,1);if(w==='front')a.push(e);else if(w==='back')a.unshift(e);else if(w==='up')a.splice(Math.min(a.length,i+1),0,e);else a.splice(Math.max(0,i-1),0,e);infoRender();infoDirty();};
+window.stInfoZoom=function(d){IE.zoom=Math.max(.15,Math.min(1.5,+(IE.zoom+d).toFixed(2)));infoRender();};
+function infoFit(){if(!IE)return;const m=$('in-main');if(!m)return;IE.zoom=Math.max(.15,Math.min(1,+Math.min((m.clientWidth-40)/IE.d.w,(m.clientHeight-40)/IE.d.h).toFixed(2)));infoRender();}
+window.stInfoFit=infoFit;
+window.stInfoSet=function(k,v,num){const e=selEl();if(!e)return;if(IE.lastK!==k||Date.now()-IE.lastT>700)infoSnap();IE.lastK=k;IE.lastT=Date.now();e[k]=num?(+v||0):v;const n=document.querySelector('.in-el[data-id="'+e.id+'"]');if(n)n.outerHTML=elHtml(e);const sb=document.querySelector('.in-sel');if(sb)sb.outerHTML=selBox();infoDirty();};
+window.stInfoData=function(v){const e=selEl();if(!e)return;if(IE.lastK!=='data'||Date.now()-IE.lastT>700)infoSnap();IE.lastK='data';IE.lastT=Date.now();e.data=v.split('\n').map(l=>{const i=l.lastIndexOf(',');return i<0?null:[l.slice(0,i).trim(),parseFloat(l.slice(i+1))];}).filter(r=>r&&isFinite(r[1]));const n=document.querySelector('.in-el[data-id="'+e.id+'"]');if(n)n.outerHTML=elHtml(e);infoDirty();};
+function sw(k,cur){return '<div class="in-sws">'+IC.map(c=>'<button class="in-sw'+(cur&&cur.toLowerCase()===c.toLowerCase()?' on':'')+'" style="background:'+c+'" onclick="stInfoSet(\''+k+'\',\''+c+'\');stInfoR()"></button>').join('')+'<input type="color" value="'+(/^#[0-9a-f]{6}$/i.test(cur||'')?cur:'#4778F5')+'" oninput="stInfoSet(\''+k+'\',this.value)" title="Այլ գույն"></div>';}
+window.stInfoR=function(){infoRight();};
+function num(l,k,e,step){return '<label class="in-f"><span>'+l+'</span><input type="number" step="'+(step||1)+'" value="'+(Math.round((e[k]==null?0:e[k])*100)/100)+'" onchange="stInfoSet(\''+k+'\',this.value,1);stInfoRender2()"></label>';}
+window.stInfoRender2=function(){infoRender();};
+function infoRight(){
+  const r=$('in-right');if(!r)return;const e=selEl();
+  if(!e){r.innerHTML='<div class="st-h" style="margin:2px 0 8px">Կտավ</div><div class="st-sub">Ընտրեք տարր՝ դրա կարգավորումները խմբագրելու համար։ Քաշեք տարրը տեղափոխելու, անկյուններից՝ չափը փոխելու համար։</div><div class="st-sub" style="margin-top:10px">Ստեղներ՝ Delete՝ ջնջել · Ctrl+D՝ կրկնօրինակել · Ctrl+Z / Ctrl+Y · սլաքներ՝ տեղաշարժ (Shift՝ ավելի մեծ քայլ) · Ctrl+S՝ պահպանել</div>';return;}
+  let h='<div class="st-h" style="margin:2px 0 8px">'+({text:'Տեքստ',shape:'Ֆիգուր',icon:'Պատկերակ',img:'Նկար',stat:'Թիվ',chart:'Գծապատկեր'}[e.t])+'</div>';
+  if(e.t==='text')h+='<label class="in-f col"><span>Տեքստ</span><textarea id="in-ta" oninput="stInfoSet(\'text\',this.value)">'+esc(e.text)+'</textarea></label>'+num('Չափ','fs',e)+'<label class="in-f"><span>Հաստություն</span><select onchange="stInfoSet(\'fw\',+this.value);stInfoRender2()"><option value="400"'+(e.fw<600?' selected':'')+'>Սովորական</option><option value="700"'+(e.fw>=600&&e.fw<800?' selected':'')+'>Թավ</option><option value="800"'+(e.fw>=800?' selected':'')+'>Շատ թավ</option></select></label><label class="in-f"><span>Հավասարեցում</span><select onchange="stInfoSet(\'al\',this.value)">'+[['left','Ձախ'],['center','Կենտրոն'],['right','Աջ']].map(a=>'<option value="'+a[0]+'"'+(e.al===a[0]?' selected':'')+'>'+a[1]+'</option>').join('')+'</select></label><div class="st-sub">Գույն</div>'+sw('color',e.color);
+  if(e.t==='shape'){h+='<div class="st-sub">Գույն</div>'+sw('fill',e.fill);if(e.shape==='rect')h+=num('Կլորացում','rad',e);if(e.shape==='line')h+=num('Հաստություն','sw',e);}
+  if(e.t==='icon')h+='<label class="in-f"><span>Պատկերակ</span><input value="'+esc(e.emoji)+'" maxlength="4" oninput="stInfoSet(\'emoji\',this.value)"></label>'+num('Չափ','fs',e);
+  if(e.t==='img')h+=num('Կլորացում','rad',e);
+  if(e.t==='stat')h+='<label class="in-f"><span>Թիվ</span><input value="'+esc(e.num)+'" oninput="stInfoSet(\'num\',this.value)"></label><label class="in-f"><span>Ստորագրություն</span><input value="'+esc(e.label)+'" oninput="stInfoSet(\'label\',this.value)"></label><div class="st-sub">Թվի գույն</div>'+sw('color',e.color)+'<div class="st-sub">Ֆոն</div>'+sw('fill',e.fill);
+  if(e.t==='chart')h+='<label class="in-f"><span>Տեսակ</span><select onchange="stInfoSet(\'kind\',this.value);stInfoRender2()">'+[['bar','Սյունակային'],['line','Գծային'],['pie','Շրջանային'],['donut','Օղակաձև']].map(a=>'<option value="'+a[0]+'"'+(e.kind===a[0]?' selected':'')+'>'+a[1]+'</option>').join('')+'</select></label><label class="in-f"><span>Վերնագիր</span><input value="'+esc(e.title||'')+'" oninput="stInfoSet(\'title\',this.value)"></label><label class="in-f col"><span>Տվյալներ (անուն, թիվ՝ տողով)</span><textarea style="min-height:120px" oninput="stInfoData(this.value)">'+(e.data||[]).map(r=>r[0]+', '+r[1]).join('\n')+'</textarea></label><div class="st-sub">Ֆոն</div>'+sw('fill',e.fill);
+  h+='<div class="st-h" style="margin:12px 0 6px">Դիրք և չափ</div><div class="in-g2">'+num('X','x',e)+num('Y','y',e)+num('Լայն.','w',e)+(e.t==='shape'&&e.shape==='line'?'':num('Բարձր.','h',e))+'</div>'+num('Թափանցիկություն','op',e,.1)
+   +'<div class="in-g2" style="margin-top:8px"><button class="sl-btn sm" onclick="stInfoOrder(\'front\')">Առջև</button><button class="sl-btn sm" onclick="stInfoOrder(\'back\')">Ետև</button><button class="sl-btn sm" onclick="stInfoDup()">Կրկնօրինակել</button><button class="sl-btn sm" onclick="stInfoDel()">🗑 Ջնջել</button></div>';
+  const keep=document.activeElement&&r.contains(document.activeElement)&&document.activeElement.tagName==='TEXTAREA'?document.activeElement:null;
+  if(keep&&IE.lastRight===IE.sel)return;IE.lastRight=IE.sel;r.innerHTML=h;
+}
+function infoStatus(t,cls){const s=$('in-st');if(s){s.textContent=t;s.className='mf-save '+(cls||'');}}
+function infoDirty(){if(!IE)return;IE.saved=false;infoStatus('Չպահպանված փոփոխություններ...');clearTimeout(IE.t);IE.t=setTimeout(()=>stInfoSave(false),1500);}
+window.stInfoDirty=infoDirty;
+window.stInfoSave=async function(manual){
+  if(!IE||IE.busy)return;clearTimeout(IE.t);IE.busy=true;infoStatus('Պահպանվում է...');
+  try{const d=IE.d;d.title=(($('in-title')||{}).value||'Անանուն ինֆոգրաֆիկա').trim().slice(0,120)||'Անանուն ինֆոգրաֆիկա';d.ts=Date.now();d.owner=d.owner||me();delete d.isNew;
+    if(JSON.stringify(d).length>950000){infoStatus('Չափազանց մեծ է (նկարները)։ Հեռացրեք նկար։','er');IE.busy=false;return;}
+    await bSet(PK2.info.item+d.id,d);await pMeta('info',metaOf('info',d));IE.saved=true;infoStatus('✓ Պահպանված է '+new Date().toLocaleTimeString('hy-AM',{hour:'2-digit',minute:'2-digit'}),'ok');if(manual)tst('Պահպանվեց։');}
+  catch(e){console.error(e);infoStatus('Չհաջողվեց պահպանել','er');}
+  IE.busy=false;
+};
+window.stInfoClose=async function(){if(IE&&!IE.saved)await stInfoSave(false);window.removeEventListener('resize',infoFit);const o=$('md-info');if(o)o.remove();document.body.style.overflow='';IE=null;if(ST.tab==='info')draw();};
+function stageSvg(scale){
+  const d=IE.d,html=d.els.map(elHtml).join('');
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="'+d.w*scale+'" height="'+d.h*scale+'" viewBox="0 0 '+d.w+' '+d.h+'"><foreignObject width="'+d.w+'" height="'+d.h+'"><div xmlns="http://www.w3.org/1999/xhtml" style="position:relative;width:'+d.w+'px;height:'+d.h+'px;background:'+d.bg+';overflow:hidden">'+html.replace(/&nbsp;/g,'&#160;')+'</div></foreignObject></svg>';
+}
+function xmlSafe(s){const doc=new DOMParser().parseFromString(s,'image/svg+xml');return !doc.querySelector('parsererror');}
+window.stInfoPng=async function(){
+  if(!IE)return;tst('Պատրաստվում է PNG...');
+  try{
+    const tmp=document.createElement('div');tmp.innerHTML=stageSvg(1);
+    let svg=new XMLSerializer().serializeToString(tmp.firstChild);
+    const im=new Image();await new Promise((ok,no)=>{im.onload=ok;im.onerror=no;im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);});
+    const c=document.createElement('canvas');c.width=IE.d.w;c.height=IE.d.h;c.getContext('2d').drawImage(im,0,0);
+    const blob=await new Promise(ok=>c.toBlob(ok,'image/png'));if(!blob)throw 0;
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(($('in-title')||{}).value||'infographic').replace(/[^\wԱ-֏-]+/g,'_')+'.png';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},2000);logAct('export','PNG՝ ինֆոգրաֆիկա','');
+  }catch(e){console.error(e);tst('PNG-ն չհաջողվեց։ Օգտագործեք PDF։');}
+};
+window.stInfoPdf=function(){
+  if(!IE)return;const d=IE.d;
+  printHtml(($('in-title')||{}).value||'Ինֆոգրաֆիկա','<div style="position:relative;width:'+d.w+'px;height:'+d.h+'px;background:'+d.bg+';overflow:hidden">'+d.els.map(elHtml).join('')+'</div>','@page{size:'+d.w+'px '+d.h+'px;margin:0}html,body{margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}');
+};
+
 /* ================= deep links (#studio=kind:id) ================= */
 let hoDone='';
 function hashOpen(){
@@ -12156,6 +12493,251 @@ window.mdJcCfg=async function(){
 window.mdJcColor=async function(k,c){try{await txDoc(JCT,d=>{d.j=d.j||{};const x=d.j[k]=d.j[k]||{};if(c)x.color=c;else delete x.color;});await drawJc();}catch(e){console.error(e);}};
 window.mdJcDl=async function(k,v){try{await txDoc(JCT,d=>{d.j=d.j||{};const x=d.j[k]=d.j[k]||{};if(v)x.deadline=v;else delete x.deadline;});await drawJc();}catch(e){console.error(e);}};
 window.mdCtl={gate,adminScan,selfScan};
+})();
+</script>
+
+<style id="md-ds">
+/* ===== MyDigitalSchool design system v2: Apple-style, minimal SaaS ===== */
+:root:root{
+ --bg:#F7F8FA;--surf:#FFFFFF;--surf2:#F3F5F9;--surf3:#ECEFF5;--bdr:#E8EAF0;--bdr2:#D8DCE6;
+ --acc:#4778F5;--acc2:#3A66DB;--acc3:#6F95F8;--acc-lt:rgba(71,120,245,.12);--acc-lt2:rgba(71,120,245,.06);--acc-p:#8874EA;
+ --txt:#17191F;--txt2:#5F6676;--txt3:#858B98;
+ --sh:0 1px 2px rgba(23,25,31,.04),0 1px 3px rgba(23,25,31,.05);--sh2:0 8px 24px rgba(23,25,31,.08);--sh3:0 24px 60px rgba(23,25,31,.16);
+ --r:10px;--r2:14px;--r3:18px;--r4:24px;--ease:cubic-bezier(.2,.8,.2,1);--ease-out:cubic-bezier(.2,.8,.2,1);--dur:.18s;
+}
+html[data-theme=dark]:root,html[data-theme=dark]{
+ --bg:#0F1115;--surf:#171A21;--surf2:#1D212A;--surf3:#252A36;--bdr:#272C38;--bdr2:#343A49;
+ --acc:#6A92FF;--acc2:#8AA9FF;--acc3:#4778F5;--acc-lt:rgba(106,146,255,.16);--acc-lt2:rgba(106,146,255,.08);--acc-p:#9B89F0;
+ --txt:#F2F4F8;--txt2:#AAB1C0;--txt3:#7C8497;
+ --sh:0 1px 2px rgba(0,0,0,.3);--sh2:0 8px 24px rgba(0,0,0,.35);--sh3:0 24px 60px rgba(0,0,0,.5);
+}
+html body{background:var(--bg);color:var(--txt);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body::before{background:var(--bg)!important}
+/* motion: short and quiet */
+html body *{scroll-behavior:smooth}
+html body button,html body a,html body .ni,html body .cd,html body .st-card,html body .mp-card,html body .home-card,html body input,html body select,html body textarea{transition:background-color var(--dur) var(--ease),border-color var(--dur) var(--ease),color var(--dur) var(--ease),box-shadow var(--dur) var(--ease),transform var(--dur) var(--ease),opacity var(--dur) var(--ease)}
+html body .pg.on{animation:dsPage .22s var(--ease) both}
+@keyframes dsPage{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+html body button:active:not(:disabled){transform:scale(.97)}
+html body :focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:8px}
+/* sidebar */
+html body .sb{background:var(--surf)!important;border-right:1px solid var(--bdr);box-shadow:none;width:260px;transition:width .22s var(--ease)}
+html body .sbh{border-bottom:1px solid var(--bdr);position:relative}
+html body .sbh .brand{color:var(--txt)}html body .sbh .un{color:var(--txt3)}
+html body .sbh .ur{background:var(--acc-lt);color:var(--acc);border:0}
+html body .sbs{color:var(--txt3);letter-spacing:.08em}
+html body .ni{color:var(--txt2);border-radius:12px;font-weight:500}
+html body .ni:hover{background:var(--surf3);color:var(--txt);transform:none}
+html body .ni.on{background:var(--acc-lt);color:var(--acc);font-weight:650;box-shadow:none}
+html body .ni.on::before{background:var(--acc);box-shadow:none}
+html body .sbf{border-top:1px solid var(--bdr)}
+html body .bout{background:var(--surf2);border:1px solid var(--bdr);color:var(--txt2);border-radius:12px}
+html body .bout:hover{background:var(--red-lt);border-color:transparent;color:var(--red)}
+#sb-tg{position:absolute;right:56px;top:20px;background:var(--surf2);border:1px solid var(--bdr);width:30px;height:30px;border-radius:9px;cursor:pointer;color:var(--txt2);font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;flex:none}
+#sb-tg:hover{background:var(--surf3);color:var(--txt)}
+@media(min-width:721px){
+ body.sb-min .sb{width:76px}
+ body.sb-min .sbh .un,body.sb-min .sbh .ur,body.sb-min .sbs,body.sb-min .sbh .brand span:not(#sb-tg),body.sb-min .sbh .brand img+*{display:none}
+ body.sb-min .sbh{padding:16px 10px;text-align:center}
+ body.sb-min .sbh .brand{justify-content:center;gap:8px;flex-direction:column}
+ body.sb-min #sb-tg{position:static;margin:6px auto 0}
+ body.sb-min .ni{font-size:0!important;justify-content:center;padding:10px 0;margin:2px 10px}
+ body.sb-min .ni .ico{font-size:15px!important;margin:0}
+ body.sb-min .bout{font-size:0;padding:9px 0}body.sb-min .bout::before{content:'⎋';font-size:15px}
+}
+html body .mh{background:var(--surf)!important;border-bottom:1px solid var(--bdr);color:var(--txt)}
+html body .mh span,html body .mh button{color:var(--txt)!important}
+/* page titles, cards, forms, buttons */
+html body .pt{font-size:28px;font-weight:700;color:var(--txt);letter-spacing:-.02em;border:0;padding:0;margin-bottom:6px}
+html body .pt::after{display:none}
+html body .ps{color:var(--txt3);font-size:14px;margin-bottom:22px}
+html body .cd,html body .st-box,html body .st-card,html body .mp-card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r3);box-shadow:var(--sh)}
+html body .st-card:hover,html body .mp-card:hover{box-shadow:var(--sh2);transform:translateY(-2px);border-color:var(--bdr2)}
+html body .fg input,html body .fg select,html body .fg textarea,html body .st-in,html body select,html body textarea,html body input[type=text],html body input[type=search],html body input[type=email],html body input[type=password],html body input[type=number],html body input[type=date]{border-radius:12px;border:1px solid var(--bdr);background:var(--surf);color:var(--txt)}
+html body input:focus,html body select:focus,html body textarea:focus{border-color:var(--acc);box-shadow:0 0 0 4px var(--acc-lt);outline:none}
+html body .btn,html body .sl-btn,html body .mp-btn{border-radius:11px;font-weight:600;border:1px solid var(--bdr);background:var(--surf);color:var(--txt);box-shadow:none}
+html body .btn:hover,html body .sl-btn:hover,html body .mp-btn:hover{background:var(--surf2);border-color:var(--bdr2)}
+html body .sl-btn.pri,html body .btn.bp2,html body .lk-big,html body .ac-btn.g,html body .st-chip.on,html body .mp-btn.pri{background:var(--acc);border-color:var(--acc);color:#fff;box-shadow:0 1px 2px rgba(71,120,245,.3)}
+html body .sl-btn.pri:hover,html body .btn.bp2:hover,html body .lk-big:hover{background:var(--acc2);border-color:var(--acc2)}
+html body .lk-big{animation:none!important;border-radius:12px}
+html body .st-chip{border-radius:999px;border:1px solid var(--bdr);background:var(--surf);color:var(--txt2);font-weight:600}
+html body .st-chip:hover{background:var(--surf2)}
+html body table{border-collapse:separate;border-spacing:0}
+html body th{color:var(--txt3);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+html body .st-welcome,html body #studio .st-wel{background:linear-gradient(135deg,var(--acc),var(--acc-p));box-shadow:none}
+/* auth + portal calmer */
+html body .aw{background:var(--bg)}
+html body .ab{background:var(--surf);border:1px solid var(--bdr);box-shadow:var(--sh3)}
+html body .mp-top{background:var(--surf);border-bottom:1px solid var(--bdr)}
+/* modals */
+html body .st-modal,html body #md-bm,html body .ac-box+*{backdrop-filter:blur(6px)}
+html body .st-modal>*,html body #md-bm .bx,html body .ac-box,html body .mr-box{animation:dsPop .2s var(--ease) both;border-radius:var(--r4);box-shadow:var(--sh3)}
+@keyframes dsPop{from{opacity:0;transform:scale(.97) translateY(6px)}to{opacity:1;transform:none}}
+/* top loader */
+#ds-bar{position:fixed;left:0;top:0;height:2px;width:0;background:linear-gradient(90deg,var(--acc),var(--acc-p));z-index:2147482500;opacity:0;pointer-events:none}
+#ds-bar.on{opacity:1;width:80%;transition:width .5s var(--ease)}
+#ds-bar.done{width:100%;opacity:0;transition:width .15s,opacity .25s .1s}
+/* skeleton / empty */
+.ds-skel{background:linear-gradient(90deg,var(--surf2),var(--surf3),var(--surf2));background-size:200% 100%;animation:dsSk 1.1s linear infinite;border-radius:12px}
+@keyframes dsSk{to{background-position:-200% 0}}
+/* command palette */
+#md-cmd{position:fixed;inset:0;z-index:2147482600;background:rgba(15,17,21,.45);backdrop-filter:blur(6px);display:none;align-items:flex-start;justify-content:center;padding:12vh 14px 14px}
+#md-cmd.on{display:flex}
+#md-cmd .cm{width:100%;max-width:640px;background:var(--surf);border:1px solid var(--bdr);border-radius:20px;box-shadow:var(--sh3);overflow:hidden;animation:dsPop .18s var(--ease) both}
+#md-cmd input{width:100%;box-sizing:border-box;border:0;border-bottom:1px solid var(--bdr);padding:18px 20px;font-size:17px;background:transparent;color:var(--txt);border-radius:0;box-shadow:none!important}
+#md-cmd .cl{max-height:50vh;overflow:auto;padding:8px}
+#md-cmd .cg{font-size:11px;color:var(--txt3);padding:10px 12px 4px;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+#md-cmd .ci{display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:12px;cursor:pointer;color:var(--txt);font-size:14px}
+#md-cmd .ci .ic{width:28px;text-align:center;font-size:17px}
+#md-cmd .ci small{margin-left:auto;color:var(--txt3);font-size:12px}
+#md-cmd .ci.on{background:var(--acc-lt);color:var(--acc)}
+#md-cmd .cf{display:flex;gap:14px;padding:10px 16px;border-top:1px solid var(--bdr);font-size:11px;color:var(--txt3)}
+kbd{font:600 11px/1 inherit;background:var(--surf2);border:1px solid var(--bdr);border-bottom-width:2px;border-radius:6px;padding:3px 6px;color:var(--txt2)}
+[data-tip]{position:relative}
+/* full-screen editors (documents / infographics) */
+.md-full{position:fixed;inset:0;z-index:5300;background:var(--bg);display:flex;flex-direction:column;color:var(--txt)}
+.md-full .mf-top{display:flex;gap:8px;align-items:center;padding:10px 14px;background:var(--surf);border-bottom:1px solid var(--bdr);flex-wrap:wrap}
+.md-full .mf-title{border:1px solid transparent;background:transparent;font-size:16px;font-weight:650;padding:7px 10px;border-radius:10px;min-width:160px;max-width:340px;color:var(--txt)}
+.md-full .mf-title:hover{background:var(--surf2)}
+.md-full .mf-save{font-size:12px;color:var(--txt3)}.md-full .mf-save.ok{color:#22a06b}.md-full .mf-save.er{color:var(--red)}
+.md-full .mf-bar{display:flex;gap:4px;align-items:center;padding:8px 14px;background:var(--surf);border-bottom:1px solid var(--bdr);flex-wrap:wrap}
+.md-full .mf-bar button,.md-full .mf-c{min-width:34px;height:34px;border:1px solid transparent;background:transparent;border-radius:9px;cursor:pointer;color:var(--txt);font-size:14px;display:inline-flex;align-items:center;justify-content:center;position:relative;font-weight:700}
+.md-full .mf-bar button:hover,.md-full .mf-c:hover{background:var(--surf3)}
+.md-full .mf-c input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.md-full .mf-sep{width:1px;height:22px;background:var(--bdr);margin:0 4px}
+.md-full select{height:34px;padding:0 8px;font-size:13px}
+.md-full .mf-body{flex:1;display:flex;min-height:0}
+.md-full .mf-side{width:210px;flex:none;background:var(--surf);border-right:1px solid var(--bdr);padding:12px;overflow:auto}
+.md-full .mf-side.in-right{border-right:0;border-left:1px solid var(--bdr);width:260px}
+.md-full .mf-main{flex:1;overflow:auto;padding:24px 16px;background:var(--surf3)}
+.md-full .mf-pg{display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:10px;cursor:pointer;font-size:13px;color:var(--txt2)}
+.md-full .mf-pg b{width:22px;height:22px;border-radius:7px;background:var(--surf3);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--txt2);flex:none}
+.md-full .mf-pg.on{background:var(--acc-lt);color:var(--acc)}.md-full .mf-pg.on b{background:var(--acc);color:#fff}
+.md-full .mf-pg span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.md-full .in-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.md-full .in-grid button{padding:9px 6px;border:1px solid var(--bdr);background:var(--surf);border-radius:10px;cursor:pointer;font-size:12px;color:var(--txt);font-weight:600}
+.md-full .in-grid button:hover{background:var(--surf2);border-color:var(--acc)}.md-full .in-grid.e{grid-template-columns:repeat(4,1fr)}.md-full .in-em{font-size:18px!important}
+.md-full .in-sws{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.md-full .in-sw{width:24px;height:24px;border-radius:50%;border:2px solid var(--bdr2);cursor:pointer;padding:0}.md-full .in-sw.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc-lt)}
+.md-full .in-sws input[type=color]{width:28px;height:28px;border:0;padding:0;background:none;cursor:pointer}
+.md-full .in-main{display:block;padding:20px;text-align:left}
+#in-wrap{margin:0 auto;position:relative}
+#in-stage .in-el{cursor:move;user-select:none}
+#in-stage .in-sel{position:absolute;outline:solid var(--acc);pointer-events:none;box-sizing:border-box}
+#in-stage .in-h{position:absolute;background:#fff;border:solid var(--acc);border-radius:50%;pointer-events:auto;box-sizing:border-box}
+#in-stage .in-h[data-h=nw],#in-stage .in-h[data-h=se]{cursor:nwse-resize}#in-stage .in-h[data-h=ne],#in-stage .in-h[data-h=sw]{cursor:nesw-resize}#in-stage .in-h[data-h=n],#in-stage .in-h[data-h=s]{cursor:ns-resize}#in-stage .in-h[data-h=w],#in-stage .in-h[data-h=e]{cursor:ew-resize}
+.md-full .in-f{display:flex;flex-direction:column;gap:3px;margin-bottom:8px;font-size:12px;color:var(--txt3)}.md-full .in-f input,.md-full .in-f select,.md-full .in-f textarea{padding:7px 9px;font-size:13px;width:100%;box-sizing:border-box}.md-full .in-f textarea{min-height:70px;resize:vertical}
+.md-full .in-g2{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px}
+@media(max-width:820px){.md-full .mf-body{flex-direction:column}.md-full .mf-side{width:auto;max-height:26vh;border-right:0;border-bottom:1px solid var(--bdr)}.md-full .mf-side.in-right{width:auto;border-left:0;border-top:1px solid var(--bdr);border-bottom:0;max-height:32vh}.md-full .mf-main{padding:12px 6px}.md-full .dc-page{transform-origin:0 0}}
+@media(max-width:820px){.md-full .mf-top,.md-full .mf-bar{flex-wrap:nowrap;overflow-x:auto;padding:8px}.md-full .mf-top>*,.md-full .mf-bar>*{flex:none}.md-full .mf-title{min-width:110px;max-width:150px}.md-full .mf-side{max-height:18vh}.md-full .mf-side.in-right{max-height:30vh}.md-full .mf-main{min-height:34vh}.md-full .in-grid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:820px){.md-full .dc-page{zoom:.8}}@media(max-width:600px){.md-full .dc-page{zoom:.46}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+<script id="md-ds-js">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const LSg=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:v;}catch(e){return d;}};
+const LSs=(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}};
+const E=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+/* collapsible sidebar (desktop) */
+function sbToggleBtn(){
+  const br=document.querySelector('.sbh .brand');if(!br||$('sb-tg'))return;
+  const b=document.createElement('button');b.id='sb-tg';b.type='button';b.title='Ծալել / բացել մենյուն (Ctrl+B)';b.setAttribute('aria-label','Ծալել մենյուն');b.textContent='⟨⟩'.charAt(0);b.onclick=()=>sbMin();br.appendChild(b);
+}
+function sbMin(v){const on=v==null?!document.body.classList.contains('sb-min'):!!v;document.body.classList.toggle('sb-min',on);LSs('md_sb_min',on?'1':'0');const b=$('sb-tg');if(b)b.textContent=on?'›':'‹';setTips();}
+function setTips(){document.querySelectorAll('#nav .ni').forEach(n=>{if(!n.title)n.title=n.textContent.trim();});}
+if(LSg('md_sb_min','0')==='1')document.body.classList.add('sb-min');
+/* creative group in the sidebar */
+const GROUP=[['doc','📄','Փաստաթղթեր'],['info','📊','Ինֆոգրաֆիկաներ'],['quiz','📝','Թեստեր'],['ai','✨','ԱԲ գործիքներ'],['proj','📁','Իմ նախագծերը'],['tpl','🧩','Ձևանմուշների գրադարան']];
+function ensureGroup(){
+  const nav=$('nav');if(!nav||typeof CU==='undefined'||!CU)return;
+  if(!nav.querySelector('[data-p="studio"]')||nav.querySelector('[data-g="1"]'))return;
+  const st=nav.querySelector('[data-p="studio"]');if(CU.role==='parent')return;
+  let after=st;
+  GROUP.forEach(g=>{const it=document.createElement('div');it.className='ni';it.dataset.g='1';it.dataset.t=g[0];it.setAttribute('onclick',"mdGoSt('"+g[0]+"')");it.textContent=g[1]+' '+g[2];after.insertAdjacentElement('afterend',it);after=it;try{if(window._mdEmojiNav)window._mdEmojiNav(it);}catch(e){}});
+  const pf=nav.querySelector('[data-p="prof"]');
+  if(pf&&!pf.dataset.s){pf.dataset.s='1';const l=pf.lastChild;}
+  setTips();markGroup();
+}
+window.mdGoSt=function(t){showPg('studio');setTimeout(()=>{try{stGo(t);}catch(e){}markGroup();},40);try{const s=document.querySelector('.sb');if(s&&innerWidth<=720)s.classList.remove('open');}catch(e){}};
+function markGroup(){
+  const on=document.querySelector('#studio.on')&&window.stTab?stTab():'';
+  document.querySelectorAll('#nav [data-g="1"]').forEach(n=>n.classList.toggle('on',n.dataset.t===on));
+  const st=document.querySelector('#nav [data-p="studio"]');if(st&&on&&document.querySelector('#nav [data-t="'+on+'"]'))st.classList.remove('on');
+}
+['nav','mn'].forEach(id=>{const e=$(id);if(e)new MutationObserver(()=>{clearTimeout(ensureGroup.t);ensureGroup.t=setTimeout(()=>{try{sbToggleBtn();ensureGroup();markGroup();}catch(x){console.error(x);}},30);}).observe(e,{childList:true,subtree:id==='mn'?true:false,attributes:id==='mn',attributeFilter:id==='mn'?['class']:undefined});});
+/* top progress bar on page change */
+const bar=document.createElement('div');bar.id='ds-bar';document.body.appendChild(bar);
+const _sp=window.showPg;
+window.showPg=function(){
+  bar.className='';void bar.offsetWidth;bar.className='on';setTimeout(()=>{bar.className='done';},260);
+  const r=_sp.apply(this,arguments);setTimeout(markGroup,60);return r;
+};
+/* command palette (Ctrl+K) + global search */
+let cm=null,sel=0,items=[],qtimer=null,seq=0;
+function acts(){
+  const a=[];
+  document.querySelectorAll('#nav .ni').forEach(n=>{const tx=n.textContent.trim();if(!tx)return;a.push({g:'Անցում',ic:'→',t:tx,run:()=>n.click()});});
+  const add=(g,ic,t,run,k)=>a.push({g:g,ic:ic,t:t,run:run,k:k});
+  if(typeof CU!=='undefined'&&CU&&CU.role!=='parent'){
+    add('Ստեղծել','＋','Նոր սահիկաշար',()=>{showPg('slides');setTimeout(()=>window.slNew&&slNew(),150);});
+    add('Ստեղծել','＋','Նոր փաստաթուղթ',()=>{mdGoSt('doc');setTimeout(()=>window.stPNew&&stPNew('doc'),200);});
+    add('Ստեղծել','＋','Նոր ինֆոգրաֆիկա',()=>{mdGoSt('info');setTimeout(()=>window.stPNew&&stPNew('info'),200);});
+    add('Ստեղծել','＋','Նոր թեստ',()=>{mdGoSt('quiz');setTimeout(()=>window.stQuizNew&&stQuizNew(),200);});
+  }
+  add('Գործողություն','◐','Փոխել թեման (մուգ / լուսավոր)',()=>{try{tgTheme();}catch(e){}},'Ctrl+Shift+L');
+  add('Գործողություն','⟨⟩'.charAt(0),'Ծալել / բացել կողային մենյուն',()=>sbMin(),'Ctrl+B');
+  add('Գործողություն','⌨','Ստեղնաշարի դյուրանցումներ',()=>help(),'Ctrl+/');
+  add('Գործողություն','⎋','Դուրս գալ',()=>{try{logout();}catch(e){}});
+  return a;
+}
+function open(){
+  if(typeof CU==='undefined'||!CU||!$('app')){return;}
+  if(!cm){cm=document.createElement('div');cm.id='md-cmd';cm.innerHTML='<div class="cm" role="dialog" aria-label="Արագ հրամաններ"><input id="cm-q" placeholder="Որոնել էջ, նախագիծ, թեստ կամ գործողություն..." autocomplete="off"><div class="cl" id="cm-l"></div><div class="cf"><span><kbd>↑</kbd> <kbd>↓</kbd> ընտրել</span><span><kbd>Enter</kbd> բացել</span><span><kbd>Esc</kbd> փակել</span></div></div>';document.body.appendChild(cm);
+    cm.addEventListener('mousedown',e=>{if(e.target===cm)close();});
+    $('cm-q').addEventListener('input',()=>{sel=0;render();clearTimeout(qtimer);qtimer=setTimeout(dataSearch,220);});
+    $('cm-q').addEventListener('keydown',e=>{if(e.key==='ArrowDown'){e.preventDefault();sel=Math.min(items.length-1,sel+1);paintSel();}else if(e.key==='ArrowUp'){e.preventDefault();sel=Math.max(0,sel-1);paintSel();}else if(e.key==='Enter'){e.preventDefault();pick(sel);}else if(e.key==='Escape'){close();}});}
+  cm.classList.add('on');$('cm-q').value='';sel=0;render();setTimeout(()=>$('cm-q').focus(),20);
+}
+function close(){if(cm)cm.classList.remove('on');}
+let remote=[];
+function render(){
+  const q=($('cm-q').value||'').trim().toLowerCase();
+  let list=acts().filter(a=>!q||a.t.toLowerCase().includes(q));
+  if(q.length>=2)list=list.concat(remote.filter(r=>r.t.toLowerCase().includes(q)||(r.s||'').toLowerCase().includes(q)));
+  items=list.slice(0,40);
+  let h='',g='';items.forEach((a,i)=>{if(a.g!==g){g=a.g;h+='<div class="cg">'+E(g)+'</div>';}h+='<div class="ci'+(i===sel?' on':'')+'" data-i="'+i+'"><span class="ic">'+E(a.ic)+'</span><span>'+E(a.t)+'</span>'+(a.k?'<small>'+E(a.k)+'</small>':a.s?'<small>'+E(a.s)+'</small>':'')+'</div>';});
+  $('cm-l').innerHTML=h||'<div class="cg" style="padding:24px 12px;text-align:center;text-transform:none;font-size:13px">Ոչինչ չի գտնվել</div>';
+  $('cm-l').querySelectorAll('.ci').forEach(el=>{el.onclick=()=>pick(+el.dataset.i);el.onmousemove=()=>{if(sel!==+el.dataset.i){sel=+el.dataset.i;paintSel();}};});
+}
+function paintSel(){document.querySelectorAll('#cm-l .ci').forEach((el,i)=>{el.classList.toggle('on',i===sel);if(i===sel)el.scrollIntoView({block:'nearest'});});}
+function pick(i){const a=items[i];if(!a)return;close();setTimeout(()=>{try{a.run();}catch(e){console.error(e);}},30);}
+async function dataSearch(){
+  const q=($('cm-q').value||'').trim().toLowerCase();if(q.length<2){remote=[];return;}
+  const my=++seq,out=[];
+  try{
+    if(window.MD_SL){await MD_SL.loadIdx();Object.values(MD_SL.idx()).forEach(d=>{if(d&&MD_SL.canSee(d)&&String(d.title).toLowerCase().includes(q))out.push({g:'Սահիկաշարեր',ic:'🎞',t:d.title,s:d.ownerName||'',run:()=>window.slEdit&&slEdit(d.id)});});}
+  }catch(e){}
+  try{const qi=await bGet('quiz_index');Object.values((qi&&qi.quizzes)||{}).forEach(x=>{if(x&&String(x.title).toLowerCase().includes(q))out.push({g:'Թեստեր',ic:'📝',t:x.title,s:x.ownerName||'',run:()=>{mdGoSt('quiz');}});});}catch(e){}
+  try{for(const k of ['doc','info']){const d=await bGet((k==='doc'?'mdocs_':'minfos_')+CU.username);Object.values((d&&d.items)||{}).forEach(x=>{if(x&&String(x.title).toLowerCase().includes(q))out.push({g:k==='doc'?'Փաստաթղթեր':'Ինֆոգրաֆիկաներ',ic:k==='doc'?'📄':'📊',t:x.title,run:()=>{mdGoSt(k);setTimeout(()=>window.stPOpen&&stPOpen(k,x.id),250);}});});}}catch(e){}
+  try{const ci=await bGet('comm_index');Object.values((ci&&ci.posts)||{}).forEach(p=>{if(p&&(String(p.title).toLowerCase().includes(q)||String(p.authorName||'').toLowerCase().includes(q)))out.push({g:'Համայնք',ic:'🌐',t:p.title,s:p.authorName||'',run:()=>{mdGoSt('comm');setTimeout(()=>window.stCommView&&stCommView(p.id),250);}});});}catch(e){}
+  if(my!==seq)return;remote=out.slice(0,20);render();
+}
+/* shortcuts help */
+function help(){
+  let o=$('md-help');if(!o){o=document.createElement('div');o.id='md-help';o.style.cssText='position:fixed;inset:0;z-index:2147482700;background:rgba(15,17,21,.45);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:14px';o.addEventListener('mousedown',e=>{if(e.target===o)o.remove();});
+  const rows=[['Ctrl + K','Արագ հրամաններ և որոնում'],['Ctrl + /','Ստեղնաշարի դյուրանցումներ'],['Ctrl + B','Ծալել / բացել կողային մենյուն'],['Ctrl + Shift + L','Մուգ / լուսավոր թեմա'],['Ctrl + S','Պահպանել (խմբագրիչներում)'],['Ctrl + Z / Ctrl + Y','Հետարկել / կրկնել'],['Ctrl + D','Կրկնօրինակել տարրը (ինֆոգրաֆիկա)'],['Delete','Ջնջել ընտրված տարրը'],['Esc','Փակել պատուհանը']];
+  o.innerHTML='<div style="background:var(--surf);border:1px solid var(--bdr);border-radius:20px;box-shadow:var(--sh3);padding:22px;max-width:460px;width:100%"><h3 style="margin:0 0 12px">Ստեղնաշարի դյուրանցումներ</h3>'+rows.map(r=>'<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--bdr);font-size:14px"><span>'+r[1]+'</span><span>'+r[0].split(' ').map(k=>k==='+'||k==='/'&&0?k:'<kbd>'+k+'</kbd>').join(' ')+'</span></div>').join('')+'<div style="margin-top:14px;text-align:right"><button class="sl-btn" onclick="document.getElementById(\'md-help\').remove()">Փակել</button></div></div>';document.body.appendChild(o);}
+}
+document.addEventListener('keydown',e=>{
+  const c=e.ctrlKey||e.metaKey,k=e.key.toLowerCase();
+  if(c&&k==='k'){e.preventDefault();cm&&cm.classList.contains('on')?close():open();}
+  else if(c&&(e.key==='/'||e.code==='Slash')){e.preventDefault();help();}
+  else if(c&&e.shiftKey&&k==='l'){e.preventDefault();try{tgTheme();}catch(x){}}
+  else if(c&&!e.shiftKey&&k==='b'&&!document.querySelector('.md-full')&&!(e.target.isContentEditable)){e.preventDefault();sbMin();}
+  else if(e.key==='Escape'){if(cm&&cm.classList.contains('on'))close();const h=$('md-help');if(h)h.remove();}
+},true);
+window.mdCmd={open:open,help:help};
+setTimeout(()=>{try{sbToggleBtn();ensureGroup();const b=$('sb-tg');if(b)b.textContent=document.body.classList.contains('sb-min')?'›':'‹';}catch(e){}},500);
 })();
 </script>
 
