@@ -12750,6 +12750,8 @@ setTimeout(()=>{try{sbToggleBtn();ensureGroup();const b=$('sb-tg');if(b)b.textCo
 
 
 
+
+
 <style id="md-ui2">
 /* ===== MyDigitalSchool UI v2 — new shell ===== */
 html body.u2{--u2-rail:68px;--u2-pan:256px;--u2-gap:14px;--u2-ml:calc(var(--u2-gap)*3 + var(--u2-rail) + var(--u2-pan));--u2-top:58px;
@@ -12883,6 +12885,14 @@ body.u2 .ub-it.out{color:#e5484d}
 }
 @media(prefers-reduced-motion:reduce){body.u2 *{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
+#u2-sheet .u2me{display:flex;align-items:center;gap:14px;padding:8px 6px 14px}
+#u2-sheet .u2me .av{width:52px;height:52px;border-radius:17px;background:var(--u2-g1);color:#fff;display:grid;place-items:center;font:700 22px inherit;font-family:inherit}
+#u2-sheet .u2me b{display:block;font-size:17px}#u2-sheet .u2me small{color:var(--txt3);font-size:13px}
+#u2-sheet .u2row{display:flex;align-items:center;gap:14px;border:0;background:var(--surf2);border-radius:16px;padding:12px 14px;font:650 15px inherit;font-family:inherit;color:var(--txt);cursor:pointer;text-align:left;transition:transform .15s var(--u2-ease)}
+#u2-sheet .u2row:active{transform:scale(.97)}
+#u2-sheet .u2row i{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--u2-g1);color:#fff}#u2-sheet .u2row i svg{width:19px;height:19px}
+#u2-sheet .u2row.out{color:#e5484d}#u2-sheet .u2row.out i{background:linear-gradient(135deg,#f87171,#e5484d)}
+
 /* ===== UI v2 — unified component system (all sections) ===== */
 html body.u2 .pt{font-size:30px;font-weight:750;letter-spacing:-.03em;color:var(--txt);border:0!important;padding:0!important;margin:6px 0 4px!important;display:block;background:none;-webkit-text-fill-color:initial}
 html body.u2 .pt::after{display:none!important}
@@ -12957,6 +12967,8 @@ body.u2 ::-webkit-scrollbar{width:10px;height:10px}body.u2 ::-webkit-scrollbar-t
   html body.u2 table{font-size:13px}
 }
 @media(min-width:861px) and (max-width:1100px){html body.u2 .srow{grid-template-columns:repeat(2,1fr)!important}}
+
+@media(max-width:860px){html body.u2 .mn,html body.u2 .pg{overflow-x:hidden;max-width:100vw}html body.u2 .cd{overflow-x:auto}}
 
 /* ===== UI v2 — Home ===== */
 #md-portal{background:radial-gradient(1100px 520px at 90% -120px,rgba(136,116,234,.16),transparent 65%),radial-gradient(900px 480px at -5% 0,rgba(71,120,245,.12),transparent 65%),var(--bg)!important}
@@ -13052,6 +13064,22 @@ body.u2 ::-webkit-scrollbar{width:10px;height:10px}body.u2 ::-webkit-scrollbar-t
 }
 @media(max-width:380px){.hm-stats{grid-template-columns:1fr 1fr}.hm-st small{font-size:11.5px}}
 .hm-cols{margin-top:34px}.hm-cols .hm-sec{margin-top:0}
+
+/* phone overflow fixes */
+#md-portal{overflow-x:hidden}
+.hm-hero,.hm-cols,.hm-main,.hm-sec,.hm-tile,.hm-link,.hm-q,.hm-card,.hm-lt,.hm-tt{min-width:0}
+.hm-tile,.hm-link,.hm-q{width:100%;box-sizing:border-box}
+.hm-tt b,.hm-lt b{overflow-wrap:anywhere}
+.hm-td,.hm-lt small{overflow-wrap:anywhere}
+.hm-lt small{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+@media(max-width:860px){
+  .hm-sys,.hm-links,.hm-cols{grid-template-columns:minmax(0,1fr)!important}
+  .hm-qc{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #md-portal .hm-top{background:var(--surf);backdrop-filter:none}
+  .hm-hero{padding:22px 18px}.hm-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .hm-pri,.hm-gh{width:100%;justify-content:center}
+}
+@media(max-width:860px){#md-portal .hm-top{top:0!important;margin:0!important;border-radius:0 0 22px 22px;border-top:0;box-shadow:0 6px 20px rgba(0,0,0,.12)}}
 
 /* ===== UI v2 — editors (slides / documents / infographics / quiz) ===== */
 html body.u2 #sl-ed,html body.u2 .md-full{background:radial-gradient(circle at 1px 1px,var(--u2-line) 1.2px,transparent 0) 0 0/22px 22px,var(--bg)}
@@ -13220,7 +13248,7 @@ function paint(){
   $('u2-tab').innerHTML='<button data-t="home">'+ic('home')+'<span>Գլխավոր</span></button><button data-t="menu" class="'+(act?'on':'')+'">'+ic('grid')+'<span>Բաժիններ</span></button>'
    +(canCreate()?'<button data-t="new" class="fab" aria-label="Ստեղծել">'+ic('plus')+'<span>Ստեղծել</span></button>':'')
    +'<button data-t="find">'+ic('search')+'<span>Որոնել</span></button><button data-t="me">'+ic('user')+'<span>Հաշիվ</span></button>';
-  $('u2-tab').querySelectorAll('button').forEach(b=>b.onclick=e=>{const k=b.dataset.t;if(k==='home')u2Home();else if(k==='menu')sheet('nav');else if(k==='new')sheet('new');else if(k==='find')u2Search();else if(k==='me'){const c=$('ub-chip');if(c)c.click();}});
+  $('u2-tab').querySelectorAll('button').forEach(b=>b.onclick=e=>{const k=b.dataset.t;if(k==='home')u2Home();else if(k==='menu')sheet('nav');else if(k==='new')sheet('new');else if(k==='find')u2Search();else if(k==='me')sheet('me');});
   // sheet
   $('u2-sheet').dataset.k=$('u2-sheet').dataset.k||'';
   crumb(act,gs);
@@ -13234,6 +13262,11 @@ function sheet(k){
   if(k==='nav'){
     s.innerHTML='<div class="gr"></div><div class="u2sc">'+groups(its).map(g=>'<h4>'+E(g.t)+'</h4><div class="u2sg">'+g.its.map(x=>'<button class="u2sgi'+(x.on?' on':'')+'" data-i="'+its.indexOf(x)+'"><i>'+ic(x.i)+'</i>'+E(x.t)+'</button>').join('')+'</div>').join('')+'</div>';
     s.querySelectorAll('.u2sgi').forEach(b=>b.onclick=()=>{sheet(false);its[+b.dataset.i].n.click();setTimeout(paint,60);});
+  }else if(k==='me'){
+    const dark=document.documentElement.getAttribute('data-theme')==='dark';
+    const L=[['user','Իմ հաշիվը',()=>mdOpenAccount()],['fileText','Անձնական տվյալներ',()=>mdOpenPersonal()],[dark?'sun':'moon',dark?'Լուսավոր թեմա':'Մուգ թեմա',()=>{tgTheme();setTimeout(paint,60);}],['home','Գլխավոր էջ',()=>u2Home()],['power','Ելք',()=>out()]];
+    s.innerHTML='<div class="gr"></div><div class="u2sc"><div class="u2me"><span class="av">'+E((nm()||'?').trim().charAt(0).toUpperCase())+'</span><div><b>'+E(nm())+'</b><small>'+E(ROLE[CU.role]||'')+'</small></div></div>'+L.map((x,i)=>'<button class="u2row'+(x[0]==='power'?' out':'')+'" data-i="'+i+'"><i>'+ic(x[0])+'</i>'+E(x[1])+'</button>').join('')+'</div>';
+    s.querySelectorAll('.u2row').forEach(b=>b.onclick=()=>{sheet(false);setTimeout(L[+b.dataset.i][2],120);});
   }else{
     s.innerHTML='<div class="gr"></div><div class="u2sc"><h4>Ստեղծել</h4><div class="u2sg">'+createList().map((c,i)=>'<button class="u2sgi" data-i="'+i+'"><i style="background:'+c.g+'">'+ic(c.i)+'</i>'+E(c.t)+'</button>').join('')+'</div></div>';
     s.querySelectorAll('.u2sgi').forEach(b=>b.onclick=()=>{sheet(false);createList()[+b.dataset.i].run();});
