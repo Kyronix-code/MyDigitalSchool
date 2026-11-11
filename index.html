@@ -12754,6 +12754,12 @@ setTimeout(()=>{try{sbToggleBtn();ensureGroup();const b=$('sb-tg');if(b)b.textCo
 
 
 
+
+
+
+
+
+
 <style id="md-ui2">
 /* ===== MyDigitalSchool UI v2 — new shell ===== */
 html body.u2{--u2-rail:68px;--u2-pan:256px;--u2-gap:14px;--u2-ml:calc(var(--u2-gap)*3 + var(--u2-rail) + var(--u2-pan));--u2-top:58px;
@@ -13144,7 +13150,8 @@ html body.u2 .st-hero{border-radius:26px!important}
 }
 
 /* ===== Skeleton loading system ===== */
-.u2s{display:block;border-radius:10px;background:linear-gradient(100deg,var(--surf2) 20%,var(--surf3) 45%,var(--surf2) 70%);background-size:220% 100%;animation:u2shim 1.5s ease-in-out infinite;flex:none}
+html body.u2{--sk-a:#e4e8f0;--sk-b:#f2f4f9}html[data-theme=dark] body.u2{--sk-a:rgba(255,255,255,.07);--sk-b:rgba(255,255,255,.14)}
+.u2s{display:block;border-radius:10px;background:linear-gradient(100deg,var(--sk-a,#e4e8f0) 20%,var(--sk-b,#f2f4f9) 45%,var(--sk-a,#e4e8f0) 70%);background-size:220% 100%;animation:u2shim 1.5s ease-in-out infinite;flex:none}
 @keyframes u2shim{from{background-position:120% 0}to{background-position:-100% 0}}
 .u2s.c{border-radius:50%}.u2s.r{border-radius:16px}.u2s.l{height:12px;border-radius:7px}.u2s.t{height:26px;border-radius:9px}
 .u2sk{display:flex;flex-direction:column;gap:14px;width:100%;animation:u2fade .25s ease both}
@@ -13182,6 +13189,11 @@ html body.u2 .st-hero{border-radius:26px!important}
 @media(max-width:860px){.u2b.app .rail{display:none}}
 @media(prefers-reduced-motion:reduce){.u2s,#ld.u2-soft::before{animation-duration:3s}}
 #ubar .u2-crumb{flex:0 0 auto}#ubar .u2-crumb b{max-width:240px}@media(max-width:1100px) and (min-width:861px){#ubar .u2-crumb b{max-width:150px}}
+.u2cv{position:absolute;left:0;top:0;z-index:40;overflow:hidden;pointer-events:none;transition:opacity .22s ease;animation:u2fade .12s ease both}
+.u2cv.out{opacity:0}
+.u2cv .u2s{position:absolute}
+.u2cvb.card{position:absolute;background:var(--surf);border:1px solid var(--u2-line,var(--bdr));border-radius:20px;box-sizing:border-box}
+.u2cv .u2s.l{height:12px}
 
 </style>
 <script id="md-ui2-js">
@@ -13649,6 +13661,122 @@ function start(){
   document.querySelectorAll(SEL).forEach(conv);
 }
 if(document.body)start();else document.addEventListener('DOMContentLoaded',start);
+})();
+
+/* ===== Skeleton v2 — layout-mirroring cover for EVERY page / section ===== */
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const CARD='.cd,.sc,.st-card,.st-box,.mp-card,.hm-tile,.hm-q,.hm-card,.hm-link,.hm-st,.sl-card,.st-mi,table,.pl-card,.card,.bx';
+const CTRL={INPUT:1,SELECT:1,TEXTAREA:1,BUTTON:1,IMG:1,CANVAS:1,SVG:1,VIDEO:1,IFRAME:1};
+const MS_NEW=460,MS_SAME=300;
+function bgOf(el){
+  for(let e=el;e&&e!==document.documentElement;e=e.parentElement){const c=getComputedStyle(e).backgroundColor;if(c&&c!=='transparent'&&!/rgba\(\s*0,\s*0,\s*0,\s*0\s*\)/.test(c))return c;}
+  return getComputedStyle(document.body).backgroundColor||'#fff';
+}
+function textRect(e){try{const r=document.createRange();r.selectNodeContents(e);return r.getBoundingClientRect();}catch(x){return e.getBoundingClientRect();}}
+function build(el){
+  const er=el.getBoundingClientRect(),sx=el.scrollLeft,sy=el.scrollTop;
+  const out=[];let n=0;const maxY=er.top+Math.max(el.scrollHeight,er.height)+2;
+  const walk=e=>{
+    if(n>320)return;
+    for(const c of e.children){
+      if(c.classList&&(c.classList.contains('u2cv')||c.classList.contains('u2sk')))continue;
+      const cs=getComputedStyle(c);
+      if(cs.display==='none'||cs.visibility==='hidden'||cs.position==='fixed')continue;
+      const r=c.getBoundingClientRect();
+      if(r.width<6||r.height<6)continue;
+      const x=r.left-er.left+sx,y=r.top-er.top+sy;
+      if(y>2600)continue;
+      const tag=c.tagName.toUpperCase();
+      const isCard=c.matches&&c.matches(CARD);
+      if(isCard){out.push('<i class="u2cvb card" style="left:'+x+'px;top:'+y+'px;width:'+r.width+'px;height:'+r.height+'px"></i>');n++;if(tag==='TABLE'){
+          c.querySelectorAll('tr').forEach((tr,i)=>{if(i>11)return;const rr=tr.getBoundingClientRect();if(rr.height<6)return;out.push('<i class="u2s l" style="position:absolute;left:'+(x+16)+'px;top:'+(rr.top-er.top+sy+rr.height/2-6)+'px;width:'+Math.max(40,r.width-32)+'px;height:12px;opacity:'+(i===0?.9:.7)+'"></i>');n++;});
+          continue;}}
+      const kids=c.children.length;
+      const hasText=[...c.childNodes].some(t=>t.nodeType===3&&t.textContent.trim());
+      if(CTRL[tag]||tag==='svg'||(!kids&&(hasText||c.textContent.trim()))||(kids&&hasText&&!isCard&&c.textContent.length<80&&!c.querySelector('div,section,table,ul'))){
+        if(CTRL[tag]||tag==='svg'){
+          const rad=tag==='IMG'||tag==='CANVAS'||tag==='VIDEO'?14:(cs.borderRadius&&parseFloat(cs.borderRadius)>=r.height/2-1?r.height/2:10);
+          out.push('<i class="u2s" style="position:absolute;left:'+x+'px;top:'+y+'px;width:'+r.width+'px;height:'+r.height+'px;border-radius:'+rad+'px"></i>');n++;
+        }else{
+          const tr=textRect(c);const lh=parseFloat(cs.lineHeight)||parseFloat(cs.fontSize)*1.4||18;
+          const lines=Math.max(1,Math.min(8,Math.round(tr.height/lh)));
+          const th=Math.min(parseFloat(cs.fontSize)*0.78,22);
+          const big=c.classList&&(c.classList.contains('pt'))||parseFloat(cs.fontSize)>=22;
+          for(let i=0;i<lines;i++){
+            const w=lines>1&&i===lines-1?tr.width*0.6:tr.width;
+            out.push('<i class="u2s" style="position:absolute;left:'+(tr.left-er.left+sx)+'px;top:'+(tr.top-er.top+sy+i*lh+(lh-th)/2)+'px;width:'+Math.max(18,w)+'px;height:'+th+'px;border-radius:'+(big?9:6)+'px"></i>');n++;
+          }
+        }
+        continue;
+      }
+      if(kids)walk(c);
+    }
+  };
+  walk(el);
+  return out.join('');
+}
+const LG=window.__u2cvlog=[];
+function cover(el,ms,force){LG.push((el&&el.id||'?')+':call');
+  if(!el||!el.children.length)return;
+  const now=Date.now();if(!force&&el._cvt&&now-el._cvt<60)return;el._cvt=now;
+  const old=el.querySelector(':scope>.u2cv');if(old){old.remove();}
+  clearTimeout(el._cvd);
+  const er=el.getBoundingClientRect();if(er.width<40||er.height<20){LG.push(el.id+':size '+er.width+'x'+er.height);return;}
+  const cs=getComputedStyle(el);
+  const inner=build(el);if(!inner){LG.push(el.id+':empty');return;}
+  if(cs.position==='static')el.style.position='relative';
+  const ov=document.createElement('div');ov.className='u2cv';
+  ov.style.cssText='background:'+bgOf(el)+';height:'+Math.max(el.scrollHeight,el.clientHeight)+'px;width:'+Math.max(el.scrollWidth,el.clientWidth)+'px';
+  ov.innerHTML=inner;
+  el.appendChild(ov);el._cv=1;
+  const done=()=>{ov.classList.add('out');setTimeout(()=>{if(!ov.isConnected)return;ov.remove();el._cv=0;el.classList.add('u2-rev');setTimeout(()=>el.classList.remove('u2-rev'),700);},230);};
+  el._cvd=setTimeout(done,ms||MS_NEW);
+}
+window.u2Cover=cover;
+/* ---- every page open (all roles, all sections) ---- */
+let lastPg='';
+const _sp=window.showPg;
+if(typeof _sp==='function')window.showPg=function(id){
+  const same=lastPg===id;lastPg=id;
+  const r=_sp.apply(this,arguments);
+  try{const el=typeof id==='string'?$(id):null;if(el&&el.classList.contains('pg'))cover(el,same?MS_SAME:MS_NEW);}catch(e){console.error(e);}
+  return r;
+};
+/* a page skeleton/cover that is wiped by an async render is re-shown for a minimum time */
+new MutationObserver(ms=>{ms.forEach(m=>{
+  if(!m.removedNodes.length)return;const t=m.target;
+  m.removedNodes.forEach(n=>{
+    if(n.nodeType!==1||!t.isConnected)return;
+    const isPg=n.classList.contains('u2pgsk')&&t.classList.contains('pg');
+    const wiped=n.classList.contains('u2cv')&&!n.classList.contains('out');
+    if(isPg||wiped){t._rc=(t._rc||0)+1;if(t._rc<=3&&t.children.length){t._cv=0;setTimeout(()=>{t._cv=0;cover(t,isPg?MS_SAME:220,true);},0);}setTimeout(()=>{t._rc=0;},1500);}
+  });
+});}).observe(document.body,{subtree:true,childList:true});
+/* ---- full-screen containers: landing, login, registration, portal, polls, slide editor, modals ---- */
+const WATCH=['home','aw','md-land','md-reg','md-portal','md-mod','sl-ed','sl-pr','pl-root'];
+function vis(e){return !e.classList.contains('h')&&(e.id!=='sl-ed'||e.classList.contains('on'))&&(e.id!=='md-land'||e.classList.contains('on'));}
+function watch(id){
+  const e=$(id);if(!e)return;
+  let was=vis(e);
+  const trig=()=>{const v=vis(e);if(v&&!was)setTimeout(()=>{const t=id==='md-portal'?(e.querySelector('.mp-wrap')||e):e;cover(t,MS_NEW);},30);was=v;};
+  new MutationObserver(trig).observe(e,{attributes:true,attributeFilter:['class']});
+  if(was&&(id==='md-land'||id==='home'))setTimeout(()=>cover(e,MS_NEW),0);
+}
+WATCH.forEach(watch);
+/* portal re-render (after login/lang change) */
+const pe=$('md-portal');
+if(pe)new MutationObserver(ms=>{if(pe.classList.contains('h'))return;const w=pe.querySelector('.mp-wrap');if(w&&!w._seen){w._seen=1;setTimeout(()=>cover(w,MS_NEW),0);}}).observe(pe,{childList:true});
+/* editors that mount into the DOM (documents / infographics / slide present) */
+new MutationObserver(ms=>{ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1&&n.classList&&n.classList.contains('md-full'))Promise.resolve().then(()=>cover(n,MS_NEW));}));}).observe(document.body,{childList:true});
+/* sub-sections (tabs / filters inside a page) */
+document.addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest('.st-tabs button,.sl-tabs button,.tabs>*,.tab,.tb,[role=tab],.ftab,.sw-tab,.pl-tab,.mp-tab');
+  if(!b)return;
+  const pg=b.closest('.pg');
+  setTimeout(()=>{if(pg&&pg.offsetParent)cover(pg,MS_SAME);},0);
+},true);
 })();
 
 </script>
