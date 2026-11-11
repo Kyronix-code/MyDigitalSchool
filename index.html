@@ -12752,6 +12752,8 @@ setTimeout(()=>{try{sbToggleBtn();ensureGroup();const b=$('sb-tg');if(b)b.textCo
 
 
 
+
+
 <style id="md-ui2">
 /* ===== MyDigitalSchool UI v2 — new shell ===== */
 html body.u2{--u2-rail:68px;--u2-pan:256px;--u2-gap:14px;--u2-ml:calc(var(--u2-gap)*3 + var(--u2-rail) + var(--u2-pan));--u2-top:58px;
@@ -13141,6 +13143,46 @@ html body.u2 .st-hero{border-radius:26px!important}
   html body.u2 .md-full .mf-body{padding:8px}
 }
 
+/* ===== Skeleton loading system ===== */
+.u2s{display:block;border-radius:10px;background:linear-gradient(100deg,var(--surf2) 20%,var(--surf3) 45%,var(--surf2) 70%);background-size:220% 100%;animation:u2shim 1.5s ease-in-out infinite;flex:none}
+@keyframes u2shim{from{background-position:120% 0}to{background-position:-100% 0}}
+.u2s.c{border-radius:50%}.u2s.r{border-radius:16px}.u2s.l{height:12px;border-radius:7px}.u2s.t{height:26px;border-radius:9px}
+.u2sk{display:flex;flex-direction:column;gap:14px;width:100%;animation:u2fade .25s ease both}
+.u2sk .row{display:flex;gap:12px;align-items:center}
+.u2sk .col{display:flex;flex-direction:column;gap:8px;flex:1;min-width:0}
+.u2sk .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.u2sk .card{background:var(--surf);border:1px solid var(--u2-line,var(--bdr));border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.u2sk .tbl{background:var(--surf);border:1px solid var(--u2-line,var(--bdr));border-radius:22px;padding:6px 18px;overflow:hidden}
+.u2sk .tbl .row{padding:15px 0;border-bottom:1px solid var(--u2-line,var(--bdr))}.u2sk .tbl .row:last-child{border-bottom:0}
+.u2sk .st{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+.u2sk .st .card{padding:18px}
+.ex-empty[data-u2sk],.ct-empty[data-u2sk],.st-empty[data-u2sk],.mm-empty[data-u2sk]{padding:0!important;border:0!important;background:none!important;box-shadow:none!important;text-align:left}
+.ps[data-u2sk]{margin:0!important}
+.u2-rev>*{animation:u2rv .38s var(--u2-ease,ease) both}
+.u2-rev>*:nth-child(2){animation-delay:.04s}.u2-rev>*:nth-child(3){animation-delay:.08s}.u2-rev>*:nth-child(n+4){animation-delay:.12s}
+@keyframes u2rv{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.u2sk.out{opacity:0;transition:opacity .2s}
+/* boot / data-load overlay (#ld) — replaces the spinner for "Loading" only */
+#ld.u2-boot{background:var(--bg);align-items:stretch;justify-content:flex-start;gap:0;padding:0;z-index:999;transition:opacity .26s}
+#ld.u2-boot .sp,#ld.u2-boot #ldt,#ld.u2-soft .sp,#ld.u2-soft #ldt{display:none}
+#ld.u2-boot.u2-out{opacity:0;pointer-events:none}
+#ld.u2-soft{background:transparent;pointer-events:none;align-items:flex-start;justify-content:flex-start;padding:0;transition:opacity .26s}
+#ld.u2-soft.u2-out{opacity:0}
+#ld.u2-soft .u2b{display:none}
+#ld.u2-soft::before{content:'';position:fixed;left:0;top:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#4778F5,#8874EA,transparent);background-size:50% 100%;background-repeat:no-repeat;animation:u2bar 1.1s ease-in-out infinite;z-index:1000}
+@keyframes u2bar{from{background-position:-60% 0}to{background-position:160% 0}}
+.u2b{display:none;width:100%;height:100%}
+#ld.u2-boot .u2b{display:flex}
+.u2b.app{padding:14px;gap:14px}
+.u2b.app .rail{width:68px;border-radius:24px;background:var(--surf);border:1px solid var(--u2-line,var(--bdr));padding:14px 0;display:flex;flex-direction:column;align-items:center;gap:12px}
+.u2b.app .main{flex:1;display:flex;flex-direction:column;gap:14px;min-width:0}
+.u2b.app .top{height:58px;border-radius:20px;background:var(--surf);border:1px solid var(--u2-line,var(--bdr));display:flex;align-items:center;gap:12px;padding:0 18px}
+.u2b.login{align-items:center;justify-content:center}
+.u2b.login .box{width:min(380px,90vw);background:var(--surf);border:1px solid var(--u2-line,var(--bdr));border-radius:28px;padding:30px;display:flex;flex-direction:column;gap:14px;align-items:stretch}
+@media(max-width:860px){.u2b.app .rail{display:none}}
+@media(prefers-reduced-motion:reduce){.u2s,#ld.u2-soft::before{animation-duration:3s}}
+#ubar .u2-crumb{flex:0 0 auto}#ubar .u2-crumb b{max-width:240px}@media(max-width:1100px) and (min-width:861px){#ubar .u2-crumb b{max-width:150px}}
+
 </style>
 <script id="md-ui2-js">
 (function(){
@@ -13505,6 +13547,108 @@ function upd(){
   const s=$('sl-stage'),r=$('u2-zr');if(s&&r)s.style.setProperty('--zm',(+r.value)/100);
 }
 new MutationObserver(ms=>{if(ms.every(m=>m.target.closest&&m.target.closest('#u2-zoom')))return;clearTimeout(bar.t);bar.t=setTimeout(()=>{bar();upd();},30);}).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
+})();
+
+/* ===== Skeleton loading system (engine) ===== */
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const s=(c,st)=>'<i class="u2s'+(c?' '+c:'')+'"'+(st?' style="'+st+'"':'')+'></i>';
+const SK={
+  lines:n=>Array.from({length:n},(_,i)=>s('l','width:'+(i===n-1?55:92-(i%3)*10)+'%')).join(''),
+  cards:(n,h)=>'<div class="grid">'+Array.from({length:n||6},()=>'<div class="card">'+s('r','height:'+(h||120)+'px')+s('t','width:70%')+s('l','width:90%')+s('l','width:45%')+'</div>').join('')+'</div>',
+  stats:n=>'<div class="st">'+Array.from({length:n||4},()=>'<div class="card">'+s('l','width:50%')+s('t','width:40%;height:34px')+'</div>').join('')+'</div>',
+  table:(r,c)=>'<div class="tbl">'+Array.from({length:r||6},()=>'<div class="row">'+s('c','width:36px;height:36px')+'<div class="col">'+s('l','width:40%')+s('l','width:25%;height:9px')+'</div>'+Array.from({length:(c||3)-1},()=>s('l','width:12%;flex:none')).join('')+'</div>').join('')+'</div>',
+  media:n=>'<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">'+Array.from({length:n||8},()=>s('r','height:120px')).join('')+'</div>',
+  profile:()=>'<div class="card"><div class="row">'+s('c','width:64px;height:64px')+'<div class="col">'+s('t','width:45%')+s('l','width:30%')+'</div></div>'+SK.lines(3)+'</div>',
+  page:id=>{
+    const head=s('t','width:min(280px,60%);height:32px')+s('l','width:min(420px,80%)');
+    if(/^(slides|proj|tpl|doc|info|quiz|studio)$/.test(id))return head+SK.cards(6,130);
+    if(/^(dash|adash|dsum|di|fam-select)$/.test(id))return head+SK.stats(4)+SK.table(4,3);
+    if(/^(prof)$/.test(id))return head+SK.profile();
+    return head+SK.table(7,4);
+  }
+};
+window.u2Skel=SK;
+const wrap=h=>'<div class="u2sk">'+h+'</div>';
+/* ---- boot / load overlay ---- */
+const BOOT='<div class="u2b login"><div class="box">'+s('c','width:56px;height:56px;margin:0 auto')+s('t','width:60%;margin:0 auto')+s('r','height:46px')+s('r','height:46px')+s('r','height:48px')+'</div></div>'
+ +'<div class="u2b app"><div class="rail">'+s('r','width:44px;height:44px')+s('r','width:44px;height:44px')+s('r','width:44px;height:44px')+s('r','width:44px;height:44px')+'</div><div class="main"><div class="top">'+s('t','width:160px')+'<span style="flex:1"></span>'+s('r','width:38px;height:38px')+s('r','width:38px;height:38px')+s('r','width:120px;height:40px')+'</div><div class="u2sk" style="padding:6px 4px">'+s('r','height:190px;border-radius:30px')+SK.stats(4)+SK.cards(3,90)+'</div></div></div>';
+function loggedIn(){return typeof CU!=='undefined'&&!!CU;}
+function appVisible(){const a=$('app'),p=$('md-portal');return a&&!a.classList.contains('h')&&!(p&&!p.classList.contains('h'));}
+let tm=0;
+const _s=window.sLoad,_h=window.hLoad;
+if(typeof _s==='function'&&typeof _h==='function'){
+  window.sLoad=function(t){
+    clearTimeout(tm);const l=$('ld');
+    if(l){
+      l.classList.remove('u2-out');
+      const loading=!t||/^Loading/i.test(String(t));
+      l.classList.remove('u2-boot','u2-soft');
+      if(loading){
+        if(!l.querySelector('.u2b'))l.insertAdjacentHTML('afterbegin',BOOT);
+        const inApp=loggedIn()&&appVisible();
+        l.classList.add(inApp?'u2-soft':'u2-boot');
+        const ub=l.querySelector('.u2b.login'),ua=l.querySelector('.u2b.app');
+        if(ub&&ua){ub.style.display=(!inApp&&!loggedIn())?'flex':'none';ua.style.display=(!inApp&&loggedIn())?'flex':'none';}
+      }
+    }
+    return _s.apply(this,arguments);
+  };
+  window.hLoad=function(){
+    const l=$('ld');
+    if(l&&(l.classList.contains('u2-boot')||l.classList.contains('u2-soft'))&&!l.classList.contains('h')){
+      l.classList.add('u2-out');clearTimeout(tm);
+      tm=setTimeout(()=>{l.classList.add('h');l.classList.remove('u2-out','u2-boot','u2-soft');},270);
+      return;
+    }
+    return _h.apply(this,arguments);
+  };
+}
+/* ---- placeholders ("Բեռնվում է...") -> skeletons ---- */
+const LOAD=/^(Բեռնվում է|Chargement|Loading|Загрузка)[.…\s]*$/i;
+const SEL='.ex-empty,.ct-empty,.st-empty,.mm-empty,.ps';
+function conv(el){
+  if(!el||el.dataset.u2sk||!LOAD.test((el.textContent||'').trim())||el.children.length)return;
+  el.dataset.u2sk='1';
+  const c=el.classList;
+  el.innerHTML=wrap(c.contains('st-empty')?SK.cards(6,110):c.contains('mm-empty')?SK.media(8):SK.table(5,3));
+}
+/* ---- empty pages (async render) -> page skeleton ---- */
+const PG=new Map();
+function pageSkel(id){
+  const el=$(id);if(!el||!el.classList.contains('pg'))return;
+  if(el.children.length||(el.textContent||'').trim())return;
+  el.insertAdjacentHTML('afterbegin','<div class="u2sk u2pgsk" data-u2sk="1">'+SK.page(id)+'</div>');
+  clearTimeout(PG.get(id));PG.set(id,setTimeout(()=>{const k=el.querySelector(':scope>.u2pgsk');if(k)k.remove();},9000));
+}
+const _sp=window.showPg;
+if(typeof _sp==='function')window.showPg=function(id){const r=_sp.apply(this,arguments);try{if(typeof id==='string')pageSkel(id);}catch(e){}return r;};
+/* ---- observer: convert placeholders, clean up, reveal ---- */
+let q=[],raf=0;
+function flush(){
+  raf=0;const recs=q;q=[];
+  recs.forEach(m=>{
+    m.addedNodes.forEach(n=>{
+      if(n.nodeType!==1)return;
+      if(n.matches&&n.matches(SEL))conv(n);
+      if(n.querySelectorAll)n.querySelectorAll(SEL).forEach(conv);
+      const par=m.target;
+      if(par&&par.classList&&par.classList.contains('pg')&&!(n.classList&&n.classList.contains('u2pgsk'))){
+        const k=par.querySelector(':scope>.u2pgsk');if(k)k.remove();
+      }
+    });
+    if(m.removedNodes.length){
+      let had=false;m.removedNodes.forEach(n=>{if(n.nodeType===1&&(n.dataset&&n.dataset.u2sk||n.querySelector&&n.querySelector('[data-u2sk]')||(n.classList&&n.classList.contains('u2sk'))))had=true;});
+      if(had&&m.target&&m.target.classList){const t=m.target;t.classList.add('u2-rev');clearTimeout(t._rv);t._rv=setTimeout(()=>t.classList.remove('u2-rev'),700);}
+    }
+  });
+}
+function start(){
+  new MutationObserver(ms=>{q.push(...ms);if(!raf)raf=requestAnimationFrame(flush);}).observe(document.body,{subtree:true,childList:true});
+  document.querySelectorAll(SEL).forEach(conv);
+}
+if(document.body)start();else document.addEventListener('DOMContentLoaded',start);
 })();
 
 </script>
