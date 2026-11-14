@@ -3020,6 +3020,7 @@ function showPg(id){
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
   const rb={
     'dash':()=>{const o=$('dash');if(o){o.outerHTML=buildDash()}},
+    'ahw':()=>hwAdmin(),'acreq':()=>crAdmin(),'shw':()=>hwStudent('stu'),'scr':()=>crUser('stu'),'fc-hw':()=>hwFam(),'fc-cr':()=>crUser('fam'),
     'adash':()=>{const o=$('adash');if(o){o.outerHTML=buildADash()}},
     'apend':()=>{const o=$('apend');if(o){o.outerHTML=buildAPend()};updPC()},
     'checkin':()=>{if(typeof stopScanner==='function')stopScanner();const o=$('checkin');if(o){o.outerHTML=buildCheckin()}},
@@ -3061,6 +3062,8 @@ function buildNav(){
       +'<div class="ni" onclick="showPg(\'asc\')" data-p="asc">📅 '+t('schedule')+'</div>'
       +'<div class="ni" onclick="showPg(\'aexam\')" data-p="aexam">📝 Քննական ժամանակացույց</div>'
       +'<div class="ni" onclick="showPg(\'acert\')" data-p="acert">🧾 Տեղեկանքներ</div>'
+      +'<div class="ni" onclick="showPg(\'ahw\')" data-p="ahw">📚 Իմ առաջադրանքները</div>'
+      +'<div class="ni" onclick="showPg(\'acreq\')" data-p="acreq">📨 Տեղեկանքների հայտեր</div>'
       +'<div class="ni" onclick="showPg(\'apend\')" data-p="apend">⏳ '+t('pending')+' <span class="pb" id="pc"></span></div>'
       +'<div class="ni" onclick="showPg(\'checkin\')" data-p="checkin">🔍 '+t('checkin')+'</div>'
       +'<div class="ni" onclick="showPg(\'sads\')" data-p="sads">✉️ '+t('broadcast')+'</div>'
@@ -3068,8 +3071,8 @@ function buildNav(){
       +'<div class="sbs">'+t('nav_system')+'</div>'
       +'<div class="ni" id="maint-ni" onclick="toggleMaint()" style="color:var(--grn)">🟢 '+t('school_open')+'</div>'
       +'<div class="ni" onclick="confirmNewYear()" style="color:#ffd54f">🎓 '+t('new_year')+'</div>';
-    mn.innerHTML=buildADash()+buildATch()+buildAStu()+buildACls()+buildASc()+buildAExam()+buildACert()+buildAPend()+buildCheckin()+buildAdminAds()+buildAdminNur();
-    updPC();updMaintNi();showPg('adash');setTimeout(()=>onScMo(),100);
+    mn.innerHTML=buildADash()+buildATch()+buildAStu()+buildACls()+buildASc()+buildAExam()+buildACert()+buildHwAdmin()+buildCrAdmin()+buildAPend()+buildCheckin()+buildAdminAds()+buildAdminNur();
+    updPC();updMaintNi();showPg('adash');if(window.hwBoot)hwBoot();setTimeout(()=>onScMo(),100);
   }else if(CU.role==='teacher'){
     const hr=CU.homeroom?'<div class="ni" onclick="showPg(\'hr\')" data-p="hr">🏠 '+t('homeroom')+' ('+CU.homeroom+')</div>':'';
     nav.innerHTML='<div class="sbs">'+t('nav_overview')+'</div>'
@@ -3093,10 +3096,12 @@ function buildNav(){
       +'<div class="ni" onclick="showPg(\'sem\')" data-p="sem">📊 '+t('semester_grades')+'</div>'
       +'<div class="ni h" onclick="showPg(\'sexam\')" data-p="sexam" id="ni-sexam">📝 Քննական ժամանակացույց</div>'
       +'<div class="ni" onclick="showPg(\'scert\')" data-p="scert">🧾 Իմ տեղեկանքները</div>'
+      +'<div class="ni" onclick="showPg(\'shw\')" data-p="shw">📚 Իմ առաջադրանքները</div>'
+      +'<div class="ni" onclick="showPg(\'scr\')" data-p="scr">📨 Տեղեկանքների պատվիրում</div>'
       +'<div class="sbs">'+t('nav_account')+'</div>'
       +'<div class="ni" onclick="showPg(\'prof\')" data-p="prof">👤 '+t('my_profile')+'</div>';
-    mn.innerHTML=buildDi()+buildSem()+buildSExam()+buildSCert()+buildProf();
-    initDi();initSem();showPg('di');exInitNav('student');
+    mn.innerHTML=buildDi()+buildSem()+buildSExam()+buildSCert()+buildHwStu()+buildCrStu()+buildProf();
+    initDi();initSem();showPg('di');exInitNav('student');if(window.hwBoot)hwBoot();
   }
   // Update sign-out button
   const bout=document.querySelector('.bout');
@@ -3190,11 +3195,13 @@ function showFamilyChild(idx){
     +'<div class="ni" onclick="showPg(\'fc-grades\')" data-p="fc-grades">⭐ Grades</div>'
     +'<div class="ni h" onclick="showPg(\'fc-exam\')" data-p="fc-exam" id="ni-fcexam">📝 Քննական ժամանակացույց</div>'
     +'<div class="ni" onclick="showPg(\'fc-cert\')" data-p="fc-cert">🧾 Տեղեկանքներ</div>'
+    +'<div class="ni" onclick="showPg(\'fc-hw\')" data-p="fc-hw">📚 Առաջադրանքներ</div>'
+    +'<div class="ni" onclick="showPg(\'fc-cr\')" data-p="fc-cr">📨 Տեղեկանքների պատվիրում</div>'
     +'<div class="ni" onclick="showPg(\'fc-profile\')" data-p="fc-profile">👤 Profile</div>';
   const mn=$('mn');
-  mn.innerHTML=buildFamDiary(idx)+buildFamGrades(idx)+buildFamExam(idx)+buildFamCert(idx)+buildFamProfile(idx)+buildFamContact(idx);
+  mn.innerHTML=buildFamDiary(idx)+buildFamGrades(idx)+buildFamExam(idx)+buildFamCert(idx)+buildHwFam()+buildCrFam()+buildFamProfile(idx)+buildFamContact(idx);
   initFamDiary(idx);
-  showPg('fc-diary');exInitNav('family');
+  showPg('fc-diary');exInitNav('family');if(window.hwBoot)hwBoot();
 }
 
 function backToFamSelect(){
@@ -6921,7 +6928,7 @@ const SEC={};SECS.forEach((s,i)=>{SEC[s.id]=s;s.g=s.id==='polls'?'linear-gradien
 const svg=n=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+IC[n]+'</svg>';
 const ROLE_LBL={teacher:'Ուսուցիչ',student:'Աշակերտ',parent:'Ծնող',admin:'Ադմին'};
 const ST_LBL={pending:'Սպասում է',approved:'Հաստատված է',rejected:'Մերժված է'};
-const ADMIN_PAGES=['adash','atch','astu','acls','asc','aexam','acert','apend','checkin','sads','anur','areq','ausr'];
+const ADMIN_PAGES=['ahw','acreq','adash','atch','astu','acls','asc','aexam','acert','apend','checkin','sads','anur','areq','ausr'];
 
 const E=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const $=id=>document.getElementById(id);
@@ -13242,7 +13249,7 @@ const P={
 };
 const ic=(n,sz)=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"'+(sz?' width="'+sz+'" height="'+sz+'"':'')+'>'+(P[n]||P.dot)+'</svg>';
 window.__u2ic=ic;window.__u2P=P;
-const IM={adash:'grid',di:'book',dsum:'bar',['fam-select']:'users',atch:'school',astu:'users',acls:'building',asc:'calendar',aexam:'fileCheck',acert:'fileText',areq:'key',ausr:'search',blk:'ban',jc:'book',acodes:'key',apend:'clock',checkin:'check',sads:'send',anur:'award',sem:'award',sexam:'fileCheck',scert:'fileText',slides:'monitor',studio:'palette',doc:'fileText',info:'bar',quiz:'check',ai:'spark',proj:'folder',tpl:'layout',prof:'user',dash:'grid',gr:'fileCheck',semtch:'award',stu:'users',tp:'calendar',hr:'users'};
+const IM={adash:'grid',di:'book',dsum:'bar',['fam-select']:'users',atch:'school',astu:'users',acls:'building',asc:'calendar',aexam:'fileCheck',acert:'fileText',areq:'key',ausr:'search',blk:'ban',jc:'book',acodes:'key',apend:'clock',checkin:'check',sads:'send',anur:'award',sem:'award',sexam:'fileCheck',scert:'fileText',ahw:'book',acreq:'fileText',shw:'book',scr:'fileText','fc-hw':'book','fc-cr':'fileText',slides:'monitor',studio:'palette',doc:'fileText',info:'bar',quiz:'check',ai:'spark',proj:'folder',tpl:'layout',prof:'user',dash:'grid',gr:'fileCheck',semtch:'award',stu:'users',tp:'calendar',hr:'users'};
 const GMAP={};
 ['adash','dash','di','dsum','fam-select'].forEach(k=>GMAP[k]='main');
 ['slides','studio','doc','info','quiz','ai','proj','tpl'].forEach(k=>GMAP[k]='create');
@@ -13780,6 +13787,261 @@ document.addEventListener('click',e=>{
 })();
 
 </script>
+<!-- ===== MyDigitalSchool: «Իմ առաջադրանքները» + «Տեղեկանքների պատվիրում» — additive module ===== -->
+<style id="md-hw-css">
+.hw-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px}
+.hw-bar .ff{min-width:150px;flex:1}
+.hw-bar label,.hw-f label{display:block;font-size:11px;color:var(--txt2);margin-bottom:4px;font-weight:600}
+.hw-bar select,.hw-bar input,.hw-f select,.hw-f textarea,.hw-f input,.hw-row textarea{width:100%;padding:9px 11px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:10px;color:var(--txt);font:inherit;font-size:13px;outline:none;box-sizing:border-box}
+.hw-row{display:grid;grid-template-columns:minmax(120px,200px) minmax(0,1fr);gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid var(--bdr)}
+.hw-row b{font-size:14px}.hw-row small{display:block;color:var(--txt3);font-size:11px;margin-top:2px}
+.hw-row textarea{min-height:44px;resize:vertical}
+.hw-day{margin-bottom:14px}.hw-day h4{margin:0 0 8px;font-size:13px;color:var(--txt2)}
+.hw-it{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;padding:12px;border:1.5px solid var(--bdr);border-radius:12px;margin-bottom:8px;background:var(--surf)}
+.hw-it.dn{border-color:#34d399;background:rgba(52,211,153,.08)}
+.hw-it .tx{flex:1;min-width:180px;white-space:pre-wrap;word-break:break-word;font-size:13px;margin-top:3px}
+.hw-chip{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;background:var(--surf2);color:var(--txt2)}
+.hw-st-new{background:#dbeafe;color:#1d4ed8}.hw-st-progress{background:#fef3c7;color:#b45309}.hw-st-approved{background:#d1fae5;color:#047857}.hw-st-rejected{background:#fee2e2;color:#b91c1c}.hw-st-ready{background:#ede9fe;color:#6d28d9}
+.hw-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.hw-chips button{border:1.5px solid var(--bdr);background:var(--surf);color:var(--txt);border-radius:99px;padding:6px 12px;font-size:12px;cursor:pointer}
+.hw-chips button.on{background:#4778F5;color:#fff;border-color:#4778F5}
+.hw-f{display:grid;gap:12px}.hw-auto{padding:10px 12px;border-radius:10px;background:var(--surf2);font-size:12px;color:var(--txt2);line-height:1.7}
+.hw-tbl{width:100%;border-collapse:collapse;font-size:12px}.hw-tbl td,.hw-tbl th{padding:6px 8px;border-bottom:1px solid var(--bdr);text-align:left}
+.hw-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99998;display:flex;align-items:center;justify-content:center;padding:14px}
+.hw-md{background:var(--surf);color:var(--txt);border-radius:16px;max-width:560px;width:100%;max-height:90vh;overflow:auto;padding:18px;box-sizing:border-box}
+#hw-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#111;color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;z-index:99999;display:none;max-width:90vw}
+@media(max-width:600px){.hw-row{grid-template-columns:1fr}}
+</style>
+<script id="md-hw-js">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const E=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const key=s=>String(s).replace(/[^A-Za-z0-9]/g,c=>'_'+c.charCodeAt(0).toString(16));
+const isAdm=()=>!!CU&&CU.role==='admin'&&CU.username==='admin';
+const DAYK=['','Mon','Tue','Wed','Thu','Fri'];
+const DAYN=['Կիրակի','Երկուշաբթի','Երեքշաբթի','Չորեքշաբթի','Հինգշաբթի','Ուրբաթ','Շաբաթ'];
+const MON=['հունվարի','փետրվարի','մարտի','ապրիլի','մայիսի','հունիսի','հուլիսի','օգոստոսի','սեպտեմբերի','հոկտեմբերի','նոյեմբերի','դեկտեմբերի'];
+const ST={new:'Նոր',progress:'Ընթացքում',approved:'Հաստատված',rejected:'Մերժված',ready:'Պատրաստ է'};
+const TYPES=Object.assign({},(typeof CT_TYPES!=='undefined'?CT_TYPES:{student:'Աշակերտ լինելու մասին տեղեկանք',other:'Այլ տեղեկանք'}),{attendance:'Հաճախելիության տեղեկանք',transfer:'Այլ դպրոց տեղափոխվելու համար'});
+function toast(m){let t=$('hw-toast');if(!t){t=document.createElement('div');t.id='hw-toast';document.body.appendChild(t);}t.textContent=m;t.style.display='block';clearTimeout(toast._t);toast._t=setTimeout(()=>{t.style.display='none'},3500);}
+function pd(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
+function fd(s){const d=pd(s);return DAYN[d.getDay()]+', '+d.getDate()+' '+MON[d.getMonth()]+' '+d.getFullYear();}
+function today(){return d2s(new Date());}
+function addDays(s,n){const d=pd(s);d.setDate(d.getDate()+n);return d2s(d);}
+const hwDoc=(cls,ym)=>'hw_'+key(cls)+'_'+ym;
+const col=()=>fsdb.collection(FS_COL);
+async function loadMonth(cls,ym){try{const s=await col().doc(hwDoc(cls,ym)).get();return s.exists?(s.data().days||{}):{};}catch(e){return {};}}
+async function loadDone(uk){try{const s=await col().doc('hwdone_'+key(uk)).get();return s.exists?(s.data().done||{}):{};}catch(e){return {};}}
+const dkey=(d,sj)=>d+'~'+key(sj);
+function lessons(cls,date){
+  const d=pd(date),dk=DAYK[d.getDay()];if(!dk)return [];
+  const w=SC[cls]&&SC[cls][wkStart(d)];
+  const ls=(w&&w[dk])||(Array.isArray(SC[cls]&&SC[cls][dk])?SC[cls][dk]:[])||[];
+  const seen={},out=[];ls.forEach(l=>{if(l&&l.sub&&!seen[l.sub]){seen[l.sub]=1;out.push(l.sub);}});return out;
+}
+function studentKeys(cls){ // [{k,name}]
+  const names=(DB.classes&&DB.classes[cls])||[];const out=[];
+  Object.entries(DB.users||{}).forEach(([k,u])=>{if(u&&u.role==='student'&&(u.class===cls||names.indexOf(u.name)!==-1)&&names.indexOf(u.name)!==-1)out.push({k:k,name:u.name});});
+  return out;
+}
+function stuKeyOf(name,cls){const r=Object.entries(DB.users||{}).find(([k,u])=>u&&u.role==='student'&&u.name===name&&(!cls||u.class===cls));return r?r[0]:null;}
+const pg=(id,title,sub)=>'<div class="pg" id="'+id+'"><div class="pt">'+title+'</div><div class="ps">'+sub+'</div><div id="'+id+'-b"><div class="ct-empty">Բեռնվում է...</div></div></div>';
+window.buildHwAdmin=()=>pg('ahw','📚 Իմ առաջադրանքները (ադմին)','Լրացրեք տնային աշխատանքը ըստ դասարանի և օրվա');
+window.buildCrAdmin=()=>pg('acreq','📨 Տեղեկանքների հայտեր','Աշակերտների և ծնողների ուղարկած հայտերը');
+window.buildHwStu=()=>pg('shw','📚 Իմ առաջադրանքները','Տնային աշխատանք՝ ըստ օրերի');
+window.buildCrStu=()=>pg('scr','📨 Տեղեկանքների պատվիրում','Ուղարկեք հայտ և հետևեք կարգավիճակին');
+window.buildHwFam=()=>pg('fc-hw','📚 Առաջադրանքներ','Երեխայի տնային աշխատանքը (դիտման ռեժիմ)');
+window.buildCrFam=()=>pg('fc-cr','📨 Տեղեկանքների պատվիրում','Ուղարկեք հայտ և հետևեք կարգավիճակին');
+
+/* ---------------- ADMIN: homework ---------------- */
+const A={cls:'',date:'',rows:[],orig:{}};
+window.hwAdmin=async function(){
+  const b=$('ahw-b');if(!b)return;
+  if(!isAdm()){b.innerHTML='<div class="ct-empty">Հասանելի է միայն ադմինին։</div>';return;}
+  const cl=Object.keys(DB.classes||{}).sort();
+  if(!cl.length){b.innerHTML='<div class="ct-empty">Դասարաններ դեռ չկան։</div>';return;}
+  if(!A.cls||cl.indexOf(A.cls)<0)A.cls=cl[0];if(!A.date)A.date=today();
+  b.innerHTML='<div class="cd" style="padding:16px"><div class="hw-bar"><div class="ff"><label>Դասարան</label><select id="ahw-c" onchange="hwAdChange()">'+cl.map(c=>'<option'+(c===A.cls?' selected':'')+'>'+E(c)+'</option>').join('')+'</select></div><div class="ff"><label>Ամսաթիվ</label><input type="date" id="ahw-d" value="'+A.date+'" onchange="hwAdChange()"></div></div><div id="ahw-rows"></div></div><div class="cd" style="padding:16px;margin-top:14px"><h3 style="margin:0 0 10px;font-size:15px">Աշակերտների կատարումը</h3><div id="ahw-st"></div></div>';
+  hwAdLoad();
+};
+window.hwAdChange=function(){A.cls=$('ahw-c').value;A.date=$('ahw-d').value||today();hwAdLoad();};
+async function hwAdLoad(){
+  const R=$('ahw-rows');R.innerHTML='<div class="ct-empty">Բեռնվում է...</div>';
+  const days=await loadMonth(A.cls,A.date.slice(0,7));const saved=days[A.date]||{};
+  const sch=lessons(A.cls,A.date);const orph=Object.keys(saved).filter(s=>sch.indexOf(s)<0);
+  A.orig={};A.rows=sch.concat(orph);
+  let h='<div style="font-size:12px;color:var(--txt2);margin-bottom:6px">'+fd(A.date)+'</div>';
+  if(!sch.length)h+='<div class="ct-empty" style="margin:8px 0">Այս օրվա համար դասացուցակ չկա։'+(orph.length?' Պահպանված առաջադրանքները ցուցադրված են ներքևում։':'')+'</div>';
+  A.rows.forEach((s,i)=>{const v=(saved[s]&&saved[s].t)||'';A.orig[s]=v;
+    h+='<div class="hw-row"><div><b>'+E(s)+'</b>'+(sch.indexOf(s)<0?'<small>⚠ Այլևս դասացուցակում չէ (պահպանված է)</small>':'')+(saved[s]&&saved[s].ts?'<small>Թարմացվել է՝ '+new Date(saved[s].ts).toLocaleString('hy-AM')+'</small>':'')+'</div><textarea id="ahw-t'+i+'" placeholder="Տնային աշխատանք (դատարկ՝ չի պահանջվում)">'+E(v)+'</textarea></div>';});
+  if(A.rows.length)h+='<div style="margin-top:12px"><button class="btn bp2" onclick="hwAdSave(this)">Պահպանել</button></div>';
+  R.innerHTML=h;hwAdStatus(saved);
+}
+window.hwAdSave=async function(btn){
+  if(!isAdm())return;btn.disabled=true;
+  try{
+    const upd={};let n=0;const now=Date.now();
+    A.rows.forEach((s,i)=>{const v=($('ahw-t'+i).value||'').trim();if(v===(A.orig[s]||'').trim())return;n++;
+      upd[s]=v?{t:v,ts:now,by:'admin'}:firebase.firestore.FieldValue.delete();});
+    if(!n){toast('Փոփոխություններ չկան։');btn.disabled=false;return;}
+    await col().doc(hwDoc(A.cls,A.date.slice(0,7))).set({cls:A.cls,days:{[A.date]:upd}},{merge:true});
+    toast('✓ Պահպանվեց՝ '+A.cls+', '+A.date);await hwAdLoad();
+  }catch(e){toast('Սխալ՝ '+(e.message||e));}
+  btn.disabled=false;
+};
+async function hwAdStatus(saved){
+  const el=$('ahw-st');if(!el)return;const subs=Object.keys(saved||{}).filter(s=>saved[s]&&saved[s].t);
+  if(!subs.length){el.innerHTML='<div class="ct-empty">Այս օրվա համար առաջադրանք չկա։</div>';return;}
+  const stu=studentKeys(A.cls);if(!stu.length){el.innerHTML='<div class="ct-empty">Աշակերտներ չկան։</div>';return;}
+  const dn=await Promise.all(stu.map(s=>loadDone(s.k)));
+  el.innerHTML='<div style="overflow:auto"><table class="hw-tbl"><thead><tr><th>Աշակերտ</th>'+subs.map(s=>'<th>'+E(s)+'</th>').join('')+'</tr></thead><tbody>'+stu.map((s,i)=>'<tr><td>'+E(s.name)+'</td>'+subs.map(sj=>'<td>'+(dn[i][dkey(A.date,sj)]?'<span style="color:#059669">✓</span>':'<span style="color:var(--txt3)">—</span>')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div><div style="font-size:11px;color:var(--txt3);margin-top:6px">'+subs.map(sj=>E(sj)+': '+dn.filter(d=>d[dkey(A.date,sj)]).length+'/'+stu.length).join(' · ')+'</div>';
+}
+
+/* ---------------- STUDENT / PARENT: homework ---------------- */
+const V={ws:'',filter:'all'};
+function ctx(mode){
+  if(mode==='fam'){const ch=(CU.children||[])[window._famCurIdx];if(!ch)return null;const cls=ch.cls||ch.class||'';return{cls:cls,name:ch.name,uk:stuKeyOf(ch.name,cls)||stuKeyOf(ch.name),ro:true,b:'fc-hw-b'};}
+  return{cls:CU.class||CU.studentClass||'',name:CU.name,uk:CU.username,ro:false,b:'shw-b'};
+}
+window.hwStudent=function(mode){V.mode=mode||'stu';if(!V.ws)V.ws=wkStart(new Date());hwStLoad();};
+window.hwFam=()=>hwStudent('fam');
+async function hwStLoad(){
+  const c=ctx(V.mode);if(!c)return;const b=$(c.b);if(!b)return;
+  if(!c.cls){b.innerHTML='<div class="ct-empty">Դասարանը նշված չէ։</div>';return;}
+  const end=addDays(V.ws,6),ms=[...new Set([V.ws.slice(0,7),end.slice(0,7)])];
+  const [mm,done]=await Promise.all([Promise.all(ms.map(m=>loadMonth(c.cls,m))),c.uk?loadDone(c.uk):{}]);
+  const days=Object.assign({},...mm);
+  const items=[];for(let i=0;i<7;i++){const d=addDays(V.ws,i);const day=days[d]||{};const ord=lessons(c.cls,d);
+    Object.keys(day).filter(s=>day[s]&&day[s].t).sort((a,b)=>(ord.indexOf(a)<0?99:ord.indexOf(a))-(ord.indexOf(b)<0?99:ord.indexOf(b))).forEach(s=>{const dn=done[dkey(d,s)];items.push({d:d,s:s,t:day[s].t,ts:day[s].ts||0,dn:dn?(dn.ts||1):0});});}
+  const nd=items.filter(x=>x.dn).length;
+  const list=items.filter(x=>V.filter==='all'||(V.filter==='done'?x.dn:!x.dn));
+  let h='<div class="hw-bar"><button class="btn bg2" onclick="hwNav(-7)">‹ Նախորդ շաբաթ</button><button class="btn bg2" onclick="hwNav(0)">Այս շաբաթ</button><button class="btn bg2" onclick="hwNav(7)">Հաջորդ շաբաթ ›</button><div class="ff"><input type="date" value="'+V.ws+'" onchange="hwJump(this.value)"></div></div>'
+   +'<div style="font-size:13px;margin-bottom:8px"><b>'+fd(V.ws).split(',')[1]+' – '+fd(end).split(',')[1]+'</b> · '+c.cls+' · ավարտված '+nd+'/'+items.length+'</div>'
+   +'<div class="hw-chips">'+[['all','Բոլորը'],['todo','Չավարտված'],['done','Ավարտված']].map(f=>'<button class="'+(V.filter===f[0]?'on':'')+'" onclick="hwFilter(\''+f[0]+'\')">'+f[1]+'</button>').join('')+'</div>';
+  if(!list.length)h+='<div class="ct-empty">'+(items.length?'Այս զտիչով առաջադրանք չկա։':'Այս շաբաթվա համար առաջադրանքներ չկան։')+'</div>';
+  let last='';list.forEach(x=>{if(x.d!==last){if(last)h+='</div>';h+='<div class="hw-day"><h4>'+fd(x.d)+'</h4>';last=x.d;}
+    h+='<div class="hw-it'+(x.dn?' dn':'')+'"><div style="flex:1;min-width:180px"><b>'+E(x.s)+'</b> <span class="hw-chip">'+x.d.split('-').reverse().join('.')+'</span><div class="tx">'+E(x.t)+'</div>'+(x.dn&&x.ts>x.dn?'<div style="font-size:11px;color:#b45309;margin-top:4px">⚠ Առաջադրանքը փոփոխվել է ավարտելուց հետո</div>':'')+'</div><div>'
+     +(c.ro?'<span class="hw-chip" style="'+(x.dn?'background:#d1fae5;color:#047857':'')+'">'+(x.dn?'✓ Ավարտված':'Դեռ ոչ')+'</span>':(x.dn?'<span class="hw-chip" style="background:#d1fae5;color:#047857">✓ Ավարտված</span> <button class="btn bg2" onclick="hwDone(\''+x.d+'\',\''+encodeURIComponent(x.s)+'\',false)">Հետ վերցնել</button>':'<button class="btn bp2" onclick="hwDone(\''+x.d+'\',\''+encodeURIComponent(x.s)+'\',true)">Ավարտել եմ</button>'))+'</div></div>';});
+  if(last)h+='</div>';b.innerHTML=h;
+}
+window.hwNav=n=>{V.ws=n?addDays(V.ws,n):wkStart(new Date());hwStLoad();};
+window.hwJump=v=>{if(v){V.ws=wkStart(pd(v));hwStLoad();}};
+window.hwFilter=f=>{V.filter=f;hwStLoad();};
+window.hwDone=async function(d,sj,on){
+  if(!CU||CU.role!=='student')return;sj=decodeURIComponent(sj);
+  try{const ref=col().doc('hwdone_'+key(CU.username));
+    await ref.set({uid:CU.username,done:{[dkey(d,sj)]:on?{ts:Date.now(),cls:CU.class||'',d:d,s:sj}:firebase.firestore.FieldValue.delete()}},{merge:true});
+    toast(on?'✓ Նշվեց որպես ավարտված':'Նշումը հանվեց');hwStLoad();}catch(e){toast('Սխալ՝ '+(e.message||e));}
+};
+
+/* ---------------- CERTIFICATE REQUESTS ---------------- */
+const crcol=()=>fsdb.collection('certreq');
+const C={list:[],f:'all',q:''};
+function chip(s){return '<span class="hw-chip hw-st-'+s+'">'+ST[s]+'</span>';}
+function dt(t){return new Date(t).toLocaleString('hy-AM');}
+function dl(f){const a=document.createElement('a');a.href=f.data;a.download=f.name||'tekeghanq';document.body.appendChild(a);a.click();a.remove();}
+window.crDl=function(id){const r=C.list.find(x=>x.id===id);if(r&&r.file&&r.file.data)dl(r.file);};
+function myCtx(mode){
+  if(mode==='fam'){const ks=(CU.children||[]);return{kids:ks.map(c=>({name:c.name,cls:c.cls||c.class||''})),b:'fc-cr-b'};}
+  return{kids:[{name:CU.name,cls:CU.class||CU.studentClass||''}],b:'scr-b'};
+}
+const M={};
+window.crUser=async function(mode){
+  M.mode=mode||'stu';const x=myCtx(M.mode),b=$(x.b);if(!b)return;
+  const kids=x.kids;
+  b.innerHTML='<div class="cd" style="padding:16px;margin-bottom:14px"><h3 style="margin:0 0 10px;font-size:15px">Նոր հայտ</h3><div class="hw-f">'
+   +(kids.length>1||M.mode==='fam'?'<div><label>Աշակերտ</label><select id="cr-kid">'+kids.map((k,i)=>'<option value="'+i+'"'+(M.mode==='fam'&&i===window._famCurIdx?' selected':'')+'>'+E(k.name)+' ('+E(k.cls||'—')+')</option>').join('')+'</select></div>':'')
+   +'<div><label>Տեղեկանքի տեսակ</label><select id="cr-type">'+Object.entries(TYPES).map(([k,v])=>'<option value="'+k+'">'+E(v)+'</option>').join('')+'</select></div>'
+   +'<div><label>Նպատակ / մեկնաբանություն</label><textarea id="cr-purpose" rows="3" placeholder="Որտեղ և ինչու է պետք"></textarea></div>'
+   +'<div class="hw-auto" id="cr-auto"></div><div><button class="btn bp2" onclick="crSend(this)">Ուղարկել հայտը</button></div></div></div>'
+   +'<div class="cd" style="padding:16px"><h3 style="margin:0 0 10px;font-size:15px">Իմ հայտերը</h3><div id="cr-mine"><div class="ct-empty">Բեռնվում է...</div></div></div>';
+  const kid=$('cr-kid');if(kid)kid.onchange=crAuto;crAuto();crMine();
+};
+function crSel(){const x=myCtx(M.mode),k=$('cr-kid');return x.kids[k?+k.value:0]||x.kids[0]||{};}
+function crAuto(){const k=crSel(),su=Object.values(DB.users||{}).find(u=>u&&u.role==='student'&&u.name===k.name)||{};
+  const el=$('cr-auto');if(!el)return;
+  el.innerHTML='Տվյալները լրացվում են ավտոմատ․<br>Դիմող՝ <b>'+E(CU.name||'')+'</b> ('+(CU.role==='parent'?'ծնող':'աշակերտ')+')<br>Աշակերտ՝ <b>'+E(k.name||'—')+'</b> · Դասարան՝ <b>'+E(k.cls||'—')+'</b>'+(su.dob?'<br>Ծննդյան ամսաթիվ՝ <b>'+E(su.dob)+'</b>':'')+(CU.email?'<br>Էլ․ փոստ՝ <b>'+E(CU.email)+'</b>':'');}
+window.crSend=async function(btn){
+  if(!CU||(CU.role!=='student'&&CU.role!=='parent'))return;
+  const k=crSel();if(!k.name){toast('Աշակերտը նշված չէ։');return;}
+  const su=Object.values(DB.users||{}).find(u=>u&&u.role==='student'&&u.name===k.name)||{};
+  const now=Date.now(),id='r'+now.toString(36)+Math.random().toString(36).slice(2,6);
+  const r={id:id,uid:CU.username,role:CU.role,requester:CU.name||'',email:CU.email||'',studentName:k.name,cls:k.cls||'',dob:su.dob||'',type:$('cr-type').value,purpose:($('cr-purpose').value||'').trim(),status:'new',createdAt:now,updatedAt:now,history:[{st:'new',ts:now,by:CU.name||CU.username,note:''}],comment:'',reason:'',file:null};
+  btn.disabled=true;
+  try{await crcol().doc(id).set(fsClean(r));$('cr-purpose').value='';toast('✓ Հայտն ուղարկվեց');await crMine();}catch(e){toast('Սխալ՝ '+(e.message||e));}
+  btn.disabled=false;
+};
+async function crMine(){
+  const el=$('cr-mine');if(!el)return;
+  try{const q=await crcol().where('uid','==',CU.username).get();
+    C.list=q.docs.map(d=>d.data()).filter(r=>r.uid===CU.username).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    const seen={};C.list.forEach(r=>seen[r.id]=r.status+':'+(r.updatedAt||0));try{localStorage.setItem('crseen_'+CU.username,JSON.stringify(seen));}catch(e){}
+    setBadge('scr',0);setBadge('fc-cr',0);
+    el.innerHTML=C.list.length?C.list.map(r=>'<div class="hw-it"><div style="flex:1;min-width:200px"><b>'+E(TYPES[r.type]||r.type)+'</b> '+chip(r.status)+'<div style="font-size:12px;color:var(--txt2);margin-top:4px">'+E(r.studentName)+' · '+dt(r.createdAt)+'</div>'+(r.purpose?'<div class="tx">'+E(r.purpose)+'</div>':'')
+      +(r.status==='rejected'&&r.reason?'<div style="font-size:12px;color:#b91c1c;margin-top:6px">Պատճառ՝ '+E(r.reason)+'</div>':'')+(r.comment?'<div style="font-size:12px;margin-top:6px">💬 '+E(r.comment)+'</div>':'')
+      +'<div style="font-size:11px;color:var(--txt3);margin-top:6px">'+(r.history||[]).map(h=>ST[h.st]+' ('+dt(h.ts)+')').join(' → ')+'</div></div>'+(r.file?'<button class="btn bp2" onclick="crDl(\''+r.id+'\')">⬇ '+E(r.file.name||'Ներբեռնել')+'</button>':'')+'</div>').join(''):'<div class="ct-empty">Հայտեր դեռ չկան։</div>';
+  }catch(e){el.innerHTML='<div class="ct-msg er">Չհաջողվեց բեռնել։</div>';}
+}
+/* admin */
+window.crAdmin=async function(){
+  const b=$('acreq-b');if(!b)return;if(!isAdm()){b.innerHTML='<div class="ct-empty">Հասանելի է միայն ադմինին։</div>';return;}
+  try{const q=await crcol().get();C.list=q.docs.map(d=>d.data()).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));}catch(e){b.innerHTML='<div class="ct-msg er">Չհաջողվեց բեռնել։</div>';return;}
+  setBadge('acreq',C.list.filter(r=>r.status==='new').length);crAdDraw();
+};
+function crAdDraw(){
+  const b=$('acreq-b');if(!b)return;const q=(C.q||'').toLowerCase();
+  const l=C.list.filter(r=>(C.f==='all'||r.status===C.f)&&(!q||[r.requester,r.studentName,r.cls,TYPES[r.type]].join(' ').toLowerCase().includes(q)));
+  b.innerHTML='<div class="hw-chips">'+[['all','Բոլորը']].concat(Object.entries(ST)).map(([k,v])=>'<button class="'+(C.f===k?'on':'')+'" onclick="crF(\''+k+'\')">'+v+' ('+(k==='all'?C.list.length:C.list.filter(r=>r.status===k).length)+')</button>').join('')+'</div><div class="hw-bar"><div class="ff"><input id="cra-q" placeholder="Որոնել..." value="'+E(C.q||'')+'" oninput="crQ(this.value)"></div></div>'
+   +(l.length?l.map(r=>'<div class="hw-it" style="cursor:pointer" onclick="crOpen(\''+r.id+'\')"><div style="flex:1"><b>'+E(TYPES[r.type]||r.type)+'</b> '+chip(r.status)+'<div style="font-size:12px;color:var(--txt2);margin-top:4px">'+E(r.studentName)+' ('+E(r.cls)+') · դիմող՝ '+E(r.requester)+' · '+dt(r.createdAt)+'</div></div><span class="hw-chip">Բացել</span></div>').join(''):'<div class="ct-empty">Հայտեր չկան։</div>');
+  const i=$('cra-q');if(i&&document.activeElement!==i&&C.q){}
+}
+window.crF=f=>{C.f=f;crAdDraw();};
+window.crQ=v=>{C.q=v;crAdDraw();const i=$('cra-q');if(i){i.focus();i.setSelectionRange(v.length,v.length);}};
+window.crOpen=function(id){
+  if(!isAdm())return;const r=C.list.find(x=>x.id===id);if(!r)return;
+  const o=document.createElement('div');o.className='hw-ov';o.id='cr-ov';
+  o.innerHTML='<div class="hw-md"><h3 style="margin:0 0 8px">'+E(TYPES[r.type]||r.type)+' '+chip(r.status)+'</h3><div class="hw-auto">Դիմող՝ <b>'+E(r.requester)+'</b> ('+(r.role==='parent'?'ծնող':'աշակերտ')+')'+(r.email?' · '+E(r.email):'')+'<br>Աշակերտ՝ <b>'+E(r.studentName)+'</b> · '+E(r.cls)+(r.dob?' · '+E(r.dob):'')+'<br>Ստեղծվել է՝ '+dt(r.createdAt)+'<br>Նպատակ՝ '+E(r.purpose||'—')+'</div>'
+   +'<div class="hw-f" style="margin-top:12px"><div><label>Կարգավիճակ</label><select id="cro-st" onchange="document.getElementById(\'cro-rs\').style.display=this.value===\'rejected\'?\'block\':\'none\'">'+Object.entries(ST).map(([k,v])=>'<option value="'+k+'"'+(k===r.status?' selected':'')+'>'+v+'</option>').join('')+'</select></div>'
+   +'<div id="cro-rs" style="display:'+(r.status==='rejected'?'block':'none')+'"><label>Մերժման պատճառ</label><textarea id="cro-reason" rows="2">'+E(r.reason||'')+'</textarea></div>'
+   +'<div><label>Մեկնաբանություն դիմողին</label><textarea id="cro-c" rows="2">'+E(r.comment||'')+'</textarea></div>'
+   +'<div><label>Պատրաստ տեղեկանքի ֆայլ (մինչև 700 ԿԲ)'+(r.file?' — կա՝ '+E(r.file.name):'')+'</label><input type="file" id="cro-f"></div>'
+   +'<div style="font-size:11px;color:var(--txt3)">'+(r.history||[]).map(h=>ST[h.st]+' · '+dt(h.ts)+(h.note?' · '+E(h.note):'')).join('<br>')+'</div>'
+   +'<div style="display:flex;gap:8px"><button class="btn bg2" style="flex:1" onclick="document.getElementById(\'cr-ov\').remove()">Փակել</button><button class="btn bp2" style="flex:1" onclick="crSave(\''+id+'\',this)">Պահպանել</button></div></div></div>';
+  document.body.appendChild(o);
+};
+window.crSave=async function(id,btn){
+  if(!isAdm())return;const r=C.list.find(x=>x.id===id);if(!r)return;
+  const st=$('cro-st').value,reason=($('cro-reason').value||'').trim(),comment=($('cro-c').value||'').trim();
+  if(st==='rejected'&&!reason){toast('Մերժման համար գրեք պատճառը։');return;}
+  btn.disabled=true;
+  try{
+    let file=r.file||null;const f=$('cro-f').files[0];
+    if(f){if(f.size>700*1024){toast('Ֆայլը մեծ է (առավելագույնը 700 ԿԲ)։');btn.disabled=false;return;}
+      file=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res({name:f.name,type:f.type,size:f.size,data:fr.result});fr.onerror=rej;fr.readAsDataURL(f);});}
+    const now=Date.now(),hist=(r.history||[]).slice();
+    if(st!==r.status||reason!==(r.reason||''))hist.push({st:st,ts:now,by:'admin',note:st==='rejected'?reason:''});
+    const nr=Object.assign({},r,{status:st,reason:st==='rejected'?reason:'',comment:comment,file:file,history:hist,updatedAt:now});
+    await crcol().doc(id).set(fsClean(nr));
+    Object.assign(r,nr);$('cr-ov').remove();toast('✓ Պահպանվեց');crAdmin();
+  }catch(e){toast('Սխալ՝ '+(e.message||e));btn.disabled=false;}
+};
+
+/* ---------------- badges / notifications ---------------- */
+function setBadge(page,n){document.querySelectorAll('[data-p="'+page+'"]').forEach(el=>{let b=el.querySelector('.hw-bdg');if(!n){if(b)b.remove();return;}if(!b){b=document.createElement('span');b.className='pb hw-bdg';b.style.marginLeft='6px';el.appendChild(b);}b.textContent=n;});}
+window.hwBoot=async function(){
+  try{
+    if(!CU)return;
+    if(isAdm()){const q=await crcol().get();setBadge('acreq',q.docs.filter(d=>d.data().status==='new').length);return;}
+    if(CU.role!=='student'&&CU.role!=='parent')return;
+    const q=await crcol().where('uid','==',CU.username).get();let seen={};try{seen=JSON.parse(localStorage.getItem('crseen_'+CU.username)||'{}');}catch(e){}
+    const ch=q.docs.map(d=>d.data()).filter(r=>r.uid===CU.username&&seen[r.id]&&seen[r.id]!==r.status+':'+(r.updatedAt||0));
+    if(ch.length){setBadge('scr',ch.length);setBadge('fc-cr',ch.length);toast('📨 Տեղեկանքի հայտի կարգավիճակը փոխվել է՝ '+ST[ch[0].status]);}
+  }catch(e){}
+};
+})();
+</script>
+
 </body>
 </html>
 
