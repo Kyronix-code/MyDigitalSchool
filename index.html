@@ -3032,7 +3032,7 @@ function showPg(id){
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
   const rb={
     'dash':()=>{const o=$('dash');if(o){o.outerHTML=buildDash()}},
-    'ahw':()=>hwAdmin(),'acreq':()=>crAdmin(),'shw':()=>hwStudent('stu'),'scr':()=>crUser('stu'),'fc-hw':()=>hwFam(),'fc-cr':()=>crUser('fam'),
+    'ave':()=>veLauncher(),'ahw':()=>hwAdmin(),'acreq':()=>crAdmin(),'shw':()=>hwStudent('stu'),'scr':()=>crUser('stu'),'fc-hw':()=>hwFam(),'fc-cr':()=>crUser('fam'),
     'adash':()=>{const o=$('adash');if(o){o.outerHTML=buildADash()}},
     'apend':()=>{const o=$('apend');if(o){o.outerHTML=buildAPend()};updPC()},
     'checkin':()=>{if(typeof stopScanner==='function')stopScanner();const o=$('checkin');if(o){o.outerHTML=buildCheckin()}},
@@ -3076,6 +3076,7 @@ function buildNav(){
       +'<div class="ni" onclick="showPg(\'acert\')" data-p="acert">🧾 Տեղեկանքներ</div>'
       +'<div class="ni" onclick="showPg(\'ahw\')" data-p="ahw">📚 Իմ առաջադրանքները</div>'
       +'<div class="ni" onclick="showPg(\'acreq\')" data-p="acreq">📨 Տեղեկանքների հայտեր</div>'
+      +'<div class="ni" onclick="showPg(\'ave\')" data-p="ave">🎨 Կայքի տեսքի խմբագրիչ</div>'
       +'<div class="ni" onclick="showPg(\'apend\')" data-p="apend">⏳ '+t('pending')+' <span class="pb" id="pc"></span></div>'
       +'<div class="ni" onclick="showPg(\'checkin\')" data-p="checkin">🔍 '+t('checkin')+'</div>'
       +'<div class="ni" onclick="showPg(\'sads\')" data-p="sads">✉️ '+t('broadcast')+'</div>'
@@ -3083,7 +3084,7 @@ function buildNav(){
       +'<div class="sbs">'+t('nav_system')+'</div>'
       +'<div class="ni" id="maint-ni" onclick="toggleMaint()" style="color:var(--grn)">🟢 '+t('school_open')+'</div>'
       +'<div class="ni" onclick="confirmNewYear()" style="color:#ffd54f">🎓 '+t('new_year')+'</div>';
-    mn.innerHTML=buildADash()+buildATch()+buildAStu()+buildACls()+buildASc()+buildAExam()+buildACert()+buildHwAdmin()+buildCrAdmin()+buildAPend()+buildCheckin()+buildAdminAds()+buildAdminNur();
+    mn.innerHTML=buildADash()+buildATch()+buildAStu()+buildACls()+buildASc()+buildAExam()+buildACert()+buildHwAdmin()+buildCrAdmin()+buildVeAdmin()+buildAPend()+buildCheckin()+buildAdminAds()+buildAdminNur();
     updPC();updMaintNi();showPg('adash');if(window.hwBoot)hwBoot();setTimeout(()=>onScMo(),100);
   }else if(CU.role==='teacher'){
     const hr=CU.homeroom?'<div class="ni" onclick="showPg(\'hr\')" data-p="hr">🏠 '+t('homeroom')+' ('+CU.homeroom+')</div>':'';
@@ -6936,11 +6937,11 @@ const SECS=[
  {id:'vacancies',type:'link',ic:'bell',title:'Թափուր հաստիքներ',desc:'Համակարգը նախատեսված է դպրոցներում թափուր հաստիքների դիմելու համար'},
  {id:'school_diary',type:'link',ic:'diary',title:'Դպրոցների էլեկտրոնային օրագիր',desc:'Դպրոցների էլեկտրոնային օրագիր'}
 ];
-const SEC={};SECS.forEach((s,i)=>{SEC[s.id]=s;s.g=s.id==='polls'?'linear-gradient(135deg,#8b5cf6,#6d28d9)':GRAD[(i>3?i-1:i)%GRAD.length];});
+window.MD_SECS=SECS;const SEC={};SECS.forEach((s,i)=>{SEC[s.id]=s;s.g=s.id==='polls'?'linear-gradient(135deg,#8b5cf6,#6d28d9)':GRAD[(i>3?i-1:i)%GRAD.length];});
 const svg=n=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+IC[n]+'</svg>';
 const ROLE_LBL={teacher:'Ուսուցիչ',student:'Աշակերտ',parent:'Ծնող',admin:'Ադմին'};
 const ST_LBL={pending:'Սպասում է',approved:'Հաստատված է',rejected:'Մերժված է'};
-const ADMIN_PAGES=['ahw','acreq','adash','atch','astu','acls','asc','aexam','acert','apend','checkin','sads','anur','areq','ausr'];
+const ADMIN_PAGES=['ave','ahw','acreq','adash','atch','astu','acls','asc','aexam','acert','apend','checkin','sads','anur','areq','ausr'];
 
 const E=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const $=id=>document.getElementById(id);
@@ -13261,7 +13262,7 @@ const P={
 };
 const ic=(n,sz)=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"'+(sz?' width="'+sz+'" height="'+sz+'"':'')+'>'+(P[n]||P.dot)+'</svg>';
 window.__u2ic=ic;window.__u2P=P;
-const IM={adash:'grid',di:'book',dsum:'bar',['fam-select']:'users',atch:'school',astu:'users',acls:'building',asc:'calendar',aexam:'fileCheck',acert:'fileText',areq:'key',ausr:'search',blk:'ban',jc:'book',acodes:'key',apend:'clock',checkin:'check',sads:'send',anur:'award',sem:'award',sexam:'fileCheck',scert:'fileText',ahw:'book',acreq:'fileText',shw:'book',scr:'fileText','fc-hw':'book','fc-cr':'fileText',slides:'monitor',studio:'palette',doc:'fileText',info:'bar',quiz:'check',ai:'spark',proj:'folder',tpl:'layout',prof:'user',dash:'grid',gr:'fileCheck',semtch:'award',stu:'users',tp:'calendar',hr:'users'};
+const IM={adash:'grid',di:'book',dsum:'bar',['fam-select']:'users',atch:'school',astu:'users',acls:'building',asc:'calendar',aexam:'fileCheck',acert:'fileText',areq:'key',ausr:'search',blk:'ban',jc:'book',acodes:'key',apend:'clock',checkin:'check',sads:'send',anur:'award',sem:'award',sexam:'fileCheck',scert:'fileText',ahw:'book',ave:'palette',acreq:'fileText',shw:'book',scr:'fileText','fc-hw':'book','fc-cr':'fileText',slides:'monitor',studio:'palette',doc:'fileText',info:'bar',quiz:'check',ai:'spark',proj:'folder',tpl:'layout',prof:'user',dash:'grid',gr:'fileCheck',semtch:'award',stu:'users',tp:'calendar',hr:'users'};
 const GMAP={};
 ['adash','dash','di','dsum','fam-select'].forEach(k=>GMAP[k]='main');
 ['slides','studio','doc','info','quiz','ai','proj','tpl'].forEach(k=>GMAP[k]='create');
@@ -13273,7 +13274,7 @@ function label(n){const c=n.cloneNode(true);c.querySelectorAll('.ico,.pb,svg').f
 function items(){
   const nav=$('nav');if(!nav)return[];
   const out=[];
-  nav.querySelectorAll('.ni').forEach(n=>{
+  nav.querySelectorAll('.ni:not([data-ve-hide])').forEach(n=>{
     const p=n.dataset.p||n.dataset.t||'';const tx=label(n);if(!tx)return;
     const g=GMAP[p]||(p?'school':'me');
     const pb=n.querySelector('.pb');const cnt=pb?pb.textContent.trim():'';
@@ -14051,6 +14052,338 @@ window.hwBoot=async function(){
     if(ch.length){setBadge('scr',ch.length);setBadge('fc-cr',ch.length);toast('📨 Տեղեկանքի հայտի կարգավիճակը փոխվել է՝ '+ST[ch[0].status]);}
   }catch(e){}
 };
+})();
+</script>
+
+<!-- ===== MyDigitalSchool: «🎨 Կայքի տեսքի խմբագրիչ» (Visual Editor) — additive, admin-only ===== -->
+<style id="md-ve-css">
+.ve-ov{position:fixed;inset:0;z-index:99990;background:var(--bg);color:var(--txt);display:none;flex-direction:column;font-family:inherit}
+.ve-ov.on{display:flex;animation:veIn .22s ease both}@keyframes veIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.ve-top{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--bdr);background:var(--surf);flex-wrap:wrap}
+.ve-top b{font-size:15px}.ve-grow{flex:1}
+.ve-b{border:1.5px solid var(--bdr);background:var(--surf2);color:var(--txt);border-radius:10px;padding:7px 12px;font:600 12.5px inherit;font-family:inherit;cursor:pointer;white-space:nowrap;transition:.15s}
+.ve-b:hover:not(:disabled){border-color:var(--acc)}.ve-b:disabled{opacity:.4;cursor:default}
+.ve-b.pri{background:var(--acc);border-color:var(--acc);color:#fff}.ve-b.dg{color:#dc2626}
+.ve-seg{display:inline-flex;border:1.5px solid var(--bdr);border-radius:10px;overflow:hidden}.ve-seg button{border:0;background:var(--surf2);color:var(--txt2);padding:7px 11px;cursor:pointer;font:600 12px inherit;font-family:inherit}.ve-seg button.on{background:var(--acc);color:#fff}
+.ve-st{font-size:12px;color:var(--txt2)}.ve-st.dirty{color:#d97706;font-weight:700}
+.ve-body{flex:1;display:grid;grid-template-columns:360px minmax(0,1fr);min-height:0}
+.ve-left{border-right:1px solid var(--bdr);background:var(--surf);display:flex;flex-direction:column;min-height:0}
+.ve-tabs{display:flex;border-bottom:1px solid var(--bdr)}.ve-tabs button{flex:1;border:0;background:none;color:var(--txt2);padding:11px 4px;font:600 12.5px inherit;font-family:inherit;cursor:pointer;border-bottom:2.5px solid transparent}.ve-tabs button.on{color:var(--acc);border-color:var(--acc)}
+.ve-pn{padding:14px;overflow:auto;flex:1;min-height:0}
+.ve-pn h4{margin:14px 0 8px;font-size:12px;color:var(--txt2);text-transform:uppercase;letter-spacing:.04em}.ve-pn h4:first-child{margin-top:0}
+.ve-f{margin-bottom:12px}.ve-f label{display:flex;justify-content:space-between;font-size:12px;color:var(--txt2);margin-bottom:5px;font-weight:600}
+.ve-f input[type=range]{width:100%}.ve-f input[type=text],.ve-f textarea,.ve-f select{width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid var(--bdr);background:var(--surf2);color:var(--txt);border-radius:9px;font:inherit;font-size:13px}
+.ve-col{display:flex;gap:8px;align-items:center}.ve-col input[type=color]{width:42px;height:34px;border:1.5px solid var(--bdr);border-radius:8px;padding:2px;background:var(--surf2);cursor:pointer}.ve-col span{font-size:12px;color:var(--txt3);flex:1}
+.ve-themes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ve-th{border:2px solid var(--bdr);border-radius:12px;padding:9px;cursor:pointer;background:var(--surf2);text-align:left;font:600 12px inherit;font-family:inherit;color:var(--txt)}.ve-th.on{border-color:var(--acc)}.ve-th i{display:block;height:20px;border-radius:7px;margin-bottom:6px}
+.ve-row{display:flex;align-items:center;gap:8px;padding:8px;border:1.5px solid var(--bdr);border-radius:11px;margin-bottom:6px;background:var(--surf2)}
+.ve-row.drag{opacity:.4}.ve-row.over{border-color:var(--acc)}.ve-row.off{opacity:.55}
+.ve-row .hd{cursor:grab;color:var(--txt3);user-select:none;padding:0 2px}.ve-row .nm{flex:1;font-size:13px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ve-ib{border:0;background:none;color:var(--txt2);cursor:pointer;font-size:14px;padding:4px 6px;border-radius:7px}.ve-ib:hover{background:var(--acc-lt)}
+.ve-ed{border:1.5px solid var(--bdr);border-radius:11px;padding:10px;margin:-2px 0 8px;background:var(--surf)}
+.ve-ics{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-bottom:8px}.ve-ics button{border:1.5px solid var(--bdr);background:var(--surf2);color:var(--txt);border-radius:8px;padding:5px;cursor:pointer}.ve-ics button.on{border-color:var(--acc);background:var(--acc-lt)}.ve-ics svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block;margin:auto}
+.ve-right{display:flex;flex-direction:column;min-height:0;min-width:0;background:var(--surf3)}
+.ve-rbar{display:flex;gap:8px;align-items:center;padding:10px 14px;flex-wrap:wrap}.ve-rbar select{padding:7px 10px;border-radius:10px;border:1.5px solid var(--bdr);background:var(--surf);color:var(--txt);font:600 12.5px inherit;font-family:inherit}
+.ve-stage{flex:1;overflow:auto;padding:0 14px 18px;min-height:0}
+.ve-pv{margin:0 auto;background:var(--bg);color:var(--txt);border:1px solid var(--bdr);border-radius:16px;padding:16px;box-sizing:border-box;transition:max-width .25s ease;box-shadow:0 10px 40px rgba(0,0,0,.12);min-height:300px}
+.ve-pv .pvh{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-weight:800}.ve-pv .pvh i{width:22px;height:22px;border-radius:7px;background:var(--acc)}
+.ve-pv .hm-tile[draggable=true]{cursor:grab}.ve-pv .hm-tile.hid{opacity:.35;outline:2px dashed var(--txt3)}.ve-pv .hm-tile.dov{outline:2px solid var(--acc)}
+.ve-pv .pvnav{display:grid;grid-template-columns:200px minmax(0,1fr);gap:14px}.ve-pv .pvside{background:linear-gradient(180deg,#27315f,#101636);border-radius:14px;padding:10px;color:#fff}.ve-pv .pvside div{padding:8px 10px;border-radius:9px;font-size:12.5px;margin-bottom:3px}.ve-pv .pvside div.hid{opacity:.35;text-decoration:line-through}
+.ve-pv.tab{max-width:820px}.ve-pv.pho{max-width:390px}.ve-pv.pho .pvnav{grid-template-columns:1fr}
+.ve-hist{font-size:12px}.ve-hist .it{padding:9px;border:1.5px solid var(--bdr);border-radius:10px;margin-bottom:6px;background:var(--surf2)}
+.ve-md{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99995;display:flex;align-items:center;justify-content:center;padding:14px}
+.ve-mc{background:var(--surf);color:var(--txt);border-radius:16px;max-width:980px;width:100%;max-height:92vh;overflow:auto;padding:18px;box-sizing:border-box}
+.ve-cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px}.ve-cmp>div{min-width:0}.ve-cmp .ve-pv{padding:10px;min-height:0;zoom:.6}
+.ve-diff{font-size:13px;margin:8px 0;padding-left:18px}.ve-diff li{margin:3px 0}
+.ve-tx{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#111;color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;z-index:99999;display:none}
+@media(max-width:900px){.ve-body{grid-template-columns:1fr;grid-template-rows:minmax(0,46%) minmax(0,54%);}.ve-body>.ve-right{order:-1}.ve-left{border-right:0;border-top:1px solid var(--bdr)}.ve-cmp{grid-template-columns:1fr}}
+</style>
+<script id="md-ve-js">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const E=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const isAdm=()=>typeof CU!=='undefined'&&!!CU&&CU.role==='admin'&&CU.username==='admin';
+const LANGS=['hy','en','ru','fr'],LN={hy:'ՀԱՅ',en:'EN',ru:'RU',fr:'FR'};
+const curLang=()=>{try{return typeof _lang!=='undefined'&&_lang?_lang:'hy';}catch(e){return 'hy';}};
+const ROLES={admin:'Ադմին',teacher:'Ուսուցիչ',student:'Աշակերտ',parent:'Ծնող'};
+const NAVDEF={
+ admin:[['adash','Վահանակ'],['atch','Ուսուցիչներ'],['astu','Աշակերտներ'],['acls','Դասարաններ'],['asc','Դասացուցակ'],['aexam','Քննական ժամանակացույց'],['acert','Տեղեկանքներ'],['ahw','Իմ առաջադրանքները'],['acreq','Տեղեկանքների հայտեր'],['apend','Սպասման մեջ'],['checkin','Մուտքի գրանցում'],['sads','Ուղարկել բոլորին'],['anur','Նուր միավորներ'],['ave','Կայքի տեսքի խմբագրիչ']],
+ teacher:[['dash','Վահանակ'],['gr','Գնահատականներ'],['semtch','Կիսամյակային գնահատականներ'],['stu','Աշակերտներ'],['tp','Թեմատիկ պլան'],['prof','Իմ պրոֆիլը'],['hr','Դասղեկություն']],
+ student:[['di','Իմ օրագիրը'],['sem','Կիսամյակային գնահատականներ'],['sexam','Քննական ժամանակացույց'],['scert','Իմ տեղեկանքները'],['shw','Իմ առաջադրանքները'],['scr','Տեղեկանքների պատվիրում'],['prof','Իմ պրոֆիլը']],
+ parent:[['fam-select','Ընտանիք'],['fc-diary','Օրագիր'],['fc-grades','Գնահատականներ'],['fc-exam','Քննական ժամանակացույց'],['fc-cert','Տեղեկանքներ'],['fc-hw','Առաջադրանքներ'],['fc-cr','Տեղեկանքների պատվիրում'],['fc-profile','Պրոֆիլ']]
+};
+const PROTECT={dash:1,di:1,'fam-select':1,'fc-diary':1,adash:1,ave:1};
+const IC={
+ book:'<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M9 8h7M9 12h7"/>',diary:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v18M12.5 8h4M12.5 12h4"/>',shield:'<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2.2 2.2L15.5 10"/>',vote:'<path d="M5 12h14v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z"/><path d="M9 12l3-3 3 3M12 9V3"/>',read:'<path d="M12 7c-1.6-1.6-4-2-7-2v12c3 0 5.4.4 7 2 1.6-1.6 4-2 7-2V5c-3 0-5.4.4-7 2z"/><path d="M12 7v12"/>',cap:'<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11.2V16c0 1.3 2.7 3 6 3s6-1.7 6-3v-4.8"/>',bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',cert:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 9h6M7 12h4"/><circle cx="17" cy="14" r="2.5"/>',school:'<path d="M3 10l9-6 9 6"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/>',star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',users:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 5.5a3 3 0 0 1 0 5.6M18 14.4c2 .8 3.5 2.8 3.5 5.6"/>',
+ home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="2.2"/><path d="M16 3v4M8 3v4M3 10.5h18"/>',mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',heart:'<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/>',globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',folder:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',pen:'<path d="M4 20l4-1 11-11-3-3L5 16z"/>',trophy:'<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H4v2a3 3 0 0 0 4 3M16 6h4v2a3 3 0 0 1-4 3M12 13v4M8 20h8"/>',bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/>',lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',flag:'<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>'
+};
+const ICK=Object.keys(IC);
+/* ---------- defaults / sanitiser (whitelist: nothing but safe values reaches the page) ---------- */
+const DEF=()=>({st:{},themes:[],portal:{order:[],hide:{},ov:{}},nav:{}});
+const clr=v=>typeof v==='string'&&/^#[0-9a-fA-F]{6}$/.test(v)?v.toLowerCase():'';
+const num=(v,a,b)=>{v=parseFloat(v);return isFinite(v)?Math.min(b,Math.max(a,v)):null;};
+const txt=(v,n)=>typeof v==='string'?v.replace(/[\u0000-\u001f<>]/g,'').slice(0,n):'';
+const idk=v=>typeof v==='string'&&/^[A-Za-z0-9_-]{1,40}$/.test(v)?v:'';
+const ENUM=(v,a)=>a.indexOf(v)>=0?v:'';
+function sanSt(s){s=s||{};const o={};
+ ['accent','accent2','bgL','cardL','bgD','cardD'].forEach(k=>{const c=clr(s[k]);if(c)o[k]=c;});
+ let n;if((n=num(s.radius,0,40))!=null&&s.radius!=='')o.radius=Math.round(n);if((n=num(s.border,0,4))!=null&&s.border!=='')o.border=Math.round(n);
+ if((n=num(s.fs,80,130))!=null&&s.fs!=='')o.fs=Math.round(n);if((n=num(s.cols,0,4))!=null&&s.cols!=='')o.cols=Math.round(n);
+ const sh=ENUM(s.shadow,['none','soft','medium','strong']);if(sh)o.shadow=sh;const gp=ENUM(s.gap,['compact','normal','spacious']);if(gp)o.gap=gp;
+ const th=idk(s.theme);if(th)o.theme=th;return o;}
+function sanLang(m,n){const o={};if(m&&typeof m==='object')LANGS.forEach(l=>{const t=txt(m[l],n).trim();if(t)o[l]=t;});return o;}
+function san(c){c=c&&typeof c==='object'?c:{};const o=DEF();o.st=sanSt(c.st);
+ (Array.isArray(c.themes)?c.themes:[]).slice(0,6).forEach(t=>{const id=idk(t&&t.id),nm=txt(t&&t.name,30).trim();if(id&&nm)o.themes.push({id:id,name:nm,st:sanSt(t.st)});});
+ const p=c.portal||{};o.portal.order=(Array.isArray(p.order)?p.order:[]).map(idk).filter(Boolean).slice(0,40);
+ Object.keys(p.hide||{}).forEach(k=>{if(idk(k)&&p.hide[k])o.portal.hide[k]=1;});
+ Object.keys(p.ov||{}).forEach(k=>{if(!idk(k))return;const v=p.ov[k]||{},r={};const g=clr(v.g);if(g)r.g=g;if(IC[v.ic])r.ic=v.ic;const t=sanLang(v.t,80),d=sanLang(v.d,240);if(Object.keys(t).length)r.t=t;if(Object.keys(d).length)r.d=d;if(Object.keys(r).length)o.portal.ov[k]=r;});
+ Object.keys(ROLES).forEach(r=>{const n=(c.nav||{})[r];if(!n)return;const x={hide:{},lbl:{}};
+  Object.keys(n.hide||{}).forEach(k=>{if(r!=='admin'&&idk(k)&&n.hide[k]&&!PROTECT[k])x.hide[k]=1;});
+  Object.keys(n.lbl||{}).forEach(k=>{if(!idk(k))return;const l=sanLang(n.lbl[k],40);if(Object.keys(l).length)x.lbl[k]=l;});
+  if(Object.keys(x.hide).length||Object.keys(x.lbl).length)o.nav[r]=x;});
+ return o;}
+/* ---------- colour helpers + CSS generator ---------- */
+function hx(h){return[1,3,5].map(i=>parseInt(h.substr(i,2),16));}
+function toh(a){return'#'+a.map(x=>Math.max(0,Math.min(255,Math.round(x))).toString(16).padStart(2,'0')).join('');}
+const shade=(h,p)=>toh(hx(h).map(x=>p<0?x*(1+p):x+(255-x)*p));
+const rgba=(h,a)=>'rgba('+hx(h).join(',')+','+a+')';
+const SH={none:'none',soft:'0 1px 2px rgba(20,24,40,.05),0 4px 14px rgba(20,24,40,.07)',medium:'0 2px 6px rgba(20,24,40,.08),0 12px 30px rgba(20,24,40,.14)',strong:'0 6px 14px rgba(20,24,40,.14),0 22px 50px rgba(20,24,40,.26)'};
+const GP={compact:[10,14],normal:[16,22],spacious:[24,30]};
+const CARDS=['.hm-tile','.hm-link','.hm-card','.mp-card','.cd','.hw-it'];
+function gen(c,P,o){o=o||{};const s=c.st,out=[];const root=P||'html body:not(#ve0)';
+ let v='';if(s.accent){const a2=s.accent2||shade(s.accent,-.28);v+='--acc:'+s.accent+';--acc2:'+a2+';--acc3:'+shade(s.accent,.25)+';--acc-lt:'+rgba(s.accent,.13)+';--acc-lt2:'+rgba(s.accent,.06)+';--u2-g1:linear-gradient(135deg,'+s.accent+','+a2+');';}else if(s.accent2)v+='--acc2:'+s.accent2+';';
+ if(v)out.push(root+'{'+v+'}');
+ const mode=(a,b,dark)=>{const r=[];if(a)r.push('--bg:'+a);if(b)r.push('--surf:'+b+';--u2-card:'+b);return r.join(';');};
+ if(P){const d=!!o.dark,bg=d?s.bgD:s.bgL,cd=d?s.cardD:s.cardL;const m=mode(bg,cd);if(m)out.push(P+'{'+m+'}');}
+ else{const L=mode(s.bgL,s.cardL),D=mode(s.bgD,s.cardD);if(L)out.push('html:not([data-theme=dark]) body:not(#ve0){'+L+'}');if(D)out.push('html[data-theme=dark] body:not(#ve0){'+D+'}');}
+ const pre=P?P+' ':'html body:not(#ve0) ',sel=l=>l.map(x=>pre+x).join(',');
+ let cr='';if(s.radius!=null)cr+='border-radius:'+s.radius+'px!important;';if(s.border!=null)cr+='border-width:'+s.border+'px!important;border-style:solid!important;';if(s.shadow)cr+='box-shadow:'+SH[s.shadow]+'!important;';
+ if(cr)out.push(sel(CARDS)+'{'+cr+'}');
+ if(s.gap){const g=GP[s.gap];out.push(sel(['.hm-sys','.hm-links','.mp-grid'])+'{gap:'+g[0]+'px!important}');out.push(sel(['.hm-tile','.mp-card'])+'{padding:'+g[1]+'px!important}');}
+ if(s.fs&&s.fs!==100)out.push(sel(['.hm-tt','.hm-td','.hm-lt','.mp-t','.mp-d'])+'{zoom:'+(s.fs/100)+'}');
+ if(s.cols){const N=s.cols,G=sel(['.hm-sys','.hm-links','.mp-grid']);const rule=n=>G+'{grid-template-columns:repeat('+n+',minmax(0,1fr))!important}';
+  if(o.dev)out.push(rule(o.dev==='desktop'?N:o.dev==='tablet'?Math.min(N,2):1));
+  else{out.push('@media(min-width:1000px){'+rule(N)+'}');out.push('@media(min-width:640px) and (max-width:999px){'+rule(Math.min(N,2))+'}');out.push('@media(max-width:639px){'+rule(1)+'}');}}
+ return out.join('\n');}
+/* ---------- applying the PUBLISHED config to the real site ---------- */
+let PUB={v:0,cfg:DEF(),ts:0,by:''};
+const secs=()=>Array.isArray(window.MD_SECS)?window.MD_SECS:[];
+function secId(el){const m=/mdCard\('([^']+)'\)/.exec(el.getAttribute('onclick')||'');return m?m[1]:'';}
+function ovTxt(m,l){return m&&(m[l]||'');}
+let obs=null,applying=false,tmr=0;
+function applyDom(c){
+ if(applying)return;applying=true;if(obs)obs.disconnect();
+ try{
+  const lang=curLang(),pt=$('md-portal');
+  if(pt){const cards=[].slice.call(pt.querySelectorAll('button[onclick^="mdCard("]'));
+   const ord=c.portal.order;
+   cards.forEach((el,i)=>{const id=secId(el);if(!id)return;
+    const tE=el.querySelector('.hm-tt b,.hm-lt b,.mp-t'),dE=el.querySelector('.hm-td,.hm-lt small,.mp-d'),iE=el.querySelector('.hm-ic,.mp-ic');
+    if(!el.dataset.ve0)el.dataset.ve0=JSON.stringify({t:tE?tE.textContent:'',d:dE?dE.textContent:'',s:iE&&iE.querySelector('svg')?iE.querySelector('svg').innerHTML:'',g:iE?iE.style.background:''});
+    const b=JSON.parse(el.dataset.ve0),ov=c.portal.ov[id]||{};
+    if(tE)tE.textContent=ovTxt(ov.t,lang)||b.t;if(dE)dE.textContent=ovTxt(ov.d,lang)||b.d;
+    if(iE){const sv=iE.querySelector('svg');if(sv)sv.innerHTML=ov.ic?IC[ov.ic]:b.s;iE.style.background=ov.g?'linear-gradient(135deg,'+ov.g+','+shade(ov.g,-.28)+')':b.g;}
+    const hid=!!c.portal.hide[id];el.style.display=hid?'none':'';
+    const oi=ord.indexOf(id);el.style.order=ord.length?String(oi>=0?oi:1000+i):'';});}
+  const nv=$('nav');
+  if(nv&&typeof CU!=='undefined'&&CU){const n=c.nav[CU.role]||{hide:{},lbl:{}};
+   nv.querySelectorAll('.ni[data-p]').forEach(el=>{const p=el.dataset.p;
+    const hide=CU.role!=='admin'&&!!n.hide[p];if(hide){el.setAttribute('data-ve-hide','1');el.style.display='none';el.dataset.veh='1';}else{el.removeAttribute('data-ve-hide');if(el.dataset.veh){el.style.display='';delete el.dataset.veh;}}
+    let tn=null;const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let x;while((x=w.nextNode())){if(x.nodeValue.trim()&&!(x.parentNode.closest&&x.parentNode.closest('.pb,.hw-bdg')))tn=x;}
+    if(tn){if(el.dataset.vet===undefined)el.dataset.vet=tn.nodeValue;const pre=(/^[^\p{L}\p{N}]*/u.exec(el.dataset.vet)||[''])[0],lb=(n.lbl[p]||{})[lang];tn.nodeValue=lb?pre+lb:el.dataset.vet;}});}
+ }catch(e){console.warn('ve apply',e);}
+ applying=false;
+ if(obs){const t=$('md-portal'),n=$('nav');if(t)obs.observe(t,{childList:true,subtree:true});if(n)obs.observe(n,{childList:true,subtree:true});}
+}
+function applyAll(){
+ let st=$('md-ve-live');if(!st){st=document.createElement('style');st.id='md-ve-live';document.head.appendChild(st);}
+ st.textContent=gen(PUB.cfg,'');applyDom(PUB.cfg);
+ try{if(typeof u2Paint==='function'&&document.querySelector('#u2-pan'))u2Paint();}catch(e){}
+}
+function sched(){clearTimeout(tmr);tmr=setTimeout(()=>applyDom(PUB.cfg),40);}
+function startObs(){obs=new MutationObserver(sched);const t=$('md-portal'),n=$('nav');if(t)obs.observe(t,{childList:true,subtree:true});if(n)obs.observe(n,{childList:true,subtree:true});}
+const col=()=>fsdb.collection(FS_COL);
+async function loadPub(){try{const s=await col().doc('site_ve_pub').get();if(s.exists){const d=s.data();PUB={v:d.v||0,cfg:san(d.cfg),ts:d.ts||0,by:d.by||''};applyAll();}}catch(e){}}
+function listenPub(){try{col().doc('site_ve_pub').onSnapshot(s=>{if(!s.exists)return;const d=s.data();if(!d)return;const j=JSON.stringify(san(d.cfg));if(j===JSON.stringify(PUB.cfg)&&(d.v||0)===PUB.v)return;PUB={v:d.v||0,cfg:san(d.cfg),ts:d.ts||0,by:d.by||''};applyAll();if(S.open)updState();},()=>{});}catch(e){loadPub();}}
+/* ---------- editor state ---------- */
+const S={open:false,cfg:DEF(),saved:'',tab:'theme',target:'portal',dev:'desktop',lang:'hy',stack:[],ix:0,exp:null,hist:{versions:[],log:[]},draftTs:0,busy:false,drag:null};
+const J=x=>JSON.stringify(x);
+const dirty=()=>J(san(S.cfg))!==S.saved;
+const diffPub=()=>J(san(S.cfg))!==J(PUB.cfg);
+function tx(m){let t=$('ve-tx');if(!t){t=document.createElement('div');t.id='ve-tx';t.className='ve-tx';document.body.appendChild(t);}t.textContent=m;t.style.display='block';clearTimeout(tx._t);tx._t=setTimeout(()=>{t.style.display='none'},3200);}
+const dt=t=>t?new Date(t).toLocaleString('hy-AM'):'—';
+async function loadHist(){try{const s=await col().doc('site_ve_hist').get();const d=s.exists?s.data():{};S.hist={versions:Array.isArray(d.versions)?d.versions:[],log:Array.isArray(d.log)?d.log:[]};}catch(e){S.hist={versions:[],log:[]};}}
+async function addLog(act,detail,extraVersion){
+ await loadHist();const h=S.hist;h.log.unshift({ts:Date.now(),by:'admin',act:act,detail:txt(detail||'',300)});h.log=h.log.slice(0,100);
+ if(extraVersion){h.versions.unshift(extraVersion);h.versions=h.versions.slice(0,12);}
+ await col().doc('site_ve_hist').set(JSON.parse(J(h)));}
+function snap(){const j=J(san(S.cfg));if(S.stack[S.ix]===j)return;S.stack=S.stack.slice(0,S.ix+1);S.stack.push(j);if(S.stack.length>80)S.stack.shift();S.ix=S.stack.length-1;}
+let stT=0;function touch(skipRender){clearTimeout(stT);stT=setTimeout(snap,350);pvRender();updState();}
+function setCfg(c){S.cfg=san(c);S.stack=[J(S.cfg)];S.ix=0;}
+/* ---------- open / close ---------- */
+window.mdVE={open:async function(){
+ if(!isAdm()){alert('Այս բաժինը հասանելի է միայն ադմինին։');return;}
+ let ov=$('ve-ov');if(!ov){ov=document.createElement('div');ov.id='ve-ov';ov.className='ve-ov';document.body.appendChild(ov);}
+ S.lang=curLang();S.open=true;ov.classList.add('on');ov.innerHTML='<div style="margin:auto;font-size:14px;color:var(--txt2)">Բեռնվում է…</div>';
+ let dr=null;try{const s=await col().doc('site_ve_draft').get();if(s.exists)dr=s.data();}catch(e){}
+ if(dr&&dr.cfg){setCfg(dr.cfg);S.saved=J(san(dr.cfg));S.draftTs=dr.ts||0;}else{setCfg(PUB.cfg);S.saved=J(PUB.cfg);S.draftTs=0;}
+ await loadHist();build();},
+ close:function(){if(dirty()&&!confirm('Չպահպանված փոփոխություններ կան։ Դուրս գա՞լ առանց սևագիր պահելու։'))return;doClose();},apply:applyAll};
+function doClose(){S.open=false;const ov=$('ve-ov');if(ov){ov.classList.remove('on');ov.innerHTML='';}const m=$('ve-md');if(m)m.remove();const p=$('ve-pvs');if(p)p.remove();}
+window.addEventListener('beforeunload',e=>{if(S.open&&dirty()){e.preventDefault();e.returnValue='';}});
+document.addEventListener('keydown',e=>{if(!S.open)return;if(e.key==='Escape'&&!$('ve-md'))mdVE.close();if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||'')){e.preventDefault();e.shiftKey?redo():undo();}});
+/* ---------- editor chrome ---------- */
+const PRESETS=[['def','Լռելյայն',{}],['ocean','Օվկիանոս',{accent:'#0b6bcb',accent2:'#084c91'}],['forest','Անտառ',{accent:'#15803d',accent2:'#166534'}],['sunset','Մայրամուտ',{accent:'#ea580c',accent2:'#c2410c'}],['violet','Մանուշակ',{accent:'#7c3aed',accent2:'#5b21b6'}],['rose','Վարդագույն',{accent:'#db2777',accent2:'#9d174d'}],['graph','Գրաֆիտ',{accent:'#374151',accent2:'#111827',radius:8,shadow:'none',border:1}]];
+function build(){
+ const ov=$('ve-ov');if(!ov)return;
+ ov.innerHTML='<div class="ve-top"><button class="ve-b" onclick="mdVE.close()">✕ Փակել</button><b>🎨 Կայքի տեսքի խմբագրիչ</b><span class="ve-st" id="ve-s"></span><span class="ve-grow"></span>'
+  +'<span class="ve-seg" id="ve-dev"><button data-d="desktop">💻</button><button data-d="tablet">📱 Պլանշետ</button><button data-d="phone">📞 Հեռախոս</button></span>'
+  +'<button class="ve-b" id="ve-un" onclick="veUndo()">↶ Հետարկել</button><button class="ve-b" id="ve-re" onclick="veRedo()">↷ Կրկնել</button>'
+  +'<button class="ve-b dg" onclick="veReset()">Վերականգնել սկզբնական տեսքը</button><button class="ve-b" id="ve-sd" onclick="veSaveDraft()">Պահպանել որպես սևագիր</button><button class="ve-b pri" onclick="vePublish()">Հրապարակել</button></div>'
+  +'<div class="ve-body"><aside class="ve-left"><div class="ve-tabs" id="ve-tabs">'+[['theme','Թեմա'],['style','Ոճ'],['items','Տարրեր'],['hist','Պատմություն']].map(t=>'<button data-t="'+t[0]+'">'+t[1]+'</button>').join('')+'</div><div class="ve-pn" id="ve-pn"></div></aside>'
+  +'<main class="ve-right"><div class="ve-rbar"><select id="ve-tg" onchange="veTarget(this.value)">'+'<option value="portal">Գլխավոր էջ (բաժինների քարտեր)</option><option value="pages">Ներքին էջեր (օրինակ քարտեր)</option>'+Object.keys(ROLES).map(r=>'<option value="nav-'+r+'">Մենյու՝ '+ROLES[r]+'</option>').join('')+'</select>'
+  +'<span class="ve-seg" id="ve-lg">'+LANGS.map(l=>'<button data-l="'+l+'">'+LN[l]+'</button>').join('')+'</span><button class="ve-b" onclick="veTheme2()">☀/🌙 Թեմա</button></div><div class="ve-stage"><div class="ve-pv" id="ve-pvb"></div></div></main></div>';
+ $('ve-tg').value=S.target;
+ $('ve-tabs').onclick=e=>{const b=e.target.closest('button');if(b)veTab(b.dataset.t);};
+ $('ve-dev').onclick=e=>{const b=e.target.closest('button');if(b){S.dev=b.dataset.d;pvRender();mark();}};
+ $('ve-lg').onclick=e=>{const b=e.target.closest('button');if(b){S.lang=b.dataset.l;mark();pvRender();veTab(S.tab);}};
+ veTab(S.tab);pvRender();updState();}
+window.veTheme2=function(){if(typeof tgTheme==='function'){tgTheme();setTimeout(()=>{pvRender();veTab(S.tab);},120);}};
+function mark(){document.querySelectorAll('#ve-tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===S.tab));document.querySelectorAll('#ve-dev button').forEach(b=>b.classList.toggle('on',b.dataset.d===S.dev));document.querySelectorAll('#ve-lg button').forEach(b=>b.classList.toggle('on',b.dataset.l===S.lang));}
+function updState(){const el=$('ve-s');if(!el)return;const d=dirty();el.className='ve-st'+(d?' dirty':'');el.textContent=d?'● Չպահպանված փոփոխություններ':(diffPub()?'Սևագիրը պահպանված է (չհրապարակված)':'Հրապարակված տարբերակի հետ համընկնում է');
+ const u=$('ve-un'),r=$('ve-re');if(u)u.disabled=S.ix<=0;if(r)r.disabled=S.ix>=S.stack.length-1;}
+window.veTab=function(t){S.tab=t;mark();const p=$('ve-pn');if(!p)return;p.innerHTML=t==='theme'?tabTheme():t==='style'?tabStyle():t==='items'?tabItems():tabHist();};
+window.veTarget=function(v){S.target=v;S.exp=null;pvRender();if(S.tab==='items')veTab('items');};
+function undo(){if(S.ix>0){S.ix--;S.cfg=JSON.parse(S.stack[S.ix]);pvRender();veTab(S.tab);updState();}}
+function redo(){if(S.ix<S.stack.length-1){S.ix++;S.cfg=JSON.parse(S.stack[S.ix]);pvRender();veTab(S.tab);updState();}}
+window.veUndo=undo;window.veRedo=redo;
+window.veReset=function(){if(!confirm('Սևագիրը կվերականգնվի սկզբնական տեսքին (հրապարակված տարբերակը չի փոխվի մինչև «Հրապարակել»)։ Շարունակե՞լ։'))return;S.cfg=DEF();snap();pvRender();veTab(S.tab);updState();tx('Սևագիրը վերականգնվեց սկզբնական տեսքին');};
+/* ---------- tabs ---------- */
+const dark=()=>document.documentElement.getAttribute('data-theme')==='dark';
+function colorRow(k,lbl){const v=S.cfg.st[k]||'';return '<div class="ve-f"><label>'+lbl+'</label><div class="ve-col"><input type="color" value="'+(v||'#888888')+'" oninput="veSt(\''+k+'\',this.value)"><span>'+(v||'լռելյայն')+'</span><button class="ve-ib" title="Մաքրել" onclick="veSt(\''+k+'\',\'\',1)">✕</button></div></div>';}
+function tabTheme(){const st=S.cfg.st;
+ let h='<h4>Պատրաստի թեմաներ</h4><div class="ve-themes">'+PRESETS.map(p=>'<button class="ve-th'+((st.theme||'def')===p[0]?' on':'')+'" onclick="veTheme(\''+p[0]+'\')"><i style="background:'+(p[2].accent?'linear-gradient(135deg,'+p[2].accent+','+p[2].accent2+')':'linear-gradient(135deg,#4778F5,#8874EA)')+'"></i>'+p[1]+'</button>').join('')
+  +S.cfg.themes.map(t=>'<button class="ve-th'+(st.theme===t.id?' on':'')+'" onclick="veTheme(\''+t.id+'\')"><i style="background:linear-gradient(135deg,'+(t.st.accent||'#4778F5')+','+(t.st.accent2||'#8874EA')+')"></i>'+E(t.name)+' <span onclick="event.stopPropagation();veDelTheme(\''+t.id+'\')" style="float:right;color:var(--txt3)">✕</span></button>').join('')+'</div>';
+ h+='<h4>Սեփական գույներ</h4>'+colorRow('accent','Հիմնական գույն')+colorRow('accent2','Երկրորդ (գրադիենտ) գույն')
+  +'<h4>Ֆոն ('+(dark()?'մութ':'բաց')+' ռեժիմ)</h4>'+(dark()?colorRow('bgD','Էջի ֆոն')+colorRow('cardD','Քարտի ֆոն'):colorRow('bgL','Էջի ֆոն')+colorRow('cardL','Քարտի ֆոն'))
+  +'<div style="font-size:11px;color:var(--txt3);margin-bottom:10px">Մյուս ռեժիմի գույները փոխելու համար վերևի «☀/🌙 Թեմա» կոճակով անցեք այդ ռեժիմին։</div>'
+  +'<h4>Սեփական թեմա</h4><div class="ve-f"><input type="text" id="ve-tn" maxlength="30" placeholder="Թեմայի անունը"></div><button class="ve-b" onclick="veSaveTheme()">+ Պահպանել ընթացիկ ոճը որպես թեմա</button>';
+ return h;}
+window.veSt=function(k,v,rerender){if(v==='')delete S.cfg.st[k];else S.cfg.st[k]=v;if(k==='accent'||k==='accent2')delete S.cfg.st.theme;touch();if(rerender)veTab(S.tab);else{const sp=document.querySelector('#ve-pn .ve-col input[oninput*="\''+k+'\'"]');if(sp&&sp.nextElementSibling)sp.nextElementSibling.textContent=v;}};
+window.veTheme=function(id){const p=PRESETS.find(x=>x[0]===id);const keep=['bgL','cardL','bgD','cardD','cols','gap','fs'];
+ let src=p?p[2]:(S.cfg.themes.find(t=>t.id===id)||{st:{}}).st;const n=sanSt(src);['accent','accent2','radius','border','shadow'].forEach(k=>delete S.cfg.st[k]);Object.assign(S.cfg.st,n);if(id!=='def')S.cfg.st.theme=id;else delete S.cfg.st.theme;snap();pvRender();veTab('theme');updState();};
+window.veSaveTheme=function(){const n=($('ve-tn').value||'').trim();if(!n){tx('Գրեք թեմայի անունը');return;}if(S.cfg.themes.length>=6){tx('Առավելագույնը 6 սեփական թեմա');return;}
+ const id='t'+Date.now().toString(36);const st=JSON.parse(J(S.cfg.st));delete st.theme;S.cfg.themes.push({id:id,name:n,st:sanSt(st)});S.cfg.st.theme=id;snap();veTab('theme');updState();tx('Թեման պահվեց սևագրում');};
+window.veDelTheme=function(id){S.cfg.themes=S.cfg.themes.filter(t=>t.id!==id);if(S.cfg.st.theme===id)delete S.cfg.st.theme;snap();veTab('theme');pvRender();updState();};
+function rng(k,lbl,a,b,def,unit){const v=S.cfg.st[k]!=null?S.cfg.st[k]:def;return '<div class="ve-f"><label><span>'+lbl+'</span><b id="ve-v-'+k+'">'+v+unit+'</b></label><input type="range" min="'+a+'" max="'+b+'" value="'+v+'" oninput="veNum(\''+k+'\',this.value,\''+unit+'\')"></div>';}
+function seg(k,lbl,opts){const v=S.cfg.st[k]||'';return '<div class="ve-f"><label>'+lbl+'</label><span class="ve-seg" style="display:flex">'+opts.map(o=>'<button style="flex:1" class="'+(v===o[0]?'on':'')+'" onclick="veEnum(\''+k+'\',\''+o[0]+'\')">'+o[1]+'</button>').join('')+'</span></div>';}
+function tabStyle(){return '<h4>Քարտեր</h4>'+rng('radius','Անկյունների կլորություն',0,40,16,'px')+rng('border','Եզրագծի հաստություն',0,4,1,'px')
+ +seg('shadow','Ստվեր',[['','Լռ.'],['none','Չկա'],['soft','Թեթև'],['medium','Միջին'],['strong','Ուժեղ']])
+ +'<h4>Տարածություններ և դասավորություն</h4>'+seg('gap','Տարածություն',[['','Լռ.'],['compact','Խիտ'],['normal','Սովորական'],['spacious','Լայն']])
+ +seg('cols','Սյունակների քանակ (համակարգիչ)',[['0','Ավտո'],['1','1'],['2','2'],['3','3'],['4','4']]).replace(/veEnum\('cols','(\d)'\)/g,"veEnum('cols',$1)")
+ +rng('fs','Քարտերի տեքստի չափ',80,130,100,'%')
+ +'<div style="font-size:11px;color:var(--txt3)">Պլանշետում առավելագույնը 2 սյունակ է, հեռախոսում՝ 1։ «Լռ.»՝ ստանդարտ արժեք։</div>';}
+window.veNum=function(k,v,u){S.cfg.st[k]=+v;const l=$('ve-v-'+k);if(l)l.textContent=v+u;touch();};
+window.veEnum=function(k,v){if(v===''||(k==='cols'&&+v===0))delete S.cfg.st[k];else S.cfg.st[k]=k==='cols'?+v:v;snap();pvRender();veTab('style');updState();};
+/* items */
+function portalItems(){const ids=secs().map(s=>s.id),ord=S.cfg.portal.order.filter(i=>ids.indexOf(i)>=0);ids.forEach(i=>{if(ord.indexOf(i)<0)ord.push(i);});return ord.map(i=>secs().find(s=>s.id===i));}
+function ttl(s){const o=S.cfg.portal.ov[s.id]||{};return(o.t&&o.t[S.lang])||s.title;}
+function dsc(s){const o=S.cfg.portal.ov[s.id]||{};return(o.d&&o.d[S.lang])||s.desc;}
+function tabItems(){
+ if(S.target==='pages')return '<div class="ve-hist">Այս նախադիտման մեջ կառավարվող առանձին տարրեր չկան։ Քարտերի ոճը փոխեք «Ոճ» և «Թեմա» բաժիններից՝ այն կգործի բոլոր ներքին էջերի քարտերի վրա։</div>';
+ if(S.target==='portal'){
+  const it=portalItems();return '<div class="ve-hist" style="margin-bottom:8px">Քաշեք քարտերը՝ դասավորությունը փոխելու համար (նաև նախադիտման մեջ)։ Հեռախոսում օգտագործեք ▲▼։ «Թաքցնել»՝ միայն տեսողական է, հասանելիությունը չի փոխում։ Խմբագրվող լեզուն՝ <b>'+LN[S.lang]+'</b>։</div>'
+  +it.map(s=>{const ov=S.cfg.portal.ov[s.id]||{},hid=!!S.cfg.portal.hide[s.id],lock=s.type==='system';
+   return '<div class="ve-row'+(hid?' off':'')+'" draggable="true" data-id="'+s.id+'" ondragstart="veDs(event)" ondragover="veDo(event)" ondrop="veDp(event)" ondragend="veDe(event)"><span class="hd">⋮⋮</span><span class="nm">'+E(ttl(s))+'</span><button class="ve-ib" onclick="veMv(\''+s.id+'\',-1)">▲</button><button class="ve-ib" onclick="veMv(\''+s.id+'\',1)">▼</button>'
+    +(lock?'<span title="Հիմնական համակարգ՝ չի կարելի թաքցնել" style="padding:0 6px">🔒</span>':'<button class="ve-ib" title="'+(hid?'Ցուցադրել':'Թաքցնել')+'" onclick="veHide(\''+s.id+'\')">'+(hid?'🙈':'👁')+'</button>')
+    +'<button class="ve-ib" onclick="veExp(\''+s.id+'\')">✎</button></div>'+(S.exp===s.id?portalEd(s,ov):'');}).join('');}
+ const r=S.target.slice(4),n=S.cfg.nav[r]||{hide:{},lbl:{}};
+ return '<div class="ve-hist" style="margin-bottom:8px">Մենյու՝ <b>'+ROLES[r]+'</b>։ Թաքցնել/վերանվանել կարելի է կողմնակի մենյուի կետերը։ '+(r==='admin'?'Ադմինի մենյուում թաքցնելն անջատված է (կողպվելուց խուսափելու համար)։':'Վահանակի/գլխավոր կետերը չեն թաքցվում։')+' Լեզու՝ <b>'+LN[S.lang]+'</b></div>'
+  +NAVDEF[r].map(p=>{const hid=!!n.hide[p[0]],lb=(n.lbl[p[0]]||{})[S.lang]||'';return '<div class="ve-row'+(hid?' off':'')+'"><span class="nm" style="flex:0 0 38%">'+E(p[1])+'</span><input type="text" style="flex:1;min-width:0;padding:6px 8px;border:1.5px solid var(--bdr);border-radius:8px;background:var(--surf);color:var(--txt);font:inherit;font-size:12px" maxlength="40" placeholder="Նոր անուն" value="'+E(lb)+'" oninput="veNavLbl(\''+r+'\',\''+p[0]+'\',this.value)">'
+   +(r==='admin'||PROTECT[p[0]]?'<span style="padding:0 6px">🔒</span>':'<button class="ve-ib" onclick="veNavHide(\''+r+'\',\''+p[0]+'\')">'+(hid?'🙈':'👁')+'</button>')+'</div>';}).join('');}
+function portalEd(s,ov){return '<div class="ve-ed"><div class="ve-f"><label>Վերնագիր ('+LN[S.lang]+')</label><input type="text" maxlength="80" value="'+E((ov.t&&ov.t[S.lang])||'')+'" placeholder="'+E(s.title)+'" oninput="veOvT(\''+s.id+'\',\'t\',this.value)"></div>'
+ +'<div class="ve-f"><label>Ենթավերնագիր ('+LN[S.lang]+')</label><textarea rows="2" maxlength="240" placeholder="'+E(s.desc)+'" oninput="veOvT(\''+s.id+'\',\'d\',this.value)">'+E((ov.d&&ov.d[S.lang])||'')+'</textarea></div>'
+ +'<div class="ve-f"><label>Պատկերակ</label><div class="ve-ics">'+ICK.map(k=>'<button class="'+(ov.ic===k?'on':'')+'" onclick="veOvIc(\''+s.id+'\',\''+k+'\')"><svg viewBox="0 0 24 24">'+IC[k]+'</svg></button>').join('')+'</div><button class="ve-b" onclick="veOvIc(\''+s.id+'\',\'\')">Լռելյայն պատկերակ</button></div>'
+ +'<div class="ve-f"><label>Պատկերակի գույն</label><div class="ve-col"><input type="color" value="'+(ov.g||'#4778f5')+'" oninput="veOvG(\''+s.id+'\',this.value)"><span>'+(ov.g||'լռելյայն')+'</span><button class="ve-ib" onclick="veOvG(\''+s.id+'\',\'\',1)">✕</button></div></div></div>';}
+function ovGet(id){return S.cfg.portal.ov[id]||(S.cfg.portal.ov[id]={});}
+function ovClean(id){const o=S.cfg.portal.ov[id];if(o&&!o.g&&!o.ic&&!(o.t&&Object.keys(o.t).length)&&!(o.d&&Object.keys(o.d).length))delete S.cfg.portal.ov[id];}
+window.veExp=function(id){S.exp=S.exp===id?null:id;veTab('items');};
+window.veOvT=function(id,k,v){const o=ovGet(id);o[k]=o[k]||{};if(v.trim())o[k][S.lang]=v;else delete o[k][S.lang];ovClean(id);touch();};
+window.veOvIc=function(id,ic){const o=ovGet(id);if(ic)o.ic=ic;else delete o.ic;ovClean(id);snap();pvRender();veTab('items');updState();};
+window.veOvG=function(id,v,re){const o=ovGet(id);if(v)o.g=v;else delete o.g;ovClean(id);touch();if(re)veTab('items');};
+window.veHide=function(id){if(S.cfg.portal.hide[id])delete S.cfg.portal.hide[id];else S.cfg.portal.hide[id]=1;snap();pvRender();veTab('items');updState();};
+function setOrder(a){S.cfg.portal.order=a;snap();pvRender();if(S.tab==='items')veTab('items');updState();}
+window.veMv=function(id,d){const a=portalItems().map(s=>s.id),i=a.indexOf(id),j=i+d;if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];setOrder(a);};
+window.veDs=function(e){const el=e.target.closest('[data-id]');S.drag=el.dataset.id;e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',S.drag);}catch(x){}el.classList.add('drag');};
+window.veDo=function(e){e.preventDefault();const el=e.target.closest('[data-id]');document.querySelectorAll('.over,.dov').forEach(x=>x.classList.remove('over','dov'));if(el)el.classList.add(el.classList.contains('hm-tile')?'dov':'over');};
+window.veDe=function(e){S.drag=null;document.querySelectorAll('.drag,.over,.dov').forEach(x=>x.classList.remove('drag','over','dov'));};
+window.veDp=function(e){e.preventDefault();const el=e.target.closest('[data-id]');const from=S.drag;veDe();if(!el||!from||from===el.dataset.id)return;const a=portalItems().map(s=>s.id);a.splice(a.indexOf(from),1);a.splice(a.indexOf(el.dataset.id),0,from);setOrder(a);};
+function navCfg(r){return S.cfg.nav[r]||(S.cfg.nav[r]={hide:{},lbl:{}});}
+function navClean(r){const n=S.cfg.nav[r];if(n&&!Object.keys(n.hide).length&&!Object.keys(n.lbl).length)delete S.cfg.nav[r];}
+window.veNavHide=function(r,p){const n=navCfg(r);if(n.hide[p])delete n.hide[p];else n.hide[p]=1;navClean(r);snap();pvRender();veTab('items');updState();};
+window.veNavLbl=function(r,p,v){const n=navCfg(r);n.lbl[p]=n.lbl[p]||{};if(v.trim())n.lbl[p][S.lang]=v;else delete n.lbl[p][S.lang];if(!Object.keys(n.lbl[p]).length)delete n.lbl[p];navClean(r);touch();};
+/* ---------- preview ---------- */
+function pvHtml(c,lang,drag){
+ if(S.target==='portal'){const ids=secs().map(s=>s.id);const ord=c.portal.order.filter(i=>ids.indexOf(i)>=0);ids.forEach(i=>{if(ord.indexOf(i)<0)ord.push(i);});
+  return '<div class="pvh"><i></i> MyDigitalSchool</div><div class="mp-grid hm-sys">'+ord.map(i=>{const s=secs().find(x=>x.id===i),ov=c.portal.ov[i]||{},hid=c.portal.hide[i];
+   const t=(ov.t&&ov.t[lang])||s.title,d=(ov.d&&ov.d[lang])||s.desc,g=ov.g?'linear-gradient(135deg,'+ov.g+','+shade(ov.g,-.28)+')':(s.g||'linear-gradient(135deg,#4778F5,#8874EA)');
+   return '<button type="button" class="hm-tile'+(hid?' hid':'')+'"'+(drag?' draggable="true" data-id="'+i+'" ondragstart="veDs(event)" ondragover="veDo(event)" ondrop="veDp(event)" ondragend="veDe(event)"':'')+'><span class="hm-ic" style="background:'+g+'"><svg viewBox="0 0 24 24">'+(IC[ov.ic]||defIc(s))+'</svg></span><span class="hm-tt"><b>'+E(t)+'</b>'+(s.isNew?'<em>ՆՈՐ</em>':'')+(hid?'<em>թաքնված</em>':'')+'</span><span class="hm-td">'+E(d)+'</span></button>';}).join('')+'</div>';}
+ if(S.target==='pages')return '<div class="pvh"><i></i> Ներքին էջ</div><div class="cd" style="padding:16px;margin-bottom:12px"><h3 style="margin:0 0 6px">Օրինակ քարտ</h3><p style="margin:0 0 10px;color:var(--txt2);font-size:13px">Այսպես կերևան քարտերը բոլոր ներքին էջերում։</p><button class="btn bp2">Հիմնական կոճակ</button> <span class="badge bp">Նշան</span></div><div class="cd" style="padding:16px"><b>Երկրորդ քարտ</b><div style="color:var(--txt2);font-size:13px;margin-top:4px">Տեքստ, ստվեր, կլորություն և եզրագիծ՝ ըստ ձեր կարգավորումների։</div></div>';
+ const r=S.target.slice(4),n=c.nav[r]||{hide:{},lbl:{}};
+ return '<div class="pvh"><i></i> '+ROLES[r]+'</div><div class="pvnav"><div class="pvside">'+NAVDEF[r].map(p=>'<div class="'+(n.hide[p[0]]?'hid':'')+'">'+E((n.lbl[p[0]]||{})[lang]||p[1])+'</div>').join('')+'</div><div><div class="cd" style="padding:14px"><b>Էջի բովանդակություն</b><div style="color:var(--txt2);font-size:13px;margin-top:4px">Ընտրեք կետ ձախից՝ տեսնելու համար, թե ինչպես կերևա մենյուն։</div></div></div></div>';}
+function defIc(s){const m={journal:'book',diary:'diary',smis:'shield',polls:'vote',training:'shield',first_grade:'read',mku:'cap',vac_form:'bell',dzaq:'cert',high_school:'school',attest:'star',vacancies:'bell',school_diary:'diary'};return IC[m[s.id]]||IC.book;}
+function styleTag(id,css){let st=$(id);if(!st){st=document.createElement('style');st.id=id;document.head.appendChild(st);}st.textContent=css;}
+function pvRender(){const b=$('ve-pvb');if(!b)return;const c=san(S.cfg);
+ b.className='ve-pv'+(S.dev==='tablet'?' tab':S.dev==='phone'?' pho':'');
+ styleTag('ve-pvs',gen(c,'#ve-pvb',{dev:S.dev,dark:dark()}));b.innerHTML=pvHtml(c,S.lang,true);mark();}
+/* ---------- save draft / publish / history ---------- */
+window.veSaveDraft=async function(){if(!isAdm())return;try{const c=san(S.cfg),ts=Date.now();await col().doc('site_ve_draft').set(JSON.parse(J({cfg:c,ts:ts,by:'admin'})));S.saved=J(c);S.draftTs=ts;await addLog('draft','Սևագիրը պահպանվեց');updState();tx('✓ Սևագիրը պահպանվեց (օգտատերերը չեն տեսնում)');}catch(e){tx('Սխալ՝ '+(e.message||e));}};
+const LBL={accent:'Հիմնական գույն',accent2:'Երկրորդ գույն',bgL:'Ֆոն (բաց)',cardL:'Քարտի ֆոն (բաց)',bgD:'Ֆոն (մութ)',cardD:'Քարտի ֆոն (մութ)',radius:'Կլորություն',border:'Եզրագիծ',shadow:'Ստվեր',gap:'Տարածություն',cols:'Սյունակներ',fs:'Տեքստի չափ',theme:'Թեմա'};
+function diff(a,b){const o=[];
+ const sa=a.st,sb=b.st;Object.keys(Object.assign({},sa,sb)).forEach(k=>{if(sa[k]!==sb[k])o.push('Ոճ՝ '+(LBL[k]||k)+': '+(sa[k]!=null?sa[k]:'լռելյայն')+' → '+(sb[k]!=null?sb[k]:'լռելյայն'));});
+ if(J(a.portal.order)!==J(b.portal.order))o.push('Գլխավոր էջ՝ քարտերի դասավորությունը փոխվեց');
+ const nm=id=>{const s=secs().find(x=>x.id===id);return s?s.title:id;};
+ Object.keys(Object.assign({},a.portal.hide,b.portal.hide)).forEach(k=>{if(!!a.portal.hide[k]!==!!b.portal.hide[k])o.push('Գլխավոր էջ՝ «'+nm(k)+'» '+(b.portal.hide[k]?'թաքցվեց':'ցուցադրվեց'));});
+ Object.keys(Object.assign({},a.portal.ov,b.portal.ov)).forEach(k=>{if(J(a.portal.ov[k])!==J(b.portal.ov[k]))o.push('Գլխավոր էջ՝ «'+nm(k)+'» քարտի տեքստը/պատկերակը/գույնը փոխվեց');});
+ Object.keys(ROLES).forEach(r=>{const x=a.nav[r]||{hide:{},lbl:{}},y=b.nav[r]||{hide:{},lbl:{}};Object.keys(Object.assign({},x.hide,y.hide)).forEach(k=>{if(!!x.hide[k]!==!!y.hide[k])o.push('Մենյու ('+ROLES[r]+')՝ «'+k+'» '+(y.hide[k]?'թաքցվեց':'ցուցադրվեց'));});if(J(x.lbl)!==J(y.lbl))o.push('Մենյու ('+ROLES[r]+')՝ անունները փոխվեցին');});
+ if(J(a.themes)!==J(b.themes))o.push('Սեփական թեմաների ցանկը փոխվեց');return o;}
+function modal(h){let m=$('ve-md');if(m)m.remove();m=document.createElement('div');m.id='ve-md';m.className='ve-md';m.innerHTML='<div class="ve-mc">'+h+'</div>';document.body.appendChild(m);return m;}
+window.vePublish=function(){if(!isAdm())return;const nw=san(S.cfg),old=PUB.cfg,d=diff(old,nw);
+ const sv=S.target;
+ modal('<h3 style="margin:0 0 6px">Հրապարակման նախադիտում</h3><div style="font-size:13px;color:var(--txt2)">Հրապարակելուց հետո փոփոխությունները կերևան բոլոր համապատասխան օգտատերերին։ Նախորդ տարբերակը կպահվի և հնարավոր կլինի վերականգնել։</div>'
+  +(d.length?'<ul class="ve-diff">'+d.map(x=>'<li>'+E(x)+'</li>').join('')+'</ul>':'<div class="ve-diff" style="padding:0">Փոփոխություններ չկան։</div>')
+  +'<div class="ve-cmp"><div><b style="font-size:12px">Հիմա հրապարակված</b><div class="ve-pv" id="ve-pb"></div></div><div><b style="font-size:12px">Հրապարակելուց հետո</b><div class="ve-pv" id="ve-pa"></div></div></div>'
+  +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="ve-b" onclick="document.getElementById(\'ve-md\').remove()">Չեղարկել</button><button class="ve-b pri" id="ve-go" '+(d.length?'':'disabled')+' onclick="vePubGo(this)">Հրապարակել</button></div>');
+ styleTag('ve-pcb',gen(old,'#ve-pb',{dev:'desktop',dark:dark()}));styleTag('ve-pca',gen(nw,'#ve-pa',{dev:'desktop',dark:dark()}));
+ $('ve-pb').innerHTML=pvHtml(old,S.lang,false);$('ve-pa').innerHTML=pvHtml(nw,S.lang,false);};
+window.vePubGo=async function(btn){if(!isAdm())return;btn.disabled=true;
+ try{const nw=san(S.cfg),old=PUB.cfg,d=diff(old,nw),v=(PUB.v||0)+1,ts=Date.now();
+  await loadHist();const h=S.hist;
+  if(!h.versions.length&&PUB.v>0)h.versions.unshift({v:PUB.v,ts:PUB.ts,note:'Նախորդ',cfg:old});
+  h.versions.unshift({v:v,ts:ts,note:d.slice(0,3).join('; ').slice(0,200),cfg:nw});h.versions=h.versions.slice(0,12);
+  h.log.unshift({ts:ts,by:'admin',act:'publish',detail:'v'+v+': '+d.slice(0,6).join('; ').slice(0,400)});h.log=h.log.slice(0,100);
+  await col().doc('site_ve_hist').set(JSON.parse(J(h)));
+  await col().doc('site_ve_pub').set(JSON.parse(J({cfg:nw,v:v,ts:ts,by:'admin'})));
+  await col().doc('site_ve_draft').set(JSON.parse(J({cfg:nw,ts:ts,by:'admin'})));
+  S.hist=h;PUB={v:v,cfg:nw,ts:ts,by:'admin'};S.saved=J(nw);applyAll();const m=$('ve-md');if(m)m.remove();updState();if(S.tab==='hist')veTab('hist');tx('✓ Հրապարակվեց (տարբերակ '+v+')');
+ }catch(e){tx('Սխալ՝ '+(e.message||e));btn.disabled=false;}};
+function tabHist(){const h=S.hist;
+ return '<h4>Հրապարակված տարբերակներ</h4>'+(h.versions.length?h.versions.map(x=>'<div class="it"><b>v'+x.v+'</b> · '+dt(x.ts)+(x.v===PUB.v?' <span style="color:#059669">● ակտիվ</span>':'')+'<div style="color:var(--txt2);margin:3px 0">'+E(x.note||'')+'</div>'+(x.v===PUB.v?'':'<button class="ve-b" onclick="veRestore('+x.v+')">Վերականգնել</button>')+'</div>').join(''):'<div class="ve-hist">Հրապարակված տարբերակներ դեռ չկան։</div>')
+  +'<h4>Գործողությունների պատմություն</h4>'+(h.log.length?h.log.slice(0,40).map(x=>'<div class="it"><b>'+({draft:'Սևագիր',publish:'Հրապարակում',restore:'Վերականգնում'}[x.act]||x.act)+'</b> · '+dt(x.ts)+' · '+E(x.by)+'<div style="color:var(--txt2)">'+E(x.detail||'')+'</div></div>').join(''):'<div class="ve-hist">Դեռ գրառումներ չկան։</div>')
+  +'<h4>Սևագիր</h4><button class="ve-b" onclick="veLoadPub()">Բեռնել հրապարակված տարբերակը սևագրի մեջ</button>';}
+window.veLoadPub=function(){if(dirty()&&!confirm('Ընթացիկ փոփոխությունները կկորչեն։ Շարունակե՞լ։'))return;S.cfg=JSON.parse(J(PUB.cfg));snap();pvRender();veTab('hist');updState();};
+window.veRestore=function(v){const x=S.hist.versions.find(a=>a.v===v);if(!x)return;S.cfg=san(x.cfg);snap();pvRender();updState();h2(v);};
+function h2(v){const o=window.vePublish;o();const m=$('ve-md');if(m){const hd=m.querySelector('h3');if(hd)hd.textContent='Վերականգնում՝ տարբերակ '+v;}}
+/* ---------- launcher page in admin nav ---------- */
+window.buildVeAdmin=()=>'<div class="pg" id="ave"><div class="pt">🎨 Կայքի տեսքի խմբագրիչ</div><div class="ps">Փոխեք կայքի տեսքը՝ առանց կոդի։ Փոփոխությունները նախ պահվում են սևագրի մեջ։</div><div id="ave-b"></div></div>';
+window.veLauncher=async function(){const b=$('ave-b');if(!b)return;if(!isAdm()){b.innerHTML='<div class="ct-empty">Հասանելի է միայն ադմինին։</div>';return;}
+ let dr=null;try{const s=await col().doc('site_ve_draft').get();if(s.exists)dr=s.data();}catch(e){}
+ b.innerHTML='<div class="cd" style="padding:18px"><div style="font-size:14px;line-height:1.8">Հրապարակված տարբերակ՝ <b>'+(PUB.v?'v'+PUB.v+' · '+dt(PUB.ts):'սկզբնական տեսք')+'</b><br>Սևագիր՝ <b>'+(dr?dt(dr.ts)+(J(san(dr.cfg))!==J(PUB.cfg)?' (չհրապարակված փոփոխություններով)':' (համընկնում է հրապարակվածին)'):'չկա')+'</b></div><div style="margin-top:14px"><button class="btn bp2" onclick="mdVE.open()">Բացել խմբագրիչը</button></div></div>';};
+/* ---------- boot ---------- */
+function boot(){startObs();loadPub().then(listenPub);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+window.mdVE.hook=function(){if(PUB.v||Object.keys(PUB.cfg.nav).length)applyAll();};
 })();
 </script>
 
