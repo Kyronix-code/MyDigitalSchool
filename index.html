@@ -778,7 +778,11 @@ html[data-theme=dark] #md-boot{background:#12101f}
       <i class="o o1"></i><i class="o o2"></i><i class="o o3"></i>
       <div class="lgx-logo"><svg viewBox="0 0 48 48" width="34" height="34"><path d="M10 6h14c10 0 16 7 16 18S34 42 24 42H10z" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/><path d="M18 16h6c5 0 8 3 8 8s-3 8-8 8h-6z" fill="#fff" fill-opacity=".9"/></svg></div>
       <div class="lgx-name">MyDigitalSchool</div>
-      <div class="lgx-cards"><span></span><span></span><span></span></div>
+      <div class="lgx-cards">
+        <span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2z"/><path d="M8 7h6M8 11h6"/></svg><b data-i18n="diary">Diary</b></span>
+        <span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M15 14.5c3 0 6 1.7 6 5.5"/></svg><b data-i18n="family">Family</b></span>
+        <span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg><b data-i18n="smis">SMIS</b></span>
+      </div>
     </div>
     <div class="ab-right">
       <div id="lf">
@@ -14448,13 +14452,13 @@ html body .ab.lgx{max-width:920px;display:flex;min-height:560px;border-radius:28
 .lgx-logo{width:64px;height:64px;border-radius:20px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.4);position:relative}
 .lgx-name{font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.1;position:relative}
 .lgx-cards{display:flex;flex-direction:column;gap:10px;width:100%;position:relative;margin-top:10px}
-.lgx-cards span{display:block;height:44px;border-radius:14px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);animation:lgxSlide .8s both}
-.lgx-cards span:nth-child(2){width:82%;animation-delay:.15s}.lgx-cards span:nth-child(3){width:64%;animation-delay:.3s}
+.lgx-cards span{display:flex;align-items:center;gap:12px;padding:0 16px;font-size:14px;font-weight:700;height:48px;border-radius:14px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);animation:lgxSlide .8s both}
+.lgx-cards span:nth-child(2){animation-delay:.15s}.lgx-cards span:nth-child(3){animation-delay:.3s}
 @keyframes lgxSlide{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
-.lgx .ab-right{flex:1;padding:48px 44px;min-width:0}
+.lgx .ab-right{flex:1;padding:72px 44px 48px;min-width:0}
 .lgx .ab-right h2{font-size:30px;letter-spacing:-.03em;text-align:left!important}
 .lgx .ab-right>div>div>img,.lgx #lf>div:first-child{display:none}
-.lgx .ab-right-sub{font-size:14px;margin-bottom:28px;text-align:left}
+.lgx .ab-right p.ab-right-sub,html body .lgx .ab-right>div>p{font-size:14px;margin-bottom:28px;text-align:left!important}
 .lgx .fg{margin-bottom:20px;position:relative}
 .lgx .fg label{text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:700;color:var(--txt2)}
 .lgx .fg input{height:52px;padding:0 16px;border-radius:14px;font-size:15px;background:var(--surf2,#f4f6fb);border:1.5px solid var(--bdr)}
@@ -14466,7 +14470,7 @@ html body .ab.lgx{max-width:920px;display:flex;min-height:560px;border-radius:28
 .lgx .af{margin-top:20px}
 @media(max-width:820px){html body .ab.lgx{max-width:460px;flex-direction:column;min-height:0}
  .lgx-brand{flex:none;flex-direction:row;align-items:center;padding:20px 24px;gap:14px}.lgx-cards{display:none}.lgx-logo{width:46px;height:46px;border-radius:14px}.lgx-name{font-size:21px}
- .lgx .ab-right{padding:28px 24px 30px}.lgx .ab-right h2{font-size:25px}}
+ .lgx .ab-right{padding:60px 24px 30px}.lgx .ab-right h2{font-size:25px}}
 @media(max-width:420px){html body .aw{padding:12px}.lgx .ab-right{padding:24px 18px}}
 @media(prefers-reduced-motion:reduce){.lgx,.lgx-brand .o,.lgx-cards span{animation:none!important}}
 </style>
