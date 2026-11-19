@@ -2150,8 +2150,12 @@ async function loadAll(){
       bGet(BC).catch(()=>null),
       bGet(BB).catch(()=>null),
     ]);
+    window._grBlock=false;
+    let g2=g;
+    for(let t=0;!g2&&t<3;t++){await new Promise(r=>setTimeout(r,800*(t+1)));g2=await bGet(BG).catch(()=>null);}   // գնահատականների փաստաթղթի բեռնումը կրկնում ենք
+    if(!g2){window._grBlock=true;console.error('grades doc not loaded - writes blocked');}
     if(s&&s.users){DB=s;PE=s.pending||{};}
-    if(g){GR=g.grades||{};LI=g.lessonInfo||{};MSGS=g.messages||{};CALLS=g.calls||{};window._tp=g.thematic||{};}
+    if(g2){const g=g2;GR=g.grades||{};LI=g.lessonInfo||{};MSGS=g.messages||{};CALLS=g.calls||{};window._tp=g.thematic||{};}
     if(a&&typeof a==='object'&&!a.type)AT=a;
     if(bc&&Array.isArray(bc.items))BCASTS=bc.items;
     if(schedData&&typeof schedData==='object'&&!Array.isArray(schedData)){
@@ -2890,6 +2894,7 @@ async function renegotiateCall(){
 }
 
 async function svGrades(){
+  if(window._grBlock){alert('Գնահատականները չեն բեռնվել սերվերից, ուստի պահպանումը արգելափակված է՝ հին տվյալները չվերագրելու համար։ Թարմացրեք էջը։');throw new Error('grades not loaded');}
   try{
     await bSet(BG,{grades:GR,lessonInfo:LI,thematic:window._tp||{},messages:MSGS});
   }catch(e){hLoad();alert('❌ Save error (Grades): '+e.message);throw e;}
@@ -8176,8 +8181,9 @@ function myClasses(){
   if(CU.role==='parent')return((u.children||CU.children||[]).map(c=>c.cls||c.class)).filter(Boolean);
   return[];
 }
-function canSee(d){if(isAdm()||d.owner===me())return true;const mc=myClasses();return (d.classes||[]).some(c=>mc.indexOf(c)!==-1);}
-const canEdit=d=>isAdm()||d.owner===me();
+function canSee(d){if(isAdm()||d.owner===me())return true;if((d.collabU||[]).indexOf(me())!==-1)return true;const mc=myClasses();return (d.classes||[]).some(c=>mc.indexOf(c)!==-1);}
+const canEdit=d=>isAdm()||d.owner===me()||(d.collabE||[]).indexOf(me())!==-1;
+const canOwn=d=>isAdm()||d.owner===me();
 const canCreate=()=>CU&&CU.role!=='parent';
 
 /* ---------- storage ---------- */
@@ -8383,8 +8389,8 @@ function listGrid(){
     const ed=canEdit(d),bg=d.bg||'#6366f1',tc=d.tc||autoTc(bg);
     return '<div class="sl-card" style="animation-delay:'+Math.min(i,10)*40+'ms"><div class="sl-cover" style="background:'+esc(bg)+';color:'+esc(tc)+'" onclick="slPresent(\''+d.id+'\')">'+(d.cover?'<img src="'+esc(d.cover)+'" alt="">':'<div class="sl-ct">'+esc(d.title||'')+'</div>')+'<span class="sl-cn">'+(d.count||0)+' սահիկ</span></div>'
       +'<div class="sl-info"><h3>'+esc(d.title||'Անվանում չկա')+'</h3><div class="sl-meta">'+(d.subject?'<span class="sl-chip">'+esc(d.subject)+'</span>':'')+'<span>'+fmtDate(d.created)+'</span></div>'
-      +'<div class="sl-meta">'+(d.owner!==me()?'<span>Հեղինակ՝ '+esc(d.ownerName||'')+'</span>':((d.classes&&d.classes.length)?'<span>👥 Կիսված է՝ '+esc(d.classes.join(', '))+'</span>':'<span>🔒 Անձնական</span>'))+'</div>'
-      +'<div class="sl-act"><button class="sl-btn sm pri" onclick="slPresent(\''+d.id+'\')">▶ Դիտել</button>'+(ed?'<button class="sl-btn sm" onclick="slEdit(\''+d.id+'\')">✎ Խմբագրել</button>':'')+(canCreate()?'<button class="sl-btn sm" onclick="slCopy(\''+d.id+'\')">⧉ Պատճեն</button>':'')+(ed?'<button class="sl-btn sm" onclick="slJsonOut(\''+d.id+'\')">⬇ JSON</button><button class="sl-btn sm" onclick="slRename(\''+d.id+'\')">Վերանվանել</button><button class="sl-btn sm dng" onclick="slDelete(\''+d.id+'\')">Ջնջել</button>':'')+'</div></div></div>';}).join('')+'</div>';
+      +'<div class="sl-meta">'+(d.owner!==me()?'<span>'+((d.collabU||[]).indexOf(me())!==-1?'🤝 '+((d.collabE||[]).indexOf(me())!==-1?'Համահեղինակ':'Դիտող')+' · ':'')+'Հեղինակ՝ '+esc(d.ownerName||'')+'</span>':((d.classes&&d.classes.length)?'<span>👥 Կիսված է՝ '+esc(d.classes.join(', '))+'</span>':'<span>🔒 Անձնական</span>'))+'</div>'
+      +'<div class="sl-act"><button class="sl-btn sm pri" onclick="slPresent(\''+d.id+'\')">▶ Դիտել</button>'+(ed?'<button class="sl-btn sm" onclick="slEdit(\''+d.id+'\')">✎ Խմբագրել</button>':'')+(canCreate()?'<button class="sl-btn sm" onclick="slCopy(\''+d.id+'\')">⧉ Պատճեն</button>':'')+(ed?'<button class="sl-btn sm" onclick="slJsonOut(\''+d.id+'\')">⬇ JSON</button><button class="sl-btn sm" onclick="slRename(\''+d.id+'\')">Վերանվանել</button>'+(canOwn(d)?'<button class="sl-btn sm dng" onclick="slDelete(\''+d.id+'\')">Ջնջել</button>':'')+'':'')+'</div></div></div>';}).join('')+'</div>';
 }
 async function renderList(refresh){
   if(!$('slides')||!CU)return;
@@ -8405,8 +8411,10 @@ async function saveDeckDoc(d){
   d.imgs=[...new Set((d.imgs||[]).concat(imgIds(d)))];
   const first=d.slides[0]||{},cid=first.bgImg||first.img;
   const cover=cid?await thumbOf(await getImg(cid),240):'';
-  const meta={id:d.id,title:d.title,subject:d.subject||'',owner:d.owner,ownerName:d.ownerName||'',created:d.created,updated:d.updated,classes:d.classes||[],count:d.slides.length,cover:cover,bg:first.bg||'#6366f1',tc:first.tc||autoTc(first.bg||'#6366f1')};
-  await bSet(DK(d.id),d);await putIdx(meta);S.idx[d.id]=meta;return meta;
+  const meta={id:d.id,title:d.title,subject:d.subject||'',owner:d.owner,ownerName:d.ownerName||'',created:d.created,updated:d.updated,classes:d.classes||[],collabU:d.collabU||[],collabE:d.collabE||[],count:d.slides.length,cover:cover,bg:first.bg||'#6366f1',tc:first.tc||autoTc(first.bg||'#6366f1')};
+  await writeDeck(d);
+  meta.count=d.slides.length;meta.collabU=d.collabU||[];meta.collabE=d.collabE||[];meta.title=d.title;
+  await putIdx(meta);S.idx[d.id]=meta;return meta;
 }
 function remapImgs(d){
   const map={},m=id=>{if(!id)return id;if(!map[id])map[id]=uid();return map[id];};
@@ -8467,11 +8475,11 @@ window.slEdit=async function(id){
   try{const d=await bGet(DK(id));if(!d||!d.slides){alert('Սահիկաշարը չի գտնվել։');renderList(true);return;}
     if(!canEdit(d)){alert('Դուք իրավունք չունեք խմբագրելու այս սահիկաշարը։');return;}
     d.slides.forEach(s=>{if(!s.els)s.els=[];});
-    S.deck=d;S.sel=0;S.eid=null;S.tab='slide';S.isNew=false;S.dirty=false;openEditor();
+    ensureIds(d);S.deck=d;S.base=clone(d);S.baseRev=d.rev||0;S.sel=0;S.eid=null;S.tab='slide';S.isNew=false;S.dirty=false;openEditor();
   }catch(e){console.error(e);alert('Չհաջողվեց բացել սահիկաշարը։');}
 };
 window.slDelete=async function(id){
-  const m=S.idx[id];if(!m||!canEdit(m))return;
+  const m=S.idx[id];if(!m||!canOwn(m))return;
   if(!confirm('Ջնջե՞լ «'+(m.title||'')+'» սահիկաշարը։ Այս գործողությունը հնարավոր չէ չեղարկել։'))return;
   try{
     const d=await bGet(DK(id));
@@ -8505,22 +8513,23 @@ function openEditor(){
    +'<span class="sl-st" id="sl-st"></span><button class="sl-btn sm" id="sl-undo" onclick="slUndo()" title="Հետ (Ctrl+Z)">↶</button><button class="sl-btn sm" id="sl-redo" onclick="slRedo()" title="Առաջ (Ctrl+Y)">↷</button><button class="sl-btn" onclick="slAi(true)">✨ ԱԲ</button><button class="sl-btn" onclick="slShare()">👥 Կիսվել</button><button class="sl-btn" onclick="slPresentCur()">▶ Ցուցադրել</button><button class="sl-btn" onclick="slExportPdf()">PDF</button><button class="sl-btn" onclick="slExportPptx()">PPTX</button><button class="sl-btn pri" onclick="slSave(true)">💾 Պահպանել</button></div>'
    +'<div class="sl-main"><div class="sl-rail" id="sl-rail"></div><div class="sl-stage" id="sl-stage"></div><div class="sl-side" id="sl-side"></div></div>';
   S.hist=[snapJSON()];S.hi=0;drawAll();setStatus(S.dirty?'Չպահպանված է':'Պահպանված է','');updUndo();
+  collabOpen();
 }
 const ctxFor=(i,edit)=>({deck:S.deck,n:i+1,edit:!!edit});
 function drawAll(){drawRail();drawStage();drawSide();}
 function drawRail(){
   const r=$('sl-rail');if(!r)return;
   r.innerHTML=S.deck.slides.map((sl,i)=>'<div class="sl-th'+(i===S.sel?' on':'')+'" draggable="true" onclick="slSel('+i+')" ondragstart="slDS(event,'+i+')" ondragover="slDO(event,this)" ondragleave="this.classList.remove(\'over\')" ondrop="slDD(event,'+i+')"><span class="no">'+(i+1)+'</span>'+(sl.notes?'<span class="nt" title="Նշումներ կան">📝</span>':'')+box(sl,false,ctxFor(i))+'</div>').join('')+'<button class="sl-btn" onclick="slAddMenu()" style="flex:0 0 auto">＋ Սահիկ</button>';
-  hydrate(r);
+  hydrate(r);cbDots();
 }
 function drawStage(){
   const s=$('sl-stage');if(!s)return;const n=S.deck.slides.length;
   s.innerHTML=box(cur(),true,ctxFor(S.sel,true),'sl-edit')+'<div class="sl-tools"><button class="sl-btn sm" onclick="slMove(-1)" '+(S.sel===0?'disabled':'')+'>↑ Վերև</button><button class="sl-btn sm" onclick="slMove(1)" '+(S.sel===n-1?'disabled':'')+'>↓ Ներքև</button><button class="sl-btn sm" onclick="slDup()">⧉ Կրկնօրինակել</button><button class="sl-btn sm dng" onclick="slDel()" '+(n<2?'disabled':'')+'>🗑 Ջնջել սահիկը</button></div><div style="font-size:12px;color:var(--txt2)">Սահիկ '+(S.sel+1)+' / '+n+' · Տեքստային տարրը խմբագրելու համար կրկնակի սեղմեք</div>';
   hydrate(s);
-  const b=s.querySelector('.sl-box');b.onpointerdown=stageDown;b.ondblclick=stageDbl;
+  const b=s.querySelector('.sl-box');b.onpointerdown=stageDown;b.ondblclick=stageDbl;cbSel();
 }
 const stageBox=()=>document.querySelector('#sl-stage .sl-box');
-function repaintStage(){const b=stageBox();if(b){b.innerHTML=slideInner(cur(),true,ctxFor(S.sel,true));hydrate(b);}}
+function repaintStage(){const b=stageBox();if(b){b.innerHTML=slideInner(cur(),true,ctxFor(S.sel,true));hydrate(b);cbSel();}}
 function repaintThumb(i){i=i==null?S.sel:i;const th=document.querySelectorAll('#sl-rail .sl-th')[i];if(th){const b=th.querySelector('.sl-box');if(b){b.innerHTML=slideInner(S.deck.slides[i],false,ctxFor(i));hydrate(b);}}}
 function repaintBoth(){repaintStage();repaintThumb();}
 
@@ -8808,7 +8817,8 @@ window.slSave=async function(manual){
   }
 };
 async function pruneImages(){
-  const d=S.deck;if(!d)return;const used=new Set(imgIds(d)),old=(d.imgs||[]).filter(i=>!used.has(i));if(!old.length)return;
+  const d=S.deck;if(!d)return;if((d.collabU||[]).length)return;   // համատեղ նախագծում նկարները չեն մաքրվում՝ ուրիշի նկարը չջնջելու համար
+  const used=new Set(imgIds(d)),old=(d.imgs||[]).filter(i=>!used.has(i));if(!old.length)return;
   d.imgs=(d.imgs||[]).filter(i=>used.has(i));
   for(const im of old){try{await bSet(IK(im),{data:'',deleted:true});}catch(e){}}
   try{await bSet(DK(d.id),d);}catch(e){}
@@ -8818,7 +8828,8 @@ window.slClose=async function(){
   if(S.dirty){const ok=await slSave(false);if(!ok&&!confirm('Փոփոխությունները չպահպանվեցին։ Փակե՞լ առանց պահպանելու։'))return;}
   else if(S.deck&&S.dirty===false){}
   try{await pruneImages();}catch(e){}
-  $('sl-ed').classList.remove('on');document.body.style.overflow='';S.deck=null;S.eid=null;renderList(true);
+  collabClose();
+  $('sl-ed').classList.remove('on');document.body.style.overflow='';S.deck=null;S.base=null;S.eid=null;renderList(true);
 };
 window.addEventListener('beforeunload',e=>{if(S.deck&&S.dirty){e.preventDefault();e.returnValue='';}});
 
@@ -8829,11 +8840,218 @@ window.slShare=function(){
   const sh=$('sl-sh');
   sh.innerHTML='<div class="sl-shbox"><h3>Կիսվել դասարանների հետ</h3><p>Նշված դասարանների աշակերտներն ու ծնողները կտեսնեն այս սահիկաշարը (միայն դիտման համար)։</p>'
    +(all.length?'<div class="sl-cls">'+all.map(c=>'<label><input type="checkbox" class="sl-clsck" value="'+esc(c)+'"'+((S.deck.classes||[]).indexOf(c)!==-1?' checked':'')+'>'+esc(c)+'</label>').join('')+'</div>':'<p>Դասարաններ դեռ ավելացված չեն։</p>')
+   +cbShareHtml()
    +'<div style="display:flex;gap:8px;justify-content:flex-end"><button class="sl-btn" onclick="slShareClose()">Փակել</button><button class="sl-btn pri" onclick="slShareOk()">Պահպանել</button></div></div>';
   sh.classList.add('on');
 };
 window.slShareClose=()=>{$('sl-sh').classList.remove('on');};
 window.slShareOk=function(){S.deck.classes=[...document.querySelectorAll('.sl-clsck')].filter(c=>c.checked).map(c=>c.value);slShareClose();slMark();slSave(true);};
+
+/* ---------- LIVE COLLABORATION · համատեղ խմբագրում ----------
+   • հրավեր՝ collabU (բոլորը) / collabE (խմբագիրներ) դաշտերով՝ նախագծի և ինդեքսի մեջ
+   • իրական ժամանակ՝ onSnapshot `deck_<id>`-ի վրա, փոփոխությունները միաձուլվում են
+   • հակասություններ՝ 3-կողմանի միաձուլում (base / իմ / հեռավոր) ըստ սահիկի ու տարրի, դաշտ առ դաշտ
+   • ներկայություն՝ `slpres_<id>` փաստաթուղթ (ով է բաց, որ սահիկի վրա, որ տարրն է նշել) */
+const CB={on:false,id:'',unsub:null,punsub:null,pres:{},pend:null,pt:null,tick:null,down:false,lastW:0,lastSig:''};
+const CB_COL=['#ef4444','#f59e0b','#10b981','#06b6d4','#6366f1','#d946ef','#f97316','#84cc16'];
+const cbColor=u=>{let h=0;u=String(u||'');for(let i=0;i<u.length;i++)h=(h*31+u.charCodeAt(i))>>>0;return CB_COL[h%CB_COL.length];};
+const PRK=id=>'slpres_'+id;
+const js=o=>JSON.stringify(o===undefined?null:o);
+function ensureIds(d){let ch=false;(d.slides||[]).forEach(sl=>{if(!sl.id){sl.id=uid();ch=true;}if(!sl.els)sl.els=[];sl.els.forEach(e=>{if(!e.id){e.id=uid();ch=true;}});});return ch;}
+
+/* --- 3-way merge --- */
+function mFields(b,l,r,skip,cf){
+  b=b||{};l=l||{};r=r||{};const o={};
+  new Set(Object.keys(l).concat(Object.keys(r))).forEach(k=>{
+    if(skip&&skip.indexOf(k)!==-1)return;
+    const lv=l[k],rv=r[k],bv=b[k];let v;
+    if(js(lv)===js(rv))v=lv;else if(js(lv)===js(bv))v=rv;else if(js(rv)===js(bv))v=lv;else{v=lv;cf.n++;}   // երկուսն էլ փոխել են՝ իմը հաղթում է
+    if(v!==undefined)o[k]=v;
+  });
+  return o;
+}
+function mList(bl,ll,rl,cf,mi){
+  bl=bl||[];ll=ll||[];rl=rl||[];
+  const bm=new Map(bl.map(x=>[x.id,x])),lm=new Map(ll.map(x=>[x.id,x])),rm=new Map(rl.map(x=>[x.id,x]));
+  const bo=bl.map(x=>x.id),lo=ll.map(x=>x.id),ro=rl.map(x=>x.id);
+  let order=(js(lo)!==js(bo)&&js(ro)===js(bo))?lo.slice():ro.slice();
+  lo.forEach((id,i)=>{if(order.indexOf(id)===-1){const pv=i>0?order.indexOf(lo[i-1]):-1;order.splice(pv+1,0,id);}});
+  const out=[];
+  order.forEach(id=>{
+    const b=bm.get(id),l=lm.get(id),r=rm.get(id);
+    if(l&&r)out.push(mi(b,l,r,cf));
+    else if(l){if(!b)out.push(l);else if(js(l)!==js(b)){out.push(l);cf.n++;}}      // ուրիշը ջնջել է, բայց ես փոխել եմ՝ պահում ենք
+    else if(r){if(!b)out.push(r);else if(js(r)!==js(b)){out.push(r);cf.n++;}}      // ես ջնջել եմ, բայց ուրիշը փոխել է՝ պահում ենք
+  });
+  return out;
+}
+const mEl=(b,l,r,cf)=>mFields(b,l,r,null,cf);
+function mSlide(b,l,r,cf){const o=mFields(b,l,r,['els'],cf);o.els=mList(b&&b.els,l.els,r.els,cf,mEl);return o;}
+function mDeck(b,l,r,cf){
+  b=b||{};
+  const o=mFields(b,l,r,['slides','imgs','rev','updated','lastBy','lastName'],cf);
+  o.slides=mList(b.slides,l.slides,r.slides,cf,mSlide);
+  if(!o.slides.length)o.slides=clone(r.slides||l.slides||[]);
+  o.imgs=[...new Set((l.imgs||[]).concat(r.imgs||[]))];
+  o.rev=r.rev||0;o.updated=Date.now();o.lastBy=r.lastBy||'';o.lastName=r.lastName||'';
+  return o;
+}
+function replaceIn(d,n){Object.keys(d).forEach(k=>{delete d[k];});Object.assign(d,n);}
+
+/* --- write with transactional merge --- */
+async function writeDeck(d){
+  if(S.deck!==d||!S.base){await bSet(DK(d.id),d);if(S.deck===d){S.base=clone(d);S.baseRev=d.rev||0;}return;}
+  const ref=fsdb.collection(FS_COL).doc(DK(d.id));let merged=null,oldBase=S.base;
+  const compute=r=>{
+    const loc=clone(d);
+    if(!r||!r.slides||!r.slides.length){merged=loc;merged.rev=1;}
+    else{r.slides.forEach(sl=>{if(!sl.els)sl.els=[];});const cf={n:0};merged=mDeck(oldBase,loc,r,cf);merged.rev=(r.rev||0)+1;CB.conflicts=cf.n;}
+    merged.lastBy=me();merged.lastName=(CU&&CU.name)||me();
+    return merged;
+  };
+  if(typeof fsdb.runTransaction==='function'){
+    await fsdb.runTransaction(async tx=>{const sn=await tx.get(ref);tx.set(ref,fsClean(compute(sn.exists?sn.data():null)));});
+  }else{const sn=await ref.get();await ref.set(fsClean(compute(sn.exists?sn.data():null)));}
+  const sig=js(d.slides)+js(d.title)+js(d.subject);
+  // ավելացրած փոփոխությունները (պահպանման ընթացքում արված) չկորցնելու համար՝ նորից միաձուլում
+  const cf2={n:0},nl=mDeck(oldBase,d,merged,cf2);nl.rev=merged.rev;nl.lastBy=merged.lastBy;nl.lastName=merged.lastName;
+  replaceIn(d,nl);S.base=clone(merged);S.baseRev=merged.rev;
+  cbSyncMeta();
+  if(js(d.slides)+js(d.title)+js(d.subject)!==sig)cbRedraw();
+}
+
+/* --- applying remote changes --- */
+const cbStrip=d=>{const o=Object.assign({},d);delete o.rev;delete o.updated;delete o.lastBy;delete o.lastName;return js(o);};
+// հեռավոր տարբերակը նոր է, եթե rev-ը մեծ է կամ (նույն rev-ի դեպքում) բովանդակությունը տարբերվում է base-ից
+function cbNewer(r){const br=S.baseRev||0,rr=r.rev||0;if(rr<br)return false;if(rr>br)return true;return !S.base||cbStrip(r)!==cbStrip(S.base);}
+function cbBusy(){
+  const ae=document.activeElement,ed=$('sl-ed');
+  return CB.down||!!(ae&&ed&&ed.contains(ae)&&(ae.tagName==='TEXTAREA'||ae.isContentEditable||(ae.tagName==='INPUT'&&['text','search','number','url',''].indexOf(ae.type||'')!==-1)));
+}
+function cbSyncMeta(){const t=$('sl-title'),u=$('sl-subject');if(!S.deck)return;
+  if(t&&document.activeElement!==t&&t.value!==S.deck.title)t.value=S.deck.title;
+  if(u&&document.activeElement!==u&&u.value!==(S.deck.subject||''))u.value=S.deck.subject||'';}
+function cbRedraw(){
+  if(!S.deck||!$('sl-ed').classList.contains('on'))return;
+  clearTimeout(CB.rt);if(cbBusy()){CB.rt=setTimeout(cbRedraw,700);return;}
+  S.sel=Math.max(0,Math.min(S.sel,S.deck.slides.length-1));if(S.eid&&!curEl())S.eid=null;
+  const t=$('sl-title');if(t&&document.activeElement!==t&&t.value!==S.deck.title)t.value=S.deck.title;
+  drawAll();
+}
+function cbApply(){
+  clearTimeout(CB.pt);const r=CB.pend;if(!r||!S.deck||S.deck.id!==CB.id||!S.base)return;
+  if(S.saving||cbBusy()){CB.pt=setTimeout(cbApply,700);return;}
+  CB.pend=null;
+  if(!cbNewer(r))return;
+  if(!canEdit(r)){
+    S.dirty=false;collabClose();alert('Ձեր խմբագրման իրավունքը հանվել է այս սահիկաշարի համար։');
+    $('sl-ed').classList.remove('on');document.body.style.overflow='';S.deck=null;S.base=null;S.eid=null;renderList(true);return;
+  }
+  r.slides.forEach(sl=>{if(!sl.els)sl.els=[];});
+  const cf={n:0},pre=js(S.deck.slides),merged=mDeck(S.base,S.deck,r,cf);
+  replaceIn(S.deck,merged);S.base=clone(r);S.baseRev=r.rev||0;
+  cbSyncMeta();
+  if(js(S.deck.slides)!==pre){histCommit();cbRedraw();}
+  const t=new Date(),p=n=>String(n).padStart(2,'0');
+  setStatus('🔄 '+(r.lastName?esc(r.lastName)+'-ի փոփոխությունը ստացվեց':'Թարմացվեց')+' · '+p(t.getHours())+':'+p(t.getMinutes())+(cf.n?' · հակասություն՝ '+cf.n+' (իմ տարբերակը պահվեց)':''),'ok');
+  if(js(S.deck.slides)!==js(r.slides))S.dirty=true;   // դեռ կան իմ չպահպանված փոփոխություններ
+}
+
+/* --- presence --- */
+function cbPresWrite(force){
+  if(!CB.on||!S.deck)return;
+  const sig=S.sel+'|'+(S.eid||''),now=Date.now();
+  if(!force&&sig===CB.lastSig&&now-CB.lastW<5000)return;
+  CB.lastSig=sig;CB.lastW=now;
+  fsdb.collection(FS_COL).doc(PRK(S.deck.id)).set({u:{[me()]:{n:(CU&&CU.name)||me(),c:cbColor(me()),ts:now,i:S.sel,e:S.eid||''}}},{merge:true}).catch(()=>{});
+}
+const cbOthers=()=>Object.entries(CB.pres||{}).filter(([u,x])=>u!==me()&&x&&Date.now()-(+x.ts||0)<14000);
+const cbIni=n=>String(n||'?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+function cbPaint(){
+  const bar=$('sl-cbar');if(!bar)return;const o=cbOthers();
+  bar.innerHTML=o.slice(0,5).map(([u,x])=>'<span class="cb-pa" style="background:'+esc(x.c||cbColor(u))+'" title="'+esc(x.n||u)+' · սահիկ '+((+x.i||0)+1)+'">'+esc(cbIni(x.n||u))+'</span>').join('')+(o.length>5?'<span class="cb-pa cb-more">+'+(o.length-5)+'</span>':'')+(o.length?'<span class="cb-live">● Կենդանի</span>':'');
+  cbDots();cbSel();
+}
+function cbDots(){
+  const th=document.querySelectorAll('#sl-rail .sl-th');if(!th.length)return;
+  th.forEach(t=>{const d=t.querySelector('.cb-dots');if(d)d.remove();});
+  const by={};cbOthers().forEach(([u,x])=>{(by[+x.i||0]=by[+x.i||0]||[]).push(x);});
+  Object.keys(by).forEach(i=>{const t=th[i];if(!t)return;t.insertAdjacentHTML('beforeend','<span class="cb-dots">'+by[i].map(x=>'<i style="background:'+esc(x.c||'#6366f1')+'" title="'+esc(x.n||'')+'"></i>').join('')+'</span>');});
+}
+function cbSel(){
+  const b=stageBox();if(!b)return;b.querySelectorAll('.cb-sel').forEach(n=>{n.classList.remove('cb-sel');n.style.removeProperty('--cbc');n.removeAttribute('data-cbn');});
+  cbOthers().forEach(([u,x])=>{if((+x.i||0)!==S.sel||!x.e)return;const n=b.querySelector('.sl-el[data-eid="'+String(x.e).replace(/"/g,'')+'"]');if(n){n.classList.add('cb-sel');n.style.setProperty('--cbc',x.c||'#6366f1');n.setAttribute('data-cbn',x.n||u);}});
+}
+
+/* --- lifecycle --- */
+document.addEventListener('pointerdown',()=>{CB.down=true;},true);
+['pointerup','pointercancel'].forEach(ev=>document.addEventListener(ev,()=>{CB.down=false;},true));
+function collabOpen(){
+  collabClose(true);
+  const d=S.deck;if(!d||!d.id||!CU)return;
+  CB.on=true;CB.id=d.id;CB.pres={};CB.pend=null;CB.lastSig='';
+  const st=$('sl-st');if(st&&!$('sl-cbar'))st.insertAdjacentHTML('beforebegin','<span id="sl-cbar"></span>');
+  try{
+    CB.unsub=fsdb.collection(FS_COL).doc(DK(d.id)).onSnapshot(sn=>{
+      if(sn.metadata&&sn.metadata.hasPendingWrites)return;
+      if(!sn.exists)return;const r=sn.data();if(!r||!r.slides||!cbNewer(r))return;
+      CB.pend=r;cbApply();
+    },e=>console.warn('collab deck',e&&e.message));
+    CB.punsub=fsdb.collection(FS_COL).doc(PRK(d.id)).onSnapshot(sn=>{CB.pres=(sn.exists&&sn.data().u)||{};cbPaint();},e=>console.warn('collab presence',e&&e.message));
+  }catch(e){console.warn(e);}
+  cbPresWrite(true);
+  CB.tick=setInterval(()=>{cbPresWrite(false);cbPaint();},2000);
+}
+function collabClose(keep){
+  try{CB.unsub&&CB.unsub();}catch(e){}try{CB.punsub&&CB.punsub();}catch(e){}
+  CB.unsub=CB.punsub=null;clearInterval(CB.tick);clearTimeout(CB.pt);clearTimeout(CB.rt);
+  if(CB.on&&CB.id&&!keep){try{fsdb.collection(FS_COL).doc(PRK(CB.id)).set({u:{[me()]:firebase.firestore.FieldValue.delete()}},{merge:true}).catch(()=>{});}catch(e){}}
+  CB.on=false;const b=$('sl-cbar');if(b)b.remove();
+}
+window.addEventListener('pagehide',()=>{if(CB.on)collabClose();});
+
+/* --- share dialog: invitations --- */
+const cbRoleName=r=>({teacher:'Ուսուցիչ',student:'Աշակերտ',admin:'Ադմին'}[r]||r||'');
+function cbRowHtml(u){
+  const us=(DB.users||{})[u]||{},ed=(S.deck.collabE||[]).indexOf(u)!==-1;
+  return '<div class="cb-row"><span class="cb-av" style="background:'+cbColor(u)+'">'+esc(cbIni(us.name||u))+'</span><span class="cb-nm"><b>'+esc(us.name||u)+'</b><small>'+esc(u)+' · '+esc(cbRoleName(us.role))+'</small></span>'
+   +'<select data-u="'+esc(u)+'" onchange="cbSetRole(this.dataset.u,this.value)"><option value="edit"'+(ed?' selected':'')+'>Խմբագիր</option><option value="view"'+(ed?'':' selected')+'>Դիտող</option></select>'
+   +'<button class="sl-btn sm dng" data-u="'+esc(u)+'" onclick="cbRemove(this.dataset.u)" aria-label="Հեռացնել">✕</button></div>';
+}
+function cbShareHtml(){
+  const d=S.deck;
+  if(!canOwn(d))return '<div class="cb-box"><h4>🤝 Համատեղ խմբագրում</h4><p class="cb-n">Համահեղինակներին կարող է ավելացնել միայն նախագծի հեղինակը։</p></div>';
+  return '<div class="cb-box"><h4>🤝 Հրավիրել համահեղինակների</h4><p class="cb-n">«Խմբագիր»-ը փոխում է սահիկները իրական ժամանակում, «Դիտողը»՝ միայն տեսնում է։</p>'
+   +'<input class="cb-q" id="cb-q" placeholder="Որոնել անունով կամ մուտքանունով…" oninput="cbSearch(this.value)" autocomplete="off"><div id="cb-res"></div>'
+   +'<div class="cb-list" id="cb-list">'+((d.collabU||[]).map(cbRowHtml).join('')||'<p class="cb-n">Դեռ ոչ ոք չի հրավիրվել։</p>')+'</div></div>';
+}
+function cbRefresh(){const l=$('cb-list');if(l)l.innerHTML=(S.deck.collabU||[]).map(cbRowHtml).join('')||'<p class="cb-n">Դեռ ոչ ոք չի հրավիրվել։</p>';}
+window.cbSearch=function(q){
+  const out=$('cb-res');if(!out)return;q=String(q||'').trim().toLowerCase();if(!q){out.innerHTML='';return;}
+  const d=S.deck,have=new Set((d.collabU||[]).concat([d.owner,me()]));
+  const hits=Object.entries(DB.users||{}).filter(([u,x])=>x&&!have.has(u)&&x.role!=='admin'&&x.role!=='parent'&&((x.name||'').toLowerCase().indexOf(q)!==-1||u.toLowerCase().indexOf(q)!==-1)).slice(0,6);
+  out.innerHTML=hits.length?hits.map(([u,x])=>'<div class="cb-row"><span class="cb-av" style="background:'+cbColor(u)+'">'+esc(cbIni(x.name||u))+'</span><span class="cb-nm"><b>'+esc(x.name||u)+'</b><small>'+esc(u)+' · '+esc(cbRoleName(x.role))+'</small></span>'
+    +'<button class="sl-btn sm pri" data-u="'+esc(u)+'" onclick="cbAdd(this.dataset.u,\'edit\')">＋ Խմբագիր</button><button class="sl-btn sm" data-u="'+esc(u)+'" onclick="cbAdd(this.dataset.u,\'view\')">＋ Դիտող</button></div>').join(''):'<p class="cb-n">Ոչինչ չգտնվեց։</p>';
+};
+function cbCommit(){slMark();slSave(false);cbRefresh();}
+window.cbAdd=function(u,role){const d=S.deck;if(!canOwn(d)||!(DB.users||{})[u])return;d.collabU=(d.collabU||[]).filter(x=>x!==u).concat([u]);d.collabE=(d.collabE||[]).filter(x=>x!==u);if(role==='edit')d.collabE.push(u);const q=$('cb-q');if(q)q.value='';const r=$('cb-res');if(r)r.innerHTML='';cbCommit();};
+window.cbSetRole=function(u,role){const d=S.deck;if(!canOwn(d))return;d.collabE=(d.collabE||[]).filter(x=>x!==u);if(role==='edit')d.collabE.push(u);cbCommit();};
+window.cbRemove=function(u){const d=S.deck;if(!canOwn(d))return;d.collabU=(d.collabU||[]).filter(x=>x!==u);d.collabE=(d.collabE||[]).filter(x=>x!==u);cbCommit();};
+
+/* --- invitation notice for the invited user --- */
+function inviteCheck(){
+  try{
+    if(!CU||!S.idx||typeof addNotif!=='function')return;
+    const key='slinv_'+me();let raw=null;try{raw=localStorage.getItem(key);}catch(e){}
+    const seen=raw?JSON.parse(raw):{},first=!raw;let ch=false;
+    Object.values(S.idx).forEach(m=>{
+      if(!m||!m.id||m.owner===me()||(m.collabU||[]).indexOf(me())===-1||seen[m.id])return;
+      seen[m.id]=1;ch=true;
+      if(!first)addNotif('🤝','Հրավեր՝ համատեղ աշխատանքի','«'+(m.title||'Սահիկաշար')+'» — '+(m.ownerName||'')+((m.collabE||[]).indexOf(me())!==-1?' (խմբագիր)':' (դիտող)'),()=>{showPg('slides');});
+    });
+    if(first||ch)try{localStorage.setItem(key,JSON.stringify(seen));}catch(e){}
+  }catch(e){console.warn(e);}
+}
 
 /* ---------- presentation (full screen) ---------- */
 let P=null;
@@ -9175,7 +9393,7 @@ watch();
 try{
   idxRef().onSnapshot(snap=>{
     if(snap.metadata&&snap.metadata.hasPendingWrites)return;
-    const d=snap.exists?snap.data():{};S.idx=(d&&d.decks)||{};S.loaded=true;
+    const d=snap.exists?snap.data():{};S.idx=(d&&d.decks)||{};S.loaded=true;try{inviteCheck();}catch(e){}
     const pg=$('slides');if(CU&&pg&&pg.classList.contains('on')&&!$('sl-ed').classList.contains('on')&&!(document.activeElement&&document.activeElement.id==='sl-q'))renderList(false);
   },e=>console.warn('slides listener',e&&e.message));
 }catch(e){console.warn(e);}
@@ -14695,6 +14913,24 @@ html body #gr select:focus,html body #gr-book select:focus,html body #semtch sel
 .sl-md-p{position:relative;width:11cqw;height:11cqw}
 .sl-md-t{position:absolute;left:2cqw;right:2cqw;bottom:1.6cqw;font-size:2.2cqw;font-weight:700;text-shadow:0 1px 6px rgba(0,0,0,.7);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #sl-ed .sl-md *{pointer-events:none}
+</style>
+
+<style id="md-collab-css">
+#sl-cbar{display:inline-flex;align-items:center;gap:4px;margin-right:6px}
+.cb-pa{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;border:2px solid var(--surf,#fff);box-shadow:0 1px 4px rgba(0,0,0,.25);margin-left:-8px;animation:cbIn .3s ease}
+.cb-pa:first-child{margin-left:0}.cb-more{background:#64748b}
+.cb-live{font-size:11px;font-weight:700;color:#10b981;margin-left:8px;white-space:nowrap}
+@keyframes cbIn{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+.cb-dots{position:absolute;right:4px;bottom:4px;display:flex;gap:2px;z-index:3}.cb-dots i{width:9px;height:9px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.2)}
+.sl-el.cb-sel{outline:2px solid var(--cbc,#6366f1)!important;outline-offset:1px}
+.sl-el.cb-sel::after{content:attr(data-cbn);position:absolute;left:-2px;top:-20px;background:var(--cbc,#6366f1);color:#fff;font:700 11px/1 system-ui,sans-serif;padding:3px 6px;border-radius:5px 5px 5px 0;white-space:nowrap;pointer-events:none;z-index:5}
+.cb-box{margin:14px 0;padding:12px;border:1px solid var(--bdr,#e2e8f0);border-radius:12px;background:var(--surf2,rgba(120,140,200,.06))}
+.cb-box h4{margin:0 0 4px;font-size:14px}.cb-n{font-size:12px;color:var(--txt3,#64748b);margin:4px 0}
+.cb-q{width:100%;box-sizing:border-box;margin:8px 0;padding:9px 12px;border-radius:10px;border:1px solid var(--bdr,#cbd5e1);background:var(--surf,#fff);color:var(--txt,#111);font-size:14px}
+.cb-row{display:flex;align-items:center;gap:10px;padding:6px 0;flex-wrap:wrap}
+.cb-av{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:12px;flex:none}
+.cb-nm{flex:1;min-width:120px;display:flex;flex-direction:column}.cb-nm small{font-size:11px;color:var(--txt3,#64748b)}
+.cb-row select{padding:6px 8px;border-radius:8px;border:1px solid var(--bdr,#cbd5e1);background:var(--surf,#fff);color:var(--txt,#111)}
 </style>
 </body>
 </html>
