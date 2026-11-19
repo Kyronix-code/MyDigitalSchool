@@ -8238,6 +8238,33 @@ const VA={top:'flex-start',mid:'center',bot:'flex-end'};
 function textStyle(e,tc,ff){
   return 'font-size:'+(+e.fs||4)+'cqw;color:'+(e.color||tc)+';font-weight:'+(e.b?800:400)+';font-style:'+(e.i?'italic':'normal')+';text-decoration:'+(e.u?'underline':'none')+';text-align:'+(e.al||'left')+';justify-content:'+VA[e.va||'mid']+(e.font?';font-family:'+FONTS[e.font]:'')+(e.sh?';text-shadow:0 .2cqw .8cqw rgba(0,0,0,.45)':'');
 }
+function mediaUrl(u){u=String(u||'').trim();if(!u)return'';if(!/^[a-z][a-z0-9+.-]*:/i.test(u))u='https://'+u;try{const x=new URL(u);return/^https?:$/.test(x.protocol)?x.href:'';}catch(e){return'';}}
+function mediaInfo(e){
+  const href=mediaUrl(e.url);const o={href:href,host:'',embed:'',file:'',thumb:''};if(!href)return o;
+  let x;try{x=new URL(href);}catch(er){return o;}o.host=x.hostname.replace(/^www\./,'');
+  if(e.kind!=='video')return o;
+  let m,h=x.hostname.replace(/^www\.|^m\./,'');
+  if(h==='youtu.be'){m=x.pathname.match(/^\/([\w-]{6,15})/);}
+  else if(/(^|\.)youtube\.com$/.test(h)||/(^|\.)youtube-nocookie\.com$/.test(h)){m=x.pathname.match(/^\/(?:shorts|embed|live|v)\/([\w-]{6,15})/)||(x.searchParams.get('v')||'').match(/^([\w-]{6,15})$/);}
+  if(m){o.embed='https://www.youtube-nocookie.com/embed/'+m[1]+'?rel=0&playsinline=1';o.thumb='https://i.ytimg.com/vi/'+m[1]+'/hqdefault.jpg';return o;}
+  if(/(^|\.)vimeo\.com$/.test(h)){m=x.pathname.match(/\/(\d{5,12})/);if(m){o.embed='https://player.vimeo.com/video/'+m[1];return o;}}
+  if(/\.(mp4|webm|ogg|mov|m4v)$/i.test(x.pathname))o.file=href;
+  return o;
+}
+const PLAYSVG='<svg viewBox="0 0 64 64" width="100%" height="100%"><circle cx="32" cy="32" r="30" fill="rgba(0,0,0,.55)"/><path d="M26 20l20 12-20 12z" fill="#fff"/></svg>';
+const LINKSVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>';
+function mediaInner(e,cx){
+  const mi=mediaInfo(e),pres=!!cx.pres,ttl=esc(e.title||(mi.host||''));
+  if(e.kind==='video'){
+    if(!mi.href)return'<div class="sl-md sl-mv"><div class="sl-md-t">Վիդեոյի հղում չկա</div></div>';
+    if(pres&&mi.embed)return'<div class="sl-md sl-mv" onclick="event.stopPropagation()"><iframe src="'+esc(mi.embed)+'" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" loading="lazy" style="pointer-events:auto"></iframe></div>';
+    if(pres&&mi.file)return'<div class="sl-md sl-mv" onclick="event.stopPropagation()"><video src="'+esc(mi.file)+'" controls playsinline preload="metadata" style="pointer-events:auto"></video></div>';
+    return'<div class="sl-md sl-mv">'+(mi.thumb?'<img src="'+esc(mi.thumb)+'" alt="" referrerpolicy="no-referrer">':'')+'<div class="sl-md-p">'+PLAYSVG+'</div><div class="sl-md-t">'+(ttl||'Վիդեո')+'</div></div>';
+  }
+  const body='<span class="sl-lk-i">'+LINKSVG+'</span><span class="sl-lk-x"><b>'+(esc(e.title)||ttl||'Հղում')+'</b><small>'+esc(mi.host||'հղումը նշված չէ')+'</small></span>';
+  if(pres&&mi.href)return'<a class="sl-md sl-lk" href="'+esc(mi.href)+'" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="pointer-events:auto">'+body+'</a>';
+  return'<div class="sl-md sl-lk">'+body+'</div>';
+}
 function elHtml(e,sl,cx,tc,ff){
   const sel=cx.edit&&S.eid===e.id;
   let st='left:'+e.x+'%;top:'+e.y+'%;width:'+e.w+'%;height:'+e.h+'%;transform:rotate('+(e.rot||0)+'deg);opacity:'+((e.op==null?100:e.op)/100);
@@ -8250,6 +8277,9 @@ function elHtml(e,sl,cx,tc,ff){
   }else if(e.t==='img'){
     st+=';border-radius:'+(e.br||0)+'cqw;overflow:hidden';
     inner=imgTag(e.img,'object-fit:'+(e.fit||'cover'));
+  }else if(e.t==='media'){
+    st+=';border-radius:'+(e.br||0)+'cqw;overflow:hidden';
+    inner=mediaInner(e,cx);
   }else if(e.t==='table'){
     const rows=e.rows||[['']],hc=e.hc||'#6366f1',bc=e.bc||'#cbd5e1';
     inner='<table class="sl-tb" style="font-size:'+(+e.fs||2.6)+'cqw;color:'+(e.color||tc)+';font-family:inherit">'+rows.map((r,ri)=>'<tr>'+r.map(c=>'<td style="border:.15cqw solid '+bc+';'+(ri===0?'background:'+hc+';color:'+(lum(solidOf(hc))>.6?'#1b1f33':'#fff')+';font-weight:800':'')+'">'+esc(c)+'</td>').join('')+'</tr>').join('')+'</table>';
@@ -8296,7 +8326,9 @@ function slideInner(sl,ph,cx){
 function box(sl,ph,cx,extra){return '<div class="sl-box'+(extra?' '+extra:'')+'">'+slideInner(sl,ph,cx)+'</div>';}
 async function hydrate(root){
   const els=[...root.querySelectorAll('img[data-imgid]')].filter(el=>!el.getAttribute('src'));
-  await Promise.all(els.map(async el=>{const id=el.getAttribute('data-imgid');const d=S.imgs[id]||await getImg(id).catch(()=>'');if(d&&el.isConnected)el.src=d;}));
+  await Promise.all(els.map(async el=>{const id=el.getAttribute('data-imgid');let d=S.imgs[id]||'';
+    for(let t=0;t<4&&!d&&el.isConnected;t++){d=await getImg(id).catch(()=>'');if(!d)await new Promise(r=>setTimeout(r,500*(t+1)));}   // ցանցի ժամանակավոր սխալի դեպքում կրկնում ենք
+    if(d&&el.isConnected)el.src=d;}));
 }
 
 /* ---------- themes + starters ---------- */
@@ -8545,6 +8577,7 @@ function paneEls(sl){
   const els=sl.els||[],e=curEl();
   let h='<div class="sl-r2"><button class="sl-btn" onclick="slAddEl(\'text\')">＋ Տեքստ</button><button class="sl-btn" onclick="$(\'sl-el-file\').click()">＋ Նկար</button></div><input type="file" id="sl-el-file" accept="image/*" style="display:none" onchange="slPickEl(this)"><div id="sl-imgerr" style="color:var(--red);font-size:12px"></div>'
    +'<button class="sl-btn" onclick="slAddEl(\'table\')">＋ Աղյուսակ</button>'
+   +'<div class="sl-r2"><button class="sl-btn" onclick="slAddEl(\'media\',\'link\')">🔗 Հղում</button><button class="sl-btn" onclick="slAddEl(\'media\',\'video\')">▶ Վիդեո</button></div>'
    +F('Ձևեր','<div class="sl-shp">'+Object.keys(SHAPES).map(k=>'<button title="'+SHAPES[k][0]+'" onclick="slAddEl(\'shape\',\''+k+'\')"><svg viewBox="0 0 100 100" preserveAspectRatio="none" style="'+(k==='line'?'fill:none':'')+'">'+SHAPES[k][1]+'</svg></button>').join('')+'</div>')
    +F('Էմոջիներ','<div class="sl-emo">'+EMOJIS.map(m=>'<button onclick="slAddEmoji(\''+m+'\')">'+m+'</button>').join('')+'</div>');
   if(e)h+='<hr style="border:none;border-top:1px solid var(--bdr);width:100%">'+elProps(e);
@@ -8568,6 +8601,7 @@ function elProps(e){
      +F('Եզրագիծ',swr(['#ffffff','#1b1f33','#ef4444','#f59e0b','#10b981'],e.stroke,'slElStroke')+'<input type="range" min="0" max="10" step=".5" value="'+(e.sw!=null?e.sw:(e.shape==='line'?3:0))+'" oninput="slEl(\'sw\',+this.value)" style="margin-top:6px">');
   }
   if(e.t==='img')h+=F('Տեղավորում','<select onchange="slEl(\'fit\',this.value)"><option value="cover"'+(e.fit!=='contain'?' selected':'')+'>Լցնել (կտրել)</option><option value="contain"'+(e.fit==='contain'?' selected':'')+'>Ամբողջությամբ</option></select>')+F('Անկյունների կլորացում','<input type="range" min="0" max="25" step=".5" value="'+(+e.br||0)+'" oninput="slEl(\'br\',+this.value)">');
+  if(e.t==='media')h+=F(e.kind==='video'?'Վիդեոյի հղում (YouTube, Vimeo կամ .mp4)':'Հղում (https://…)','<input type="text" value="'+esc(e.url||'')+'" placeholder="https://" oninput="slEl(\'url\',this.value)" onchange="slEl(\'url\',this.value,1)">')+F(e.kind==='video'?'Ենթագրություն':'Գրվածք','<input type="text" value="'+esc(e.title||'')+'" oninput="slEl(\'title\',this.value)">')+(mediaUrl(e.url)||!e.url?'':'<div style="font-size:12px;color:#ef4444">Հղումը անվավեր է (թույլատրվում է միայն http/https)։</div>')+(e.kind==='video'?'<div style="font-size:11px;color:var(--txt3)">Վիդեոն նվագարկվում է «Ցուցադրել» ռեժիմում։ Խմբագրիչում երևում է նախադիտման քարտ։</div>':'')
   if(e.t==='table')h+=F('Աղյուսակ (տող = տող, սյունակները՝ |)','<textarea oninput="slTable(this.value)">'+esc((e.rows||[]).map(r=>r.join(' | ')).join('\n'))+'</textarea>')+'<div class="sl-r2"><div><label>Չափ</label><input type="range" min="1.2" max="6" step=".2" value="'+(+e.fs||2.6)+'" oninput="slEl(\'fs\',+this.value)"></div></div>'+F('Վերնագրի շարքի գույն',swr(['#6366f1','#10b981','#f59e0b','#ef4444','#1b1f33'],e.hc,'slElHc'));
   h+=F('Թափանցիկություն՝ '+(e.op==null?100:e.op)+'%','<input type="range" min="10" max="100" step="5" value="'+(e.op==null?100:e.op)+'" oninput="slEl(\'op\',+this.value);this.parentNode.firstChild.textContent=\'Թափանցիկություն՝ \'+this.value+\'%\'">')
    +'<div class="sl-r4">'+num('x','X %',-50,150,.5)+num('y','Y %',-50,150,.5)+num('w','Լ %',2,200,.5)+num('h','Բ %',2,200,.5)+'</div>'
@@ -8641,17 +8675,18 @@ async function uploadImage(file,max){
 }
 const imgErr=m=>{const e=$('sl-imgerr');if(e)e.textContent=m||'';};
 window.slPick=async function(inp){const f=inp.files&&inp.files[0];if(!f)return;imgErr('');
-  try{const r=await uploadImage(f,1280);cur().img=r.id;slMark();drawAll();}catch(e){console.error(e);imgErr((e&&e.message)||'Նկարը չհաջողվեց վերբեռնել։');setStatus('Նկարը չպահպանվեց','er');}inp.value='';};
+  try{const r=await uploadImage(f,1280);cur().img=r.id;slMark();drawAll();slSave(false);}catch(e){console.error(e);imgErr((e&&e.message)||'Նկարը չհաջողվեց վերբեռնել։');setStatus('Նկարը չպահպանվեց','er');}inp.value='';};
 window.slPickBg=async function(inp){const f=inp.files&&inp.files[0];if(!f)return;imgErr('');
-  try{const r=await uploadImage(f,1600);const sl=cur();sl.bgImg=r.id;if(sl.bgDim==null||sl.bgDim===0)sl.bgDim=25;sl.tc='#ffffff';sl.tcb='';slMark();drawAll();}catch(e){console.error(e);imgErr((e&&e.message)||'Նկարը չհաջողվեց վերբեռնել։');setStatus('Նկարը չպահպանվեց','er');}inp.value='';};
+  try{const r=await uploadImage(f,1600);const sl=cur();sl.bgImg=r.id;if(sl.bgDim==null||sl.bgDim===0)sl.bgDim=25;sl.tc='#ffffff';sl.tcb='';slMark();drawAll();slSave(false);}catch(e){console.error(e);imgErr((e&&e.message)||'Նկարը չհաջողվեց վերբեռնել։');setStatus('Նկարը չպահպանվեց','er');}inp.value='';};
 window.slPickEl=async function(inp){const f=inp.files&&inp.files[0];if(!f)return;imgErr('');
-  try{const r=await uploadImage(f,1280);const w=40,h=Math.min(90,w*(r.h/r.w)*(16/9));const e=Object.assign(ELDEF.img(),{img:r.id,w:w,h:Math.round(h*10)/10,x:30,y:Math.max(2,Math.round((100-h)/2))});addEl(e);}catch(e){console.error(e);imgErr((e&&e.message)||'Նկարը չհաջողվեց վերբեռնել։');setStatus('Նկարը չպահպանվեց','er');}inp.value='';};
+  try{const r=await uploadImage(f,1280);const w=40,h=Math.min(90,w*(r.h/r.w)*(16/9));const e=Object.assign(ELDEF.img(),{img:r.id,w:w,h:Math.round(h*10)/10,x:30,y:Math.max(2,Math.round((100-h)/2))});addEl(e);slSave(false);}catch(e){console.error(e);imgErr((e&&e.message)||'Նկարը չհաջողվեց վերբեռնել։');setStatus('Նկարը չպահպանվեց','er');}inp.value='';};
 
 /* ----- free elements ----- */
 const ELDEF={
  text:()=>({id:uid(),t:'text',x:25,y:38,w:50,h:22,text:'Տեքստ',fs:4,b:false,i:false,u:false,al:'left',va:'mid',fill:'',br:0,op:100,rot:0}),
  shape:k=>({id:uid(),t:'shape',shape:k||'rect',x:35,y:30,w:30,h:30,fill:'#6366f1',stroke:'',sw:k==='line'?3:0,text:'',fs:3.4,op:100,rot:0}),
  img:()=>({id:uid(),t:'img',img:'',x:30,y:20,w:40,h:50,fit:'cover',br:0,op:100,rot:0}),
+ media:k=>({id:uid(),t:'media',kind:k==='video'?'video':'link',url:'',title:'',x:25,y:k==='video'?22:38,w:50,h:k==='video'?50:16,br:1.5,op:100,rot:0}),
  table:()=>({id:uid(),t:'table',x:15,y:30,w:70,h:34,rows:[['Սյունակ 1','Սյունակ 2','Սյունակ 3'],['','',''],['','','']],fs:2.6,hc:'#6366f1',bc:'#cbd5e1',op:100,rot:0})
 };
 function addEl(e){const sl=cur();(sl.els=sl.els||[]).push(e);S.eid=e.id;S.tab='els';slMark();drawAll();}
@@ -8752,6 +8787,8 @@ function slMark(noHist){
   clearTimeout(S.timer);S.timer=setTimeout(()=>slSave(false),1400);
   if(!noHist){clearTimeout(S.hT);S.hT=setTimeout(histCommit,350);}
 }
+document.addEventListener('visibilitychange',function(){if(document.hidden&&S&&S.deck&&S.dirty&&!S.saving){try{window.slSave(false);}catch(e){}}});
+window.addEventListener('pagehide',function(){if(S&&S.deck&&S.dirty&&!S.saving){try{window.slSave(false);}catch(e){}}});
 window.slSave=async function(manual){
   if(!S.deck)return true;
   clearTimeout(S.timer);
@@ -8822,7 +8859,7 @@ function updBar(){const b=$('sl-pb-p');if(b&&P)b.textContent=P.paused?'▶':'⏸
 function paintP(dir){
   const b=$('sl-pbox');if(!b||!P)return;const sl=P.deck.slides[P.i],tr=sl.tr||P.deck.trans||'fade';
   b.className=tr==='none'?'':'tr-'+tr;b.style.setProperty('--d',dir<0?-1:1);
-  b.innerHTML=box(sl,false,{deck:P.deck,n:P.i+1});hydrate(b);
+  b.innerHTML=box(sl,false,{deck:P.deck,n:P.i+1,pres:true});hydrate(b);
   try{if(window.MD_ANIM)MD_ANIM.apply(b,sl);}catch(e){}
   $('sl-pc').textContent=(P.i+1)+' / '+P.deck.slides.length;
   const pg=$('sl-prog');if(pg)pg.style.width=((P.i+1)/P.deck.slides.length*100)+'%';
@@ -8911,6 +8948,8 @@ function ppEl(pp,s,e,W,H,tc,font){
     else s.addShape(type,o);
   }else if(e.t==='img'){
     const d=S.imgs[e.img];if(d)s.addImage({data:d,x:x,y:y,w:w,h:h,rotate:rot,sizing:{type:e.fit==='contain'?'contain':'cover',w:w,h:h},transparency:tr});
+  }else if(e.t==='media'){
+    const mi=mediaInfo(e);s.addText((e.kind==='video'?'▶ ':'🔗 ')+(e.title||mi.host||'Հղում'),{x:x,y:y,w:w,h:Math.max(h,.4),fontFace:PPT_FONT[font]||'Arial',fontSize:14,color:'2563EB',underline:{style:'sng'},hyperlink:mi.href?{url:mi.href}:undefined,fill:{color:'EEF2FF'},valign:'middle',margin:8});
   }else if(e.t==='table'){
     const rows=(e.rows||[]).map((r,ri)=>r.map(c=>({text:c,options:{bold:ri===0,color:ri===0?(lum(solidOf(e.hc||'#6366f1'))>.6?'1B1F33':'FFFFFF'):hx(e.color||tc),fill:ri===0?{color:hx(e.hc||'#6366f1')}:undefined}})));
     if(rows.length)s.addTable(rows,{x:x,y:y,w:w,fontSize:Math.max(6,Math.round((+e.fs||2.6)*7.2)),fontFace:PPT_FONT[font]||'Arial',border:{type:'solid',color:hx(e.bc||'#cbd5e1'),pt:.75}});
@@ -14563,6 +14602,100 @@ html body .ab.lgx{max-width:920px;display:flex;min-height:560px;border-radius:28
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
 </script>
+
+<style id="md-gx-css">
+/* ===== Գնահատականների բաժին · GX (միայն տեսք և անիմացիա) ===== */
+html body :is(#gr,#gr-book,#semtch,#sem,#fc-grades,#mg){position:relative;isolation:isolate}
+/* կենդանի գրադիենտային ֆոն՝ միայն transform/opacity (GPU) */
+html body :is(#gr,#gr-book,#semtch,#sem,#fc-grades,#mg).on::before{content:'';position:absolute;z-index:-1;inset:-40px -20px auto -20px;height:520px;pointer-events:none;
+ background:radial-gradient(380px 260px at 18% 20%,rgba(71,120,245,.34),transparent 70%),radial-gradient(420px 280px at 78% 12%,rgba(168,85,247,.28),transparent 70%),radial-gradient(360px 240px at 52% 70%,rgba(34,211,238,.22),transparent 70%);
+ filter:blur(22px);animation:gxAurora 14s ease-in-out infinite alternate;will-change:transform}
+@keyframes gxAurora{0%{transform:translate3d(-3%,0,0) scale(1)}50%{transform:translate3d(4%,6%,0) scale(1.08)}100%{transform:translate3d(-1%,-4%,0) scale(1.03)}}
+/* կինեմատոգրաֆիկ բացում՝ լույսի շերտ + վարագույր */
+html body :is(#gr,#gr-book,#semtch,#sem,#fc-grades,#mg).on::after{content:'';position:absolute;inset:0;z-index:50;pointer-events:none;
+ background:linear-gradient(100deg,transparent 0,transparent 42%,rgba(160,190,255,.65) 49%,#fff 50%,rgba(160,190,255,.65) 51%,transparent 58%,transparent 100%),linear-gradient(180deg,var(--bg,#0b0d17),var(--bg,#0b0d17));
+ background-size:300% 100%,100% 100%;background-position:140% 0,0 0;background-repeat:no-repeat;
+ animation:gxOpen 1.05s cubic-bezier(.65,0,.2,1) both}
+@keyframes gxOpen{0%{opacity:1;background-position:140% 0,0 0;clip-path:inset(0 0 0 0)}55%{opacity:1;background-position:-40% 0,0 0;clip-path:inset(0 0 0 0)}100%{opacity:0;background-position:-40% 0,0 0;clip-path:inset(0 0 0 100%)}}
+/* վերնագիր */
+html body #gr .pt,html body #gr-book .pt,html body #semtch .pt,html body #sem .pt,html body #fc-grades .pt,html body #mg .pt{font-size:clamp(26px,4.2vw,40px);font-weight:800;letter-spacing:-.03em;background:linear-gradient(110deg,var(--txt) 20%,#8ea6ff 45%,#c4a6ff 60%,var(--txt) 85%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:gxTitle 7s ease-in-out infinite,gxRise .8s .35s cubic-bezier(.16,1,.3,1) both}
+@keyframes gxTitle{0%,100%{background-position:100% 0}50%{background-position:0 0}}
+@keyframes gxRise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+html body #gr .ps,html body #gr-book .ps,html body #semtch .ps,html body #sem .ps,html body #fc-grades .ps,html body #mg .ps{animation:gxRise .8s .5s cubic-bezier(.16,1,.3,1) both}
+/* ապակե քարտեր՝ գրադիենտային եզրագծով */
+html body #gr .cd,html body #gr-book .cd,html body #semtch .cd,html body #sem .cd,html body #fc-grades .cd,html body #mg .cd{position:relative;background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02)),var(--surf)!important;border:1px solid transparent!important;border-radius:20px!important;box-shadow:0 18px 50px rgba(8,12,40,.28),inset 0 1px 0 rgba(255,255,255,.08)!important;backdrop-filter:blur(10px);animation:gxRise .75s .55s cubic-bezier(.16,1,.3,1) both;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s}
+html body #gr .cd::before,html body #gr-book .cd::before,html body #semtch .cd::before,html body #sem .cd::before,html body #fc-grades .cd::before,html body #mg .cd::before{content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;background:linear-gradient(140deg,rgba(120,150,255,.7),rgba(255,255,255,.05) 35%,rgba(168,85,247,.55) 70%,rgba(34,211,238,.6));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+/* դասարանների ընտրության քարտեր */
+html body #gr #gr-class-grid>.cd:hover{transform:translateY(-6px) scale(1.02);box-shadow:0 26px 60px rgba(71,120,245,.35),inset 0 1px 0 rgba(255,255,255,.12)!important}
+html body #gr #gr-class-grid>.cd{animation-delay:calc(.55s + var(--n,0)*60ms)}
+html body #gr #gr-class-grid>.cd:nth-child(1){--n:0}html body #gr #gr-class-grid>.cd:nth-child(2){--n:1}html body #gr #gr-class-grid>.cd:nth-child(3){--n:2}html body #gr #gr-class-grid>.cd:nth-child(4){--n:3}html body #gr #gr-class-grid>.cd:nth-child(5){--n:4}html body #gr #gr-class-grid>.cd:nth-child(6){--n:5}html body #gr #gr-class-grid>.cd:nth-child(n+7){--n:6}
+html body #gr #gr-class-grid>.cd>div:first-child{font-size:30px!important;background:linear-gradient(120deg,#6f8dff,#c084fc);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+/* աղյուսակ */
+html body #gr th,html body #gr-book th,html body #semtch th,html body #sem th,html body #fc-grades th,html body #mg th{background:linear-gradient(180deg,rgba(120,150,255,.14),rgba(120,150,255,.04))!important;font-size:10.5px!important;letter-spacing:.14em!important;text-transform:uppercase;color:var(--txt2)!important;border-bottom:1px solid rgba(140,160,255,.3)!important;font-family:ui-monospace,'SF Mono',Menlo,monospace}
+html body #gr td,html body #gr-book td,html body #semtch td,html body #sem td,html body #fc-grades td,html body #mg td{border-bottom:1px solid rgba(140,160,255,.1)!important;transition:background .25s}
+html body #gr tbody tr,html body #gr-book tbody tr,html body #semtch tbody tr,html body #sem tbody tr,html body #fc-grades tbody tr,html body #mg tbody tr{animation:gxRow .55s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(.8s + var(--r,0)*35ms)}
+html body #gr tbody tr:hover td,html body #gr-book tbody tr:hover td,html body #semtch tbody tr:hover td,html body #sem tbody tr:hover td,html body #fc-grades tbody tr:hover td,html body #mg tbody tr:hover td{background:linear-gradient(90deg,rgba(71,120,245,.12),rgba(168,85,247,.08))}
+@keyframes gxRow{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+
+/* գնահատականի դաշտեր */
+html body #gr td input,html body #gr-book td input,html body #semtch td input,html body #sem td input,html body #fc-grades td input,html body #mg td input{width:36px!important;height:32px;padding:0!important;border-radius:10px!important;background:rgba(120,150,255,.07)!important;border:1px solid rgba(140,160,255,.22)!important;font-weight:800!important;font-size:13px!important;color:var(--txt)!important;transition:transform .2s,box-shadow .25s,border-color .25s,background .25s}
+html body #gr td input:hover,html body #gr-book td input:hover,html body #semtch td input:hover,html body #sem td input:hover,html body #fc-grades td input:hover,html body #mg td input:hover{border-color:rgba(140,170,255,.6)!important}
+html body #gr td input:focus,html body #gr-book td input:focus,html body #semtch td input:focus,html body #sem td input:focus,html body #fc-grades td input:focus,html body #mg td input:focus{transform:scale(1.18);border-color:#8ea6ff!important;background:rgba(120,150,255,.16)!important;box-shadow:0 0 0 4px rgba(120,150,255,.2),0 8px 24px rgba(99,102,241,.4)}
+html body #gr td input[data-g=hi],html body #gr-book td input[data-g=hi],html body #semtch td input[data-g=hi],html body #sem td input[data-g=hi],html body #fc-grades td input[data-g=hi],html body #mg td input[data-g=hi]{color:#6ee7b7!important;border-color:rgba(52,211,153,.55)!important;background:rgba(52,211,153,.12)!important;box-shadow:0 0 14px rgba(52,211,153,.25)}
+html body #gr td input[data-g=mid],html body #gr-book td input[data-g=mid],html body #semtch td input[data-g=mid],html body #sem td input[data-g=mid],html body #fc-grades td input[data-g=mid],html body #mg td input[data-g=mid]{color:#93c5fd!important;border-color:rgba(96,165,250,.55)!important;background:rgba(96,165,250,.12)!important;box-shadow:0 0 14px rgba(96,165,250,.22)}
+html body #gr td input[data-g=lo],html body #gr-book td input[data-g=lo],html body #semtch td input[data-g=lo],html body #sem td input[data-g=lo],html body #fc-grades td input[data-g=lo],html body #mg td input[data-g=lo]{color:#fcd34d!important;border-color:rgba(251,191,36,.55)!important;background:rgba(251,191,36,.12)!important}
+html body #gr td input[data-g=bad],html body #gr-book td input[data-g=bad],html body #semtch td input[data-g=bad],html body #sem td input[data-g=bad],html body #fc-grades td input[data-g=bad],html body #mg td input[data-g=bad]{color:#fda4af!important;border-color:rgba(251,113,133,.6)!important;background:rgba(251,113,133,.14)!important;box-shadow:0 0 14px rgba(251,113,133,.25)}
+html body #gr td input[data-g=abs],html body #gr-book td input[data-g=abs],html body #semtch td input[data-g=abs],html body #sem td input[data-g=abs],html body #fc-grades td input[data-g=abs],html body #mg td input[data-g=abs]{color:var(--txt3)!important;border-style:dashed!important}
+/* գնահատականի նշաններ (badge) */
+html body #gr .badge,html body #gr-book .badge,html body #semtch .badge,html body #sem .badge,html body #fc-grades .badge,html body #mg .badge{border-radius:12px!important;padding:5px 12px!important;font-weight:800!important;letter-spacing:.02em;border:1px solid rgba(255,255,255,.14);position:relative;overflow:hidden;animation:gxPop .6s cubic-bezier(.34,1.56,.64,1) both;animation-delay:calc(.9s + var(--r,0)*30ms)}
+html body #gr .badge::after,html body #gr-book .badge::after,html body #semtch .badge::after,html body #sem .badge::after,html body #fc-grades .badge::after,html body #mg .badge::after{content:'';position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);transform:translateX(-120%);animation:gxGlint 5s 1.8s ease-in-out infinite}
+@keyframes gxPop{from{opacity:0;transform:scale(.4) rotate(-8deg)}to{opacity:1;transform:none}}
+@keyframes gxGlint{0%,70%,100%{transform:translateX(-120%)}85%{transform:translateX(120%)}}
+html body #gr .b10,html body #gr-book .b10,html body #semtch .b10,html body #sem .b10,html body #fc-grades .b10,html body #mg .b10,html body #gr .b9,html body #gr-book .b9,html body #semtch .b9,html body #sem .b9,html body #fc-grades .b9,html body #mg .b9{background:linear-gradient(135deg,rgba(16,185,129,.28),rgba(34,211,238,.22))!important;color:#6ee7b7!important;box-shadow:0 0 18px rgba(16,185,129,.3)}
+html body #gr .b8,html body #gr-book .b8,html body #semtch .b8,html body #sem .b8,html body #fc-grades .b8,html body #mg .b8,html body #gr .b7,html body #gr-book .b7,html body #semtch .b7,html body #sem .b7,html body #fc-grades .b7,html body #mg .b7{background:linear-gradient(135deg,rgba(59,130,246,.3),rgba(99,102,241,.24))!important;color:#a5c4ff!important;box-shadow:0 0 16px rgba(99,102,241,.28)}
+html body #gr .b6,html body #gr-book .b6,html body #semtch .b6,html body #sem .b6,html body #fc-grades .b6,html body #mg .b6,html body #gr .b5,html body #gr-book .b5,html body #semtch .b5,html body #sem .b5,html body #fc-grades .b5,html body #mg .b5{background:linear-gradient(135deg,rgba(245,158,11,.28),rgba(249,115,22,.2))!important;color:#fcd34d!important;box-shadow:0 0 14px rgba(245,158,11,.25)}
+html body #gr .b4,html body #gr-book .b4,html body #semtch .b4,html body #sem .b4,html body #fc-grades .b4,html body #mg .b4,html body #gr .b3,html body #gr-book .b3,html body #semtch .b3,html body #sem .b3,html body #fc-grades .b3,html body #mg .b3,html body #gr .b2,html body #gr-book .b2,html body #semtch .b2,html body #sem .b2,html body #fc-grades .b2,html body #mg .b2,html body #gr .b1,html body #gr-book .b1,html body #semtch .b1,html body #sem .b1,html body #fc-grades .b1,html body #mg .b1{background:linear-gradient(135deg,rgba(244,63,94,.3),rgba(190,24,93,.22))!important;color:#fda4af!important;box-shadow:0 0 16px rgba(244,63,94,.28)}
+/* կոճակներ և ընտրիչներ */
+html body #gr .btn.bp2,html body #gr-book .btn.bp2,html body #semtch .btn.bp2,html body #sem .btn.bp2,html body #fc-grades .btn.bp2,html body #mg .btn.bp2{background:linear-gradient(135deg,#4778F5,#8874EA)!important;border:0!important;box-shadow:0 10px 26px rgba(71,120,245,.4);transition:transform .25s,box-shadow .25s}
+html body #gr .btn.bp2:hover,html body #gr-book .btn.bp2:hover,html body #semtch .btn.bp2:hover,html body #sem .btn.bp2:hover,html body #fc-grades .btn.bp2:hover,html body #mg .btn.bp2:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(99,102,241,.55)}
+html body #gr select,html body #gr-book select,html body #semtch select,html body #sem select,html body #fc-grades select,html body #mg select{border-radius:12px!important;border:1px solid rgba(140,160,255,.3)!important;background:rgba(120,150,255,.07)!important}
+html body #gr select:focus,html body #gr-book select:focus,html body #semtch select:focus,html body #sem select:focus,html body #fc-grades select:focus,html body #mg select:focus{border-color:#8ea6ff!important;box-shadow:0 0 0 4px rgba(120,150,255,.18)!important;outline:0}
+@media(max-width:700px){html body :is(#gr,#gr-book,#semtch,#sem,#fc-grades,#mg).on::before{height:360px;filter:blur(14px)}html body #gr .cd,html body #gr-book .cd,html body #semtch .cd,html body #sem .cd,html body #fc-grades .cd,html body #mg .cd{backdrop-filter:none;border-radius:16px!important}html body #gr td input,html body #gr-book td input,html body #semtch td input,html body #sem td input,html body #fc-grades td input,html body #mg td input{width:32px!important;height:30px}}
+@media(prefers-reduced-motion:reduce){html body :is(#gr,#gr-book,#semtch,#sem,#fc-grades,#mg).on::before,html body :is(#gr,#gr-book,#semtch,#sem,#fc-grades,#mg).on::after{animation:none!important}html body :is(#gr,#gr-book,#semtch,#sem,#fc-grades,#mg).on::after{display:none}html body #gr .pt,html body #gr-book .pt,html body #semtch .pt,html body #sem .pt,html body #fc-grades .pt,html body #mg .pt,html body #gr .ps,html body #gr-book .ps,html body #semtch .ps,html body #sem .ps,html body #fc-grades .ps,html body #mg .ps,html body #gr .cd,html body #gr-book .cd,html body #semtch .cd,html body #sem .cd,html body #fc-grades .cd,html body #mg .cd,html body #gr tbody tr,html body #gr-book tbody tr,html body #semtch tbody tr,html body #sem tbody tr,html body #fc-grades tbody tr,html body #mg tbody tr,html body #gr .badge,html body #gr-book .badge,html body #semtch .badge,html body #sem .badge,html body #fc-grades .badge,html body #mg .badge,html body #gr .badge::after,html body #gr-book .badge::after,html body #semtch .badge::after,html body #sem .badge::after,html body #fc-grades .badge::after,html body #mg .badge::after{animation:none!important}}
+</style>
+<script id="md-gx-js">
+(function(){
+ // միայն ներկայացում․ գնահատականի արժեքը չի փոխվում, միայն data-g հատկանիշ՝ գունավորման համար
+ function tier(v){v=(v||'').trim();if(!v)return '';if(/^[Bb\u0562]$/.test(v))return 'abs';var n=parseInt(v,10);if(isNaN(n))return '';return n>=9?'hi':n>=7?'mid':n>=5?'lo':'bad';}
+ function tag(i){var t=tier(i.value);if(t)i.setAttribute('data-g',t);else i.removeAttribute('data-g');}
+ function pass(root){
+  var w=root||document.getElementById('gr-week-table');if(!w)return;
+  w.querySelectorAll('tbody input').forEach(tag);
+  w.querySelectorAll('tbody tr').forEach(function(tr,i){tr.style.setProperty('--r',Math.min(i,24));});
+ }
+ function passBadges(){document.querySelectorAll('#sem .badge,#semtch .badge,#fc-grades .badge,#mg .badge').forEach(function(b,i){b.style.setProperty('--r',Math.min(i,30));});}
+ document.addEventListener('input',function(e){var t=e.target;if(t&&t.tagName==='INPUT'&&t.closest&&t.closest('#gr-week-table'))tag(t);},true);
+ var tm=null;
+ function sched(){clearTimeout(tm);tm=setTimeout(function(){pass();passBadges();},50);}
+ function start(){
+  new MutationObserver(function(ms){for(var i=0;i<ms.length;i++){var n=ms[i].target;if(n&&n.nodeType===1&&n.closest&&n.closest('#gr-week-table,#sem,#semtch,#fc-grades,#mg')){sched();return;}}}).observe(document.body,{childList:true,subtree:true});
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+})();
+</script>
+
+<style id="md-slmedia-css">
+.sl-md{position:absolute;inset:0;display:flex;align-items:center;gap:3cqw;padding:0 3cqw;box-sizing:border-box;text-decoration:none;color:#fff}
+.sl-md.sl-lk{background:linear-gradient(135deg,#4778F5,#8874EA);border-radius:inherit;box-shadow:0 .6cqw 2cqw rgba(71,120,245,.35)}
+.sl-lk-i{flex:none;width:5.5cqw;height:5.5cqw;display:block}.sl-lk-i svg{width:100%;height:100%}
+.sl-lk-x{min-width:0;display:flex;flex-direction:column}.sl-lk-x b{font-size:2.8cqw;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sl-lk-x small{font-size:1.8cqw;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sl-md.sl-mv{background:#0f172a;padding:0;justify-content:center}
+.sl-md.sl-mv img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.85}
+.sl-md.sl-mv iframe,.sl-md.sl-mv video{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+.sl-md-p{position:relative;width:11cqw;height:11cqw}
+.sl-md-t{position:absolute;left:2cqw;right:2cqw;bottom:1.6cqw;font-size:2.2cqw;font-weight:700;text-shadow:0 1px 6px rgba(0,0,0,.7);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sl-ed .sl-md *{pointer-events:none}
+</style>
 </body>
 </html>
 
